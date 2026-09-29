@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NAV_ITEMS } from '../../core/data/navigation.data';
 
@@ -10,4 +10,5 @@ import { NAV_ITEMS } from '../../core/data/navigation.data';
 })
 export class SidebarComponent {
   items = NAV_ITEMS;
+  collapsed = input(false);
 }

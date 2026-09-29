@@ -1,0 +1,80 @@
+<h1 class="title">Reportar incidencia</h1>
+
+<div class="layout">
+  <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+    <label class="field">
+      <span>Categoría</span>
+      <select formControlName="categoria">
+        <option value="" disabled>Selecciona una categoría</option>
+        @for (c of categorias; track c) {
+          <option [value]="c">{{ c }}</option>
+        }
+      </select>
+      @if (invalido('categoria')) { <small class="error">Selecciona una categoría.</small> }
+    </label>
+
+    <div class="row">
+      <label class="field">
+        <span>Torre</span>
+        <select formControlName="torre">
+          <option value="" disabled>—</option>
+          @for (t of torres; track t) { <option [value]="t">{{ t }}</option> }
+        </select>
+        @if (invalido('torre')) { <small class="error">Requerido.</small> }
+      </label>
+      <label class="field">
+        <span>Piso</span>
+        <select formControlName="piso">
+          <option value="" disabled>—</option>
+          @for (p of pisos; track p) { <option [value]="p">{{ p }}</option> }
+        </select>
+        @if (invalido('piso')) { <small class="error">Requerido.</small> }
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Detalle de ubicación</span>
+      <input type="text" formControlName="detalle" placeholder="Ej.: pasadizo, departamento 3" />
+      @if (invalido('detalle')) { <small class="error">Indica dónde ocurre el problema.</small> }
+    </label>
+
+    <label class="field">
+      <span>Descripción</span>
+      <textarea rows="4" formControlName="descripcion" placeholder="Describe el problema"></textarea>
+      @if (invalido('descripcion')) { <small class="error">Escribe al menos 10 caracteres.</small> }
+    </label>
+
+    <button type="submit" class="btn">Enviar reporte</button>
+  </form>
+
+  <aside class="side">
+    @if (creada(); as inc) {
+      <div class="done">
+        <span class="material-symbols-rounded">check_circle</span>
+        <h2>Incidencia registrada</h2>
+        <p class="id">{{ inc.id }}</p>
+        <p>Estado: <strong>{{ inc.estado }}</strong></p>
+        <p class="hint">Vista de demostración: todavía no se guarda en el servidor.</p>
+        <div class="actions">
+          <a class="link" routerLink="/incidencias/mis-incidencias">Ver mis incidencias</a>
+          <button type="button" class="link" (click)="nueva()">Reportar otra</button>
+        </div>
+      </div>
+    } @else {
+      <div class="side__head">
+        <h2>Evidencia</h2>
+        <span>Opcional · máx. 3 archivos</span>
+      </div>
+      <label class="drop">
+        <input type="file" accept="image/*,video/*" multiple hidden (change)="onFiles($event)" />
+        <span class="material-symbols-rounded">add_photo_alternate</span>
+        <span>Adjuntar fotos o video</span>
+      </label>
+      @if (archivos().length) {
+        <ul class="files">
+          @for (f of archivos(); track f.name) { <li>{{ f.name }}</li> }
+        </ul>
+      }
+    }
+  </aside>
+</div>
