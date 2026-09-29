@@ -1,0 +1,35 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(20, 40, 90, 0.05), rgba(20, 40, 90, 0.3));
+  pointer-events: none;
+}
+
+.shell > * { position: relative; }
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  padding: 20px 32px 32px;
+}
+
+app-sidebar { display: block; align-self: center; }
+
+.content { display: flex; flex-direction: column; min-width: 0; }
+
+@media (max-width: 900px) {
+  .body { grid-template-columns: 1fr; padding: 16px; }
+}

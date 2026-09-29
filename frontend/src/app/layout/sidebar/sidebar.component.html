@@ -1,0 +1,16 @@
+<nav class="sidebar glass" aria-label="Menú principal">
+  @for (item of items; track item.route) {
+    <a
+      class="item"
+      [routerLink]="item.route"
+      routerLinkActive="item--active"
+      [routerLinkActiveOptions]="{ exact: item.route === '/inicio' }"
+    >
+      <span class="material-symbols-rounded">{{ item.icon }}</span>
+      <span class="item__label">{{ item.label }}</span>
+      @if (item.soon) {
+        <span class="item__soon">Pronto</span>
+      }
+    </a>
+  }
+</nav>
