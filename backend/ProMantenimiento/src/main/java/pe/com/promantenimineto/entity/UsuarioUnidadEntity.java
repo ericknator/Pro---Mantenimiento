@@ -1,9 +1,17 @@
 package pe.com.promantenimineto.entity;
 
-import java.io.Serializable;
 import java.time.LocalDateTime;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,18 +22,29 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 
-@Entity
-@Table(name = "usuario_unidad")
-@IdClass(UsuarioUnidadId.class)
+@Entity(name = "UsuarioUnidadEntity")
+@Table(
+    name = "usuario_unidad",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uq_usuario_unidad",
+            columnNames = {"usuario_id", "unidad_id"}
+        )
+    }
+)
 public class UsuarioUnidadEntity {
 
     @Id
-    @Column(name = "usuario_id")
-    private Long usuarioId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Id
-    @Column(name = "unidad_id")
-    private Long unidadId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private UsuarioPerfilEntity usuario;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unidad_id", nullable = false)
+    private UnidadResidencialEntity unidad;
 
     @Column(nullable = false, length = 30)
     private String relacion;
@@ -38,4 +57,5 @@ public class UsuarioUnidadEntity {
 
     @Column(name = "creado_en", nullable = false)
     private LocalDateTime creadoEn;
+
 }
