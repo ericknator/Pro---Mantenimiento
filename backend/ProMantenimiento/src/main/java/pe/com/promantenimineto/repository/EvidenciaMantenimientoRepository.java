@@ -1,0 +1,15 @@
+package pe.com.promantenimineto.repository;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+
+import pe.com.promantenimineto.entity.EvidenciaMantenimientoEntity;
+
+public interface EvidenciaMantenimientoRepository extends JpaRepository<EvidenciaMantenimientoEntity, Long> {
+
+    @Query("select d from EvidenciaMantenimientoEntity d where d.activo=true")
+    List<EvidenciaMantenimientoEntity> findAllCustom();
+
+}
