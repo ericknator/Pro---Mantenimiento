@@ -48,7 +48,7 @@ public class IncidenciaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public IncidenciaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

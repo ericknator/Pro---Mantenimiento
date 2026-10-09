@@ -48,7 +48,7 @@ public class EstadoIncidenciaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public EstadoIncidenciaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

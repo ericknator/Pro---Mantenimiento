@@ -48,7 +48,7 @@ public class RolRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public RolEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

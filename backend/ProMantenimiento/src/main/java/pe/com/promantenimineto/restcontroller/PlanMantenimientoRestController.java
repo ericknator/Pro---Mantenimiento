@@ -48,7 +48,7 @@ public class PlanMantenimientoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public PlanMantenimientoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

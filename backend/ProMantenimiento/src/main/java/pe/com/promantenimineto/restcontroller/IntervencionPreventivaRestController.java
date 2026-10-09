@@ -48,7 +48,7 @@ public class IntervencionPreventivaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public IntervencionPreventivaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

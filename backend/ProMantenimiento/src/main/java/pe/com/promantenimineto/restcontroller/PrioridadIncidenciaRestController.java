@@ -48,7 +48,7 @@ public class PrioridadIncidenciaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public PrioridadIncidenciaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

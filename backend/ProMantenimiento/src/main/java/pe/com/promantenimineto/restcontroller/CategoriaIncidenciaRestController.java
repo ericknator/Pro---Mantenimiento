@@ -48,7 +48,7 @@ public class CategoriaIncidenciaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public CategoriaIncidenciaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

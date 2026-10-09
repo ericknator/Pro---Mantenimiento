@@ -48,7 +48,7 @@ public class TorreRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public TorreEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

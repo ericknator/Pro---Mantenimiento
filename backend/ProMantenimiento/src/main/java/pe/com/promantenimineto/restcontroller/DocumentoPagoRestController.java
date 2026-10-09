@@ -48,7 +48,7 @@ public class DocumentoPagoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public DocumentoPagoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

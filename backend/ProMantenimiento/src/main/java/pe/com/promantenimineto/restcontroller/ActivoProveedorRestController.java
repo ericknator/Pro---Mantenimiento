@@ -48,7 +48,7 @@ public class ActivoProveedorRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public ActivoProveedorEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

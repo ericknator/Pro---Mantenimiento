@@ -48,7 +48,7 @@ public class CondominioRestComtroller {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public CondominioEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

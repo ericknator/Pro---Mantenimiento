@@ -38,7 +38,7 @@ public class ActuacionIncidenciaRestController {
 		return servicio.findById(id);
 	}
 	
-	@PostMapping
+	@PostMapping("{id}")
 	public ActuacionIncidenciaEntity add(@RequestBody ActuacionIncidenciaEntity obj) {
 		return servicio.add(obj);
 	}

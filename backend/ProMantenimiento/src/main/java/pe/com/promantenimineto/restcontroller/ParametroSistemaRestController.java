@@ -48,7 +48,7 @@ public class ParametroSistemaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public ParametroSistemaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

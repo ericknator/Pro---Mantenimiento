@@ -48,7 +48,7 @@ public class EstadoVisitaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public EstadoVisitaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

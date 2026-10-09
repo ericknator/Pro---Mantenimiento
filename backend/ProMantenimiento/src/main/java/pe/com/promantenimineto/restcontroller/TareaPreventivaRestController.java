@@ -48,7 +48,7 @@ public class TareaPreventivaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public TareaPreventivaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

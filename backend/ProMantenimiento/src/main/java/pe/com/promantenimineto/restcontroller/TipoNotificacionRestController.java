@@ -48,7 +48,7 @@ public class TipoNotificacionRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public TipoNotificacionEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

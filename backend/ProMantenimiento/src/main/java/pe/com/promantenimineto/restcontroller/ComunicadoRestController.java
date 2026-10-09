@@ -48,7 +48,7 @@ public class ComunicadoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public ComunicadoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

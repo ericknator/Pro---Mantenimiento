@@ -48,7 +48,7 @@ public class FrecuenciaMantenimientoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public FrecuenciaMantenimientoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

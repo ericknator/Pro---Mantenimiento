@@ -48,7 +48,7 @@ public class CuotaUnidadRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public CuotaUnidadEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

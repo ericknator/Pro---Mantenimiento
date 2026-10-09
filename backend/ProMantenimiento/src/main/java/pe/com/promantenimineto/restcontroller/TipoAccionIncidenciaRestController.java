@@ -48,7 +48,7 @@ public class TipoAccionIncidenciaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public TipoAccionIncidenciaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

@@ -49,7 +49,7 @@ public class PermisoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public PermisoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

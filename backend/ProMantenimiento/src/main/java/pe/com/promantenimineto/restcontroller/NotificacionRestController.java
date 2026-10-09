@@ -48,7 +48,7 @@ public class NotificacionRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public NotificacionEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

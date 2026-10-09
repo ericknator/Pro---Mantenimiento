@@ -48,7 +48,7 @@ public class EvidenciaMantenimientoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public EvidenciaMantenimientoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

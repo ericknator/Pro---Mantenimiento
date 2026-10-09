@@ -48,7 +48,7 @@ public class AlertaMantenimientoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public AlertaMantenimientoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

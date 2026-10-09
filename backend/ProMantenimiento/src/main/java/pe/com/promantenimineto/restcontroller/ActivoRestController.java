@@ -48,7 +48,7 @@ public class ActivoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public ActivoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

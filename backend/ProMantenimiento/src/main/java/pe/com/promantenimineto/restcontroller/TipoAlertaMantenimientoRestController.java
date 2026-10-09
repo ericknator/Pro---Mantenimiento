@@ -48,7 +48,7 @@ public class TipoAlertaMantenimientoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public TipoAlertaMantenimientoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

@@ -17,7 +17,7 @@ import pe.com.promantenimineto.entity.ComunicadoDestinatarioEntity;
 import pe.com.promantenimineto.service.ComunicadoDestinatarioService;
 
 @RestController
-@RequestMapping("/api/rol")
+@RequestMapping("/api/comunicado-destinatario")
 public class ComunicadoDestinatarioRestController {
 
 	@Autowired

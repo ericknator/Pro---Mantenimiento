@@ -48,7 +48,7 @@ public class AuditoriaSistemaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public AuditoriaSistemaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

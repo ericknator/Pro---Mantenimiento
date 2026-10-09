@@ -48,7 +48,7 @@ public class UsuarioPerfilRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public UsuarioPerfilEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

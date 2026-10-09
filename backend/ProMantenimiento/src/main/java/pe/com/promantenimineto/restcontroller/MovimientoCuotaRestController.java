@@ -48,7 +48,7 @@ public class MovimientoCuotaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public MovimientoCuotaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

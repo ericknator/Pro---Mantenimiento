@@ -48,7 +48,7 @@ public class UnidadResidencialRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public UnidadResidencialEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

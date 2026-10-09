@@ -48,7 +48,7 @@ public class RolPermisoRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public RolPermisoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}

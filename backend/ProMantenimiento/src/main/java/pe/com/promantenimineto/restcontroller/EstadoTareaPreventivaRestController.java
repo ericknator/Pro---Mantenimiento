@@ -48,7 +48,7 @@ public class EstadoTareaPreventivaRestController {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("{id}")
 	public EstadoTareaPreventivaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}
