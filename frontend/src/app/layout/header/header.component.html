@@ -1,0 +1,13 @@
+<header class="header glass">
+  <a class="brand" routerLink="/inicio">
+    <span class="material-symbols-rounded">apartment</span>
+    <span>
+      <strong>Pro-Mantenimiento</strong>
+      <small>Condominio Nuevo Alcázar</small>
+    </span>
+  </a>
+  <a class="exit" [routerLink]="exit.route">
+    <span class="material-symbols-rounded">{{ exit.icon }}</span>
+    {{ exit.label }}
+  </a>
+</header>

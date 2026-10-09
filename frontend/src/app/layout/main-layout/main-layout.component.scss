@@ -1,0 +1,63 @@
+.shell {
+  --sidebar-w: 240px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+// Modo "focus": superficies blancas sobre degradado azul
+.shell--focus {
+  --sidebar-w: 72px;
+  --glass-bg: #ffffff;
+  --glass-border: rgba(27, 36, 64, 0.06);
+  --glass-shadow: 0 10px 30px rgba(61, 111, 242, 0.12);
+  --item-hover-bg: #eef2fb;
+  --item-active-bg: #e3e8f4;
+}
+
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  transition: opacity 0.45s ease;
+}
+
+.bg--photo {
+  background-size: cover;
+  background-position: center;
+}
+
+.bg--photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(20, 40, 90, 0.05), rgba(20, 40, 90, 0.3));
+}
+
+.bg--focus {
+  background: radial-gradient(ellipse 60% 60% at 55% 55%, #afc8ff 0%, #f4f4f4 100%);
+  opacity: 0;
+}
+
+.shell--focus .bg--photo { opacity: 0; }
+.shell--focus .bg--focus { opacity: 1; }
+
+app-header,
+.body { position: relative; z-index: 1; }
+
+.body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  gap: 24px;
+  padding: 20px 32px 32px;
+  transition: grid-template-columns 0.3s ease;
+}
+
+app-sidebar { display: block; align-self: center; }
+
+.content { display: flex; flex-direction: column; min-width: 0; }
+
+@media (max-width: 900px) {
+  .body { grid-template-columns: 1fr; padding: 16px; }
+}
