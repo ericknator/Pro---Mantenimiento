@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.AccesoVisitaEntity;
 
 public interface AccesoVisitaRepository extends JpaRepository<AccesoVisitaEntity, Long> {
 
-    @Query("select d from AccesoVisitaEntity d where d.activo=true")
+    @Query("select d from AccesoVisitaEntity d")
     List<AccesoVisitaEntity> findAllCustom();
 
 }

@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.EvidenciaMantenimientoEntity;
 
 public interface EvidenciaMantenimientoRepository extends JpaRepository<EvidenciaMantenimientoEntity, Long> {
 
-    @Query("select d from EvidenciaMantenimientoEntity d where d.activo=true")
+    @Query("select d from EvidenciaMantenimientoEntity d")
     List<EvidenciaMantenimientoEntity> findAllCustom();
 
 }

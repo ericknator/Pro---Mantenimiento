@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.CuotaUnidadEntity;
 
 public interface CuotaUnidadRepository extends JpaRepository<CuotaUnidadEntity, Long> {
 
-    @Query("select d from CuotaUnidadEntity d where d.activo=true")
+    @Query("select d from CuotaUnidadEntity d")
     List<CuotaUnidadEntity> findAllCustom();
 
 }

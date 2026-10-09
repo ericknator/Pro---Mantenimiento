@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.AlertaMantenimientoEntity;
 
 public interface AlertaMantenimientoRepository extends JpaRepository<AlertaMantenimientoEntity, Long> {
 
-    @Query("select d from AlertaMantenimientoEntity d where d.activo=true")
+    @Query("select d from AlertaMantenimientoEntity d")
     List<AlertaMantenimientoEntity> findAllCustom();
 
 }

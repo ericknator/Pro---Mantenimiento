@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.MovimientoCuotaEntity;
 
 public interface MovimientoCuotaRepository extends JpaRepository<MovimientoCuotaEntity, Long> {
 
-    @Query("select d from MovimientoCuotaEntity d where d.activo=true")
+    @Query("select d from MovimientoCuotaEntity d")
     List<MovimientoCuotaEntity> findAllCustom();
 
 }

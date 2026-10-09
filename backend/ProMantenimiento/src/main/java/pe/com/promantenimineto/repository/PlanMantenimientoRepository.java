@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.PlanMantenimientoEntity;
 
 public interface PlanMantenimientoRepository extends JpaRepository<PlanMantenimientoEntity, Long> {
 
-    @Query("select d from PlanMantenimientoEntity d where d.activo=true")
+    @Query("select d from PlanMantenimientoEntity d")
     List<PlanMantenimientoEntity> findAllCustom();
 
 }

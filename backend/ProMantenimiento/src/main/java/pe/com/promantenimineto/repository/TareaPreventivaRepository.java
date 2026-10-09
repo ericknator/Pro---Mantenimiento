@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.TareaPreventivaEntity;
 
 public interface TareaPreventivaRepository extends JpaRepository<TareaPreventivaEntity, Long> {
 
-    @Query("select d from TareaPreventivaEntity d where d.activo=true")
+    @Query("select d from TareaPreventivaEntity d")
     List<TareaPreventivaEntity> findAllCustom();
 
 }

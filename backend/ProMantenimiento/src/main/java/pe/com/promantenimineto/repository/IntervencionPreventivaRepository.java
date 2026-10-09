@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.IntervencionPreventivaEntity;
 
 public interface IntervencionPreventivaRepository extends JpaRepository<IntervencionPreventivaEntity, Long> {
 
-    @Query("select d from IntervencionPreventivaEntity d where d.activo=true")
+    @Query("select d from IntervencionPreventivaEntity d")
     List<IntervencionPreventivaEntity> findAllCustom();
 
 }

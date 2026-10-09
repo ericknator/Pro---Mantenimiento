@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.DocumentoPagoEntity;
 
 public interface DocumentoPagoRepository extends JpaRepository<DocumentoPagoEntity, Long> {
 
-    @Query("select d from DocumentoPagoEntity d where d.activo=true")
+    @Query("select d from DocumentoPagoEntity d")
     List<DocumentoPagoEntity> findAllCustom();
 
 }

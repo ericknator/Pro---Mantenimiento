@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.NotificacionEntity;
 
 public interface NotificacionRepository extends JpaRepository<NotificacionEntity, Long> {
 
-    @Query("select d from NotificacionEntity d where d.activo=true")
+    @Query("select d from NotificacionEntity d")
     List<NotificacionEntity> findAllCustom();
 
 }

@@ -9,7 +9,7 @@ import pe.com.promantenimineto.entity.ActuacionIncidenciaEntity;
 
 public interface ActuacionIncidenciaRepository extends JpaRepository<ActuacionIncidenciaEntity, Long> {
 
-    @Query("select d from ActuacionIncidenciaEntity d where d.activo=true")
+    @Query("select d from ActuacionIncidenciaEntity d")
     List<ActuacionIncidenciaEntity> findAllCustom();
 
 }
