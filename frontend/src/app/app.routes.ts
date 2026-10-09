@@ -43,7 +43,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/incidencias/reportar/reportar.component').then((m) => m.ReportarComponent),
       },
+      {
+        // ruta temporal
+        path: 'roles-prueba',
+        title: 'Prueba de roles',
+        loadComponent: () =>
+          import('./features/roles-prueba/roles-prueba.component')
+            .then((m) => m.RolesPruebaComponent),
+      },
       ...placeholderRoutes,
+
     ],
   },
   { path: '**', redirectTo: 'inicio' },
