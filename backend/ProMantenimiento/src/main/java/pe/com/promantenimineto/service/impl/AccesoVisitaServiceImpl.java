@@ -39,7 +39,7 @@ public class AccesoVisitaServiceImpl implements AccesoVisitaService{
     @Override
     public AccesoVisitaEntity update(AccesoVisitaEntity obj, Long id) {
         AccesoVisitaEntity objAccesoVisita = repositorio.findById(id).get();
-        BeanUtils.copyProperties(obj, objAccesoVisita);
+        BeanUtils.copyProperties(obj, objAccesoVisita, "id");
         return repositorio.save(objAccesoVisita);
     }
 

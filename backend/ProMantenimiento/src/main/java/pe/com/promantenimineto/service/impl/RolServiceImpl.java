@@ -39,7 +39,7 @@ public class RolServiceImpl implements RolService{
     @Override
     public RolEntity update(RolEntity obj, Long id) {
         RolEntity objRol = repositorio.findById(id).get();
-        BeanUtils.copyProperties(obj, objRol);
+        BeanUtils.copyProperties(obj, objRol, "id");
         return repositorio.save(objRol);
     }
 
