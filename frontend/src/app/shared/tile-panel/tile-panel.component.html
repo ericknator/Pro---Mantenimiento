@@ -1,18 +1,15 @@
-<section class="panel glass">
+<section class="panel">
   <header class="panel__head">
-    <h2>{{ title() }}</h2>
+    <h2 class="label">{{ title() }}</h2>
     @if (subtitle()) {
-      <span class="panel__meta">{{ subtitle() }}</span>
+      <span class="meta">{{ subtitle() }}</span>
     }
   </header>
-  <div class="panel__grid">
+  <div class="grid">
     @for (item of items(); track item.route) {
       <a class="tile" [routerLink]="item.route">
-        @if (item.soon) {
-          <span class="tile__badge">Pronto</span>
-        }
-        <span class="material-symbols-rounded">{{ item.icon }}</span>
-        <span>{{ item.label }}</span>
+        <span class="tile__icon"><span class="material-symbols-rounded">{{ item.icon }}</span></span>
+        <span class="tile__label">{{ item.label }}</span>
       </a>
     }
   </div>

@@ -1,6 +1,52 @@
-<div class="hero">
-  <p class="hero__eyebrow">Portal del residente</p>
-  <h1>Tu condominio, <span>en un solo lugar</span></h1>
-  <p class="hero__text">Reporta incidencias, consulta su estado y mantente informado.</p>
-  <a class="cta" routerLink="/incidencias/reportar">Reportar incidencia</a>
-</div>
+<!-- Escritorio -->
+<app-page-hero
+  class="hero-desktop"
+  [title]="'Hola, ' + nombre()"
+  [subtitle]="'Este es el resumen de tus incidencias al ' + fecha + '.'"
+/>
+
+<!-- Móvil -->
+<section class="greet">
+  <p class="label">Pro-Mantenimiento</p>
+  <h1>Hola, {{ nombre() }}</h1>
+  <p>
+    @if (enCurso() === 1) { Tienes 1 incidencia en curso. }
+    @else if (enCurso() > 1) { Tienes {{ enCurso() }} incidencias en curso. }
+    @else { No tienes incidencias en curso. }
+  </p>
+</section>
+
+<section class="modulos">
+  <h2 class="label">Módulos</h2>
+  <div class="modulos__grid">
+    @for (m of modulos; track m.route) {
+      <a class="modulo" [routerLink]="m.route">
+        <span class="modulo__icon"><span class="material-symbols-rounded">{{ m.icon }}</span></span>
+        {{ m.label }}
+      </a>
+    }
+  </div>
+</section>
+
+<!-- Ambos -->
+<section class="cards dock">
+  <article class="panel">
+    <header class="panel__head">
+      <h2 class="label">Incidencias recientes</h2>
+      <a class="label" routerLink="/incidencias/mis-incidencias">Ver todas</a>
+    </header>
+    @for (i of recientes(); track i.id) {
+      <app-incidencia-row [incidencia]="i" />
+    } @empty {
+      <p class="empty">Aún no tienes incidencias registradas.</p>
+    }
+  </article>
+
+  <article class="panel">
+    <header class="panel__head"><h2 class="label">Accesos rápidos</h2></header>
+    <div class="quick">
+      <a class="btn" routerLink="/incidencias/reportar">Reportar incidencia</a>
+      <a class="btn btn--soft" routerLink="/incidencias/mis-incidencias">Mis incidencias</a>
+    </div>
+  </article>
+</section>

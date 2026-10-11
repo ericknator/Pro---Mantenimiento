@@ -1,18 +1,26 @@
-/* You can add global styles to this file, and also import other style files */
 :root {
-  --color-primary: #3d6ff2;
-  --color-primary-soft: #afc8ff;
-  --color-accent: #0f9b8e;
-  --color-warn: #f2801f;
-  --color-text: #1b2440;
-  --color-bg: #f4f4f4;
-  --glass-bg: rgba(255, 255, 255, 0.55);
-  --glass-border: rgba(255, 255, 255, 0.65);
-  --glass-shadow: 0 20px 50px rgba(15, 30, 70, 0.18);
-  --radius-lg: 28px;
-  --radius-md: 18px;
-  --item-hover-bg: rgba(255, 255, 255, 0.6);
-  --item-active-bg: rgba(255, 255, 255, 0.9);
+  --c-primary: #2563eb;
+  --c-primary-soft: #e8efff;
+  --c-teal: #0f9488;
+  --c-ink: #0f1a2e;
+  --c-muted: #64708a;
+  --c-bg: #f5f7fb;
+  --c-line: rgba(15, 26, 46, 0.1);
+  --c-danger: #dc2626;
+
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 18px 45px rgba(15, 26, 46, 0.16);
+
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+
+  --item-hover: rgba(255, 255, 255, 0.65);
+  --item-active: rgba(15, 148, 136, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -20,29 +28,100 @@ html, body { height: 100%; }
 
 body {
   margin: 0;
-  font-family: 'Poppins', system-ui, sans-serif;
-  color: var(--color-text);
-  background: var(--color-bg);
+  font-family: var(--font-ui);
+  color: var(--c-ink);
+  background: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
 }
 
 a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.material-symbols-rounded { font-size: 22px; line-height: 1; user-select: none; flex: none; }
 
-.material-symbols-rounded { font-size: 24px; line-height: 1; user-select: none; }
-
-.glass {
+/* Superficies */
+.glass,
+.panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
 }
+.panel { padding: 20px 24px 22px; border-radius: var(--radius-xl); }
 
-/* Cualquier pantalla que se cargue en el router-outlet se alinea abajo */
-router-outlet + * {
-  flex: 1;
+.panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--c-line);
+}
+
+/* Etiquetas monoespaciadas del diseño */
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-primary);
+}
+
+/* Panel anclado abajo a la derecha */
+.dock { margin-top: auto; margin-left: auto; width: min(100%, 660px); }
+
+/* Cada pantalla enrutada ocupa el alto disponible */
+main.content > :not(router-outlet) {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  flex: 1;
   gap: 24px;
   min-width: 0;
+}
+
+/* Formularios */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > span { font-family: var(--font-mono); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c-muted); }
+.control {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e3e8f2;
+  border-radius: 12px;
+  background: #f6f8fc;
+  outline: none;
+  &:focus { border-color: var(--c-primary); background: #fff; }
+}
+.field-error { color: var(--c-danger); font-size: 0.75rem; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--c-primary);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.35);
+  transition: transform 0.15s, filter 0.15s;
+  &:hover { transform: translateY(-1px); filter: brightness(1.07); }
+  .material-symbols-rounded { font-size: 18px; }
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --glass-bg: #ffffff;
+    --glass-border: transparent;
+    --glass-shadow: 0 6px 22px rgba(37, 99, 235, 0.09);
+  }
+  .dock { margin-left: 0; margin-top: 0; width: 100%; }
 }

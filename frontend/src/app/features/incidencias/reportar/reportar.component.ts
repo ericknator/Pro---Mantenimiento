@@ -1,58 +1,55 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { CATEGORIAS_INCIDENCIA } from '../../../core/data/navigation.data';
 import { IncidenciasService } from '../../../core/services/incidencias.service';
 import { Incidencia } from '../../../models/incidencia.model';
+import { IncidenciaRowComponent } from '../../../shared/incidencia-row/incidencia-row.component';
+import { PageHeroComponent } from '../../../shared/page-hero/page-hero.component';
 
 @Component({
   selector: 'app-reportar',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, PageHeroComponent, IncidenciaRowComponent],
   templateUrl: './reportar.component.html',
   styleUrl: './reportar.component.scss',
 })
 export class ReportarComponent {
-  private fb = inject(FormBuilder);
-  private service = inject(IncidenciasService);
+  private readonly fb = inject(FormBuilder);
+  private readonly service = inject(IncidenciasService);
 
-  categorias = ['Agua', 'Electricidad', 'Ascensor', 'Iluminación', 'Puerta / portón', 'Área común', 'Otro'];
-  torres = Array.from({ length: 12 }, (_, i) => String(i + 1));
-  pisos = Array.from({ length: 8 }, (_, i) => String(i + 1));
+  categorias = CATEGORIAS_INCIDENCIA;
+  recientes = () => this.service.propias().slice(0, 3);
 
+  // HU-INC-01: categoría, ubicación, descripción y evidencia.
+  // La prioridad NO se captura aquí: la define la administración (HU-INC-03).
   form = this.fb.nonNullable.group({
     categoria: ['', Validators.required],
-    torre: ['', Validators.required],
-    piso: ['', Validators.required],
-    detalle: ['', [Validators.required, Validators.maxLength(80)]],
+    ubicacion: ['', [Validators.required, Validators.maxLength(120)]],
     descripcion: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(500)]],
   });
 
-  archivos = signal<File[]>([]);
+  archivos = signal<string[]>([]);
   creada = signal<Incidencia | null>(null);
 
-  onFiles(event: Event) {
+  onArchivos(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.archivos.set(Array.from(input.files ?? []).slice(0, 3));
+    this.archivos.set(Array.from(input.files ?? []).slice(0, 3).map((f) => f.name));
   }
 
-  invalido(nombre: string): boolean {
-    const c = this.form.get(nombre);
-    return !!c && c.invalid && c.touched;
+  invalido(campo: 'categoria' | 'ubicacion' | 'descripcion'): boolean {
+    const c = this.form.controls[campo];
+    return c.invalid && c.touched;
   }
 
-  enviar() {
+  enviar(): void {
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      this.form.markAllAsTouched(); // HU-INC-01-CA-02: se indica el campo faltante y no se crea el caso
+      this.creada.set(null);
       return;
     }
-    const valores = this.form.getRawValue();
-    this.creada.set(
-      this.service.crear({ ...valores, evidencias: this.archivos().map((f) => f.name) }),
-    );
-  }
-
-  nueva() {
+    const nueva = this.service.crear({ ...this.form.getRawValue(), evidencias: this.archivos() });
+    this.creada.set(nueva);
     this.form.reset();
     this.archivos.set([]);
-    this.creada.set(null);
   }
 }

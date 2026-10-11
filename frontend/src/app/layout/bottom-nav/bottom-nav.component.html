@@ -1,0 +1,34 @@
+<nav class="bottom glass" aria-label="Navegación principal">
+  @for (item of principales; track item.route) {
+    <a
+      class="tab"
+      [routerLink]="item.route"
+      routerLinkActive="tab--active"
+      [routerLinkActiveOptions]="{ exact: item.route === '/inicio' }"
+      (click)="cerrar()"
+    >
+      <span class="material-symbols-rounded">{{ item.icon }}</span>
+      <span>{{ item.label }}</span>
+    </a>
+  }
+  <button type="button" class="tab" [class.tab--active]="abierto()" (click)="alternar()" aria-haspopup="true" [attr.aria-expanded]="abierto()">
+    <span class="material-symbols-rounded">more_horiz</span>
+    <span>Más</span>
+  </button>
+</nav>
+
+@if (abierto()) {
+  <div class="backdrop" (click)="cerrar()"></div>
+  <section class="sheet" aria-label="Más opciones">
+    @for (item of otros; track item.route) {
+      <a class="sheet__item" [class.sheet__item--danger]="item.danger" [routerLink]="item.route" (click)="cerrar()">
+        <span class="material-symbols-rounded">{{ item.icon }}</span>
+        {{ item.label }}
+      </a>
+    }
+    <button type="button" class="sheet__item sheet__exit" (click)="salir()">
+      <span class="material-symbols-rounded">logout</span>
+      Cerrar sesión
+    </button>
+  </section>
+}

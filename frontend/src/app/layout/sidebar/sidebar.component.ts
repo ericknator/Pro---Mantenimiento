@@ -10,5 +10,6 @@ import { NAV_ITEMS } from '../../core/data/navigation.data';
 })
 export class SidebarComponent {
   items = NAV_ITEMS;
+  /** true: solo íconos (pantallas de acción como Reportar incidencia) */
   collapsed = input(false);
 }
