@@ -1,13 +1,19 @@
-<header class="header glass">
-  <a class="brand" routerLink="/inicio">
+<header class="bar">
+  <a class="brand glass" routerLink="/inicio" aria-label="Ir al inicio">
     <span class="material-symbols-rounded">apartment</span>
-    <span>
-      <strong>Pro-Mantenimiento</strong>
-      <small>Condominio Nuevo Alcázar</small>
-    </span>
+    <span class="brand__text">Pro-Mantenimiento</span>
   </a>
-  <a class="exit" [routerLink]="exit.route">
-    <span class="material-symbols-rounded">{{ exit.icon }}</span>
-    {{ exit.label }}
-  </a>
+
+  <div class="user glass">
+    <a class="bell" [routerLink]="notificaciones.route" aria-label="Notificaciones">
+      <span class="material-symbols-rounded">notifications</span>
+    </a>
+    @if (usuario(); as u) {
+      <span class="user__name">{{ u.nombre }} · {{ u.unidad }}</span>
+    }
+    <button type="button" class="exit" (click)="salir()">
+      <span class="material-symbols-rounded">logout</span>
+      Salir
+    </button>
+  </div>
 </header>

@@ -1,1 +1,5 @@
-<app-tile-panel title="Incidencias" [items]="actions" />
+<app-page-hero
+  [title]="'Hola, ' + nombre()"
+  subtitle="Reporta y da seguimiento a las incidencias de tu departamento."
+/>
+<app-tile-panel class="dock" title="Incidencias" [subtitle]="acciones.length + ' opciones'" [items]="acciones" />

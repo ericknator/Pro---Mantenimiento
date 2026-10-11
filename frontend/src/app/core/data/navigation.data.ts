@@ -1,18 +1,24 @@
 import { NavItem } from '../../models/nav-item.model';
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'Inicio', icon: 'home', route: '/inicio' },
-  { label: 'Finanzas', icon: 'payments', route: '/modulo/finanzas', soon: true },
-  { label: 'Incidencias', icon: 'build', route: '/incidencias' },
-  { label: 'Alertas', icon: 'warning', route: '/modulo/alertas' },
-  { label: 'Emergencias', icon: 'sos', route: '/modulo/emergencias', soon: true },
-  { label: 'Reservas', icon: 'event', route: '/modulo/reservas', soon: true },
-  { label: 'Visitas', icon: 'how_to_reg', route: '/modulo/visitas', soon: true },
-  { label: 'Paquetes', icon: 'inventory_2', route: '/modulo/paquetes', soon: true },
-  { label: 'Mi edificio', icon: 'apartment', route: '/modulo/mi-edificio', soon: true },
-  { label: 'Comunicados', icon: 'campaign', route: '/modulo/comunicados' },
+  { label: 'Inicio', icon: 'home', route: '/inicio', bottom: true },
+  { label: 'Finanzas', icon: 'account_balance_wallet', route: '/modulo/finanzas', bottom: true, grid: true },
+  { label: 'Incidencias', icon: 'build', route: '/incidencias', bottom: true, grid: true },
+  { label: 'Alertas', icon: 'warning', route: '/modulo/alertas', grid: true },
+  { label: 'Emergencia', icon: 'gpp_maybe', route: '/modulo/emergencia', danger: true },
+  { label: 'Reservas', icon: 'calendar_month', route: '/modulo/reservas', bottom: true, grid: true },
+  { label: 'Visitas', icon: 'group', route: '/modulo/visitas', grid: true },
+  { label: 'Paquetes', icon: 'inventory_2', route: '/modulo/paquetes', grid: true },
+  { label: 'Mi edificio', icon: 'apartment', route: '/modulo/mi-edificio', grid: true },
+  { label: 'Comunicados', icon: 'campaign', route: '/modulo/comunicados', grid: true },
   { label: 'Mi perfil', icon: 'person', route: '/modulo/mi-perfil' },
 ];
+
+export const NOTIFICACIONES_ITEM: NavItem = {
+  label: 'Notificaciones',
+  icon: 'notifications',
+  route: '/modulo/notificaciones',
+};
 
 export const INCIDENT_ACTIONS: NavItem[] = [
   { label: 'Reportar incidencia', icon: 'edit_note', route: '/incidencias/reportar' },
@@ -21,4 +27,15 @@ export const INCIDENT_ACTIONS: NavItem[] = [
   { label: 'Historial de incidencias', icon: 'history', route: '/incidencias/historial' },
 ];
 
-export const EXIT_ITEM: NavItem = { label: 'Salir', icon: 'logout', route: '/modulo/login' };
+export const CATEGORIAS_INCIDENCIA = [
+  'Gasfitería',
+  'Electricidad',
+  'Ascensores',
+  'Iluminación',
+  'Puertas y portones',
+  'Áreas comunes',
+  'Seguridad',
+  'Otro',
+];
+
+export const EDIFICIO_NOMBRE = 'Condominio Nuevo Alcázar';

@@ -1,0 +1,43 @@
+<app-page-hero title="Seguimiento de incidencia" [subtitle]="incidencia()?.id ?? 'Caso no disponible'" />
+
+<section class="panel dock">
+  <header class="panel__head">
+    <h2 class="label">Seguimiento de incidencia</h2>
+    <a class="label back" routerLink="/incidencias/mis-incidencias">← Volver</a>
+  </header>
+
+  @if (incidencia(); as inc) {
+    <div class="resumen">
+      <span class="resumen__text">
+        <strong>{{ inc.descripcion }}</strong>
+        <small>{{ inc.id }} · {{ inc.categoria }} · {{ inc.ubicacion }}</small>
+        <small>Última actualización: {{ inc.actualizada | date: "d MMM yyyy, HH:mm" }}</small>
+      </span>
+      <app-estado-badge [estado]="inc.estado" />
+    </div>
+
+    <ol class="timeline">
+      @for (paso of inc.historial; track $index; let ultimo = $last) {
+        <li>
+          <span class="timeline__text">
+            <strong>{{ paso.estado }}</strong>
+            <small>{{ paso.fecha | date: "d MMM, HH:mm" }}</small>
+          </span>
+          <span class="chip" [class.chip--now]="ultimo">{{ ultimo ? 'Actual' : 'Hecho' }}</span>
+        </li>
+      }
+    </ol>
+
+    @if (inc.estado === 'Solucionada') {
+      <p class="note">La confirmación o reapertura del caso se habilitará en una versión posterior.</p>
+    }
+  } @else {
+    <div class="denied" role="alert">
+      <span class="material-symbols-rounded">lock</span>
+      <div>
+        <strong>Acceso no permitido</strong>
+        <small>No tienes acceso a este caso o no existe.</small>
+      </div>
+    </div>
+  }
+</section>

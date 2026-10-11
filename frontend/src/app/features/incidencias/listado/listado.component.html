@@ -1,0 +1,13 @@
+<app-page-hero [title]="titulo" [subtitle]="items().length + ' registros · datos de ejemplo'" />
+
+<section class="panel dock">
+  <header class="panel__head">
+    <h2 class="label">{{ titulo }}</h2>
+    <a class="label back" routerLink="/incidencias">← Volver</a>
+  </header>
+  @for (i of items(); track i.id) {
+    <app-incidencia-row [incidencia]="i" />
+  } @empty {
+    <p class="empty">No hay incidencias en esta vista.</p>
+  }
+</section>

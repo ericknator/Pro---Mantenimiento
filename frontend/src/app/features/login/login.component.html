@@ -1,0 +1,57 @@
+<main class="login">
+  <section class="visual" style="background-image: url('/images/fondo-login.jpg')">
+    <span class="brand">Pro-Mantenimiento</span>
+    <div class="visual__text">
+      <p class="label">Gestión de edificios</p>
+      <h1>Tu edificio,<br />en un solo lugar.</h1>
+      <p>Incidencias, mantenimiento y comunicación del condominio desde una sola aplicación.</p>
+    </div>
+  </section>
+
+  <section class="side">
+    <form class="card" [formGroup]="form" (ngSubmit)="ingresar()" novalidate>
+      <p class="label">Iniciar sesión</p>
+      <h2>Bienvenido</h2>
+
+      <div class="field">
+        <span>Ingresar como</span>
+        <div class="roles" role="radiogroup" aria-label="Ingresar como">
+          @for (r of roles; track r.id) {
+            <button
+              type="button" role="radio" class="role"
+              [class.role--on]="rolActivo() === r.id"
+              [attr.aria-checked]="rolActivo() === r.id"
+              [disabled]="!r.disponible"
+              [attr.title]="r.disponible ? null : 'Disponible en una versión posterior'"
+              (click)="elegirRol(r)"
+            >
+              <span class="role__icon"><span class="material-symbols-rounded">{{ r.icon }}</span></span>
+              {{ r.label }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <label class="field">
+        <span>Correo</span>
+        <input class="control" type="email" formControlName="correo" placeholder="correo@ejemplo.com" autocomplete="username" />
+        @if (invalido('correo')) { <small class="field-error">Ingresa un correo válido.</small> }
+      </label>
+
+      <label class="field">
+        <span>Contraseña</span>
+        <input class="control" type="password" formControlName="clave" placeholder="Mínimo 6 caracteres" autocomplete="current-password" />
+        @if (invalido('clave')) { <small class="field-error">La contraseña debe tener al menos 6 caracteres.</small> }
+      </label>
+
+      @if (error()) { <p class="field-error" role="alert">{{ error() }}</p> }
+
+      <button type="submit" class="btn">Ingresar <span class="material-symbols-rounded">arrow_forward</span></button>
+
+      <button type="button" class="forgot" (click)="recuperar()">¿Olvidaste tu contraseña?</button>
+      @if (aviso()) { <p class="aviso">{{ aviso() }}</p> }
+
+      <p class="demo">Demo: ingresa cualquier correo válido y una contraseña de 6 o más caracteres.</p>
+    </form>
+  </section>
+</main>

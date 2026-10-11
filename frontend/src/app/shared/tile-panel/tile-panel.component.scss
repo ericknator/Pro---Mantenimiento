@@ -1,67 +1,17 @@
 :host { display: block; }
-
-.panel { padding: 18px 22px 24px; border-radius: var(--radius-lg); }
-
-.panel__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(27, 36, 64, 0.15);
-}
-
-h2 {
-  margin: 0;
-  font-size: 0.85rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-
-.panel__meta {
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-warn);
-}
-
-.panel__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
-}
-
+.meta { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-muted); }
+h2 { margin: 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-top: 14px; }
 .tile {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 92px;
-  padding: 14px 8px;
-  text-align: center;
-  font-size: 0.78rem;
-  font-weight: 500;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: var(--radius-md);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  min-height: 100px; padding: 14px 8px; text-align: center;
+  background: #fff; border-radius: var(--radius-md);
+  box-shadow: 0 1px 0 rgba(15, 26, 46, 0.04);
   transition: transform 0.15s, box-shadow 0.15s;
-
-  .material-symbols-rounded { font-size: 28px; color: var(--color-primary); }
-  &:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(15, 30, 70, 0.18); }
+  &:hover { transform: translateY(-3px); box-shadow: 0 12px 26px rgba(37, 99, 235, 0.18); }
 }
-
-.tile__badge {
-  position: absolute;
-  top: -6px;
-  right: 8px;
-  padding: 2px 8px;
-  font-size: 0.58rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: #fff;
-  background: var(--color-warn);
-  border-radius: 999px;
+.tile__icon {
+  display: grid; place-items: center; width: 36px; height: 36px;
+  border-radius: 10px; background: var(--c-primary-soft); color: var(--c-primary);
 }
+.tile__label { font-size: 0.78rem; font-weight: 600; line-height: 1.25; }

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { EXIT_ITEM } from '../../core/data/navigation.data';
+import { Component, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { NOTIFICACIONES_ITEM } from '../../core/data/navigation.data';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -9,5 +10,14 @@ import { EXIT_ITEM } from '../../core/data/navigation.data';
   styleUrl: './header.component.scss',
 })
 export class HeaderComponent {
-  exit = EXIT_ITEM;
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+
+  usuario = this.auth.usuario;
+  notificaciones = NOTIFICACIONES_ITEM;
+
+  salir(): void {
+    this.auth.salir();
+    this.router.navigateByUrl('/login');
+  }
 }

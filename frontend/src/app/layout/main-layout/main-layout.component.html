@@ -1,12 +1,14 @@
-<div class="shell" [class.shell--focus]="mode() === 'focus'">
-  <div class="bg bg--photo" style="background-image: url('/images/edificio.png')"></div>
-  <div class="bg bg--focus"></div>
+<div class="shell" [class.shell--rail]="rail()">
+  <div class="bg" [style.background-image]="fondoUrl()"></div>
 
   <app-header />
+
   <div class="body">
-    <app-sidebar [collapsed]="mode() === 'focus'" />
+    <app-sidebar [collapsed]="rail()" />
     <main class="content">
       <router-outlet />
     </main>
   </div>
+
+  <app-bottom-nav />
 </div>
