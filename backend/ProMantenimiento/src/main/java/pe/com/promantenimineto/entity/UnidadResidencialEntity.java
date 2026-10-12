@@ -29,8 +29,9 @@ public class UnidadResidencialEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Integer torre;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "torre_id", nullable = false)
+    private TorreEntity torre;
 
     @Column(nullable = false)
     private Integer piso;
