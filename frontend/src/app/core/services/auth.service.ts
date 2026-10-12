@@ -1,53 +1,117 @@
-import { Injectable, computed, signal } from '@angular/core';
-import { Usuario } from '../../models/usuario.model';
 
-const CLAVE_SESION = 'pm_sesion_demo';
+import { Injectable, computed, signal, inject } from '@angular/core';
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+} from 'firebase/auth';
+import { firstValueFrom } from 'rxjs';
 
-// DEMO: usuario ficticio. Se reemplaza por Firebase Authentication
-// (el backend de Spring Boot valida el token y aplica permisos por rol).
-const USUARIO_DEMO: Usuario = {
-  id: 'u-1',
-  nombre: 'María Torres',
-  unidad: 'Dpto. 402',
-  correo: 'maria.torres@correo.com',
-  rol: 'residente',
-};
+import { auth } from './firebase.config';
+import { Usuario, RolUsuario } from '../../models/usuario.model';
+import { PerfilApiService } from './perfil-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly _usuario = signal<Usuario | null>(this.recuperar());
+  private readonly perfilApi = inject(PerfilApiService);
+  private readonly _usuario = signal<Usuario | null>(null);
+
+  private resolverInicializacion!: () => void;
+
+  readonly inicializacion = new Promise<void>((resolve) => {
+    this.resolverInicializacion = resolve;
+  });
 
   readonly usuario = this._usuario.asReadonly();
   readonly autenticado = computed(() => this._usuario() !== null);
-  readonly primerNombre = computed(() => this._usuario()?.nombre.split(' ')[0] ?? '');
+  readonly primerNombre = computed(
+    () => this._usuario()?.nombre.split(' ')[0] ?? ''
+  );
 
-  /** DEMO: acepta un correo con formato válido y una contraseña de 6 o más caracteres. */
-  ingresar(correo: string, clave: string): boolean {
-    const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim());
-    if (!correoValido || clave.length < 6) return false;
-    this._usuario.set({ ...USUARIO_DEMO, correo: correo.trim() });
-    try {
-      sessionStorage.setItem(CLAVE_SESION, '1');
-    } catch {
-      /* sin almacenamiento disponible */
-    }
-    return true;
+  constructor() {
+    onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (!firebaseUser) {
+          this._usuario.set(null);
+          return;
+        }
+
+        const token = await firebaseUser.getIdToken();
+        const perfil = await firstValueFrom(
+          this.perfilApi.obtenerPerfil(token)
+        );
+
+        this.establecerUsuario(perfil);
+      } catch (error) {
+        console.error('Error al obtener el perfil:', error);
+        this._usuario.set(null);
+
+        if (auth.currentUser) {
+          await signOut(auth).catch(() => {});
+        }
+      } finally {
+        this.resolverInicializacion();
+      }
+    });
   }
 
-  salir(): void {
+  async ingresar(correo: string, clave: string): Promise<boolean> {
+    try {
+      const credencial = await signInWithEmailAndPassword(
+        auth,
+        correo.trim(),
+        clave
+      );
+
+      const token = await credencial.user.getIdToken();
+      const perfil = await firstValueFrom(
+        this.perfilApi.obtenerPerfil(token)
+      );
+
+      this.establecerUsuario(perfil);
+      return true;
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      await signOut(auth).catch(() => {});
+      this._usuario.set(null);
+      return false;
+    }
+  }
+
+  async salir(): Promise<void> {
+    await signOut(auth);
     this._usuario.set(null);
-    try {
-      sessionStorage.removeItem(CLAVE_SESION);
-    } catch {
-      /* sin almacenamiento disponible */
-    }
   }
 
-  private recuperar(): Usuario | null {
-    try {
-      return sessionStorage.getItem(CLAVE_SESION) ? USUARIO_DEMO : null;
-    } catch {
-      return null;
+  private establecerUsuario(perfil: {
+    id: number;
+    uid: string;
+    nombres: string;
+    apellidos: string;
+    correo: string;
+    rol: string;
+  }): void {
+    this._usuario.set({
+      id: String(perfil.id),
+      nombre: `${perfil.nombres} ${perfil.apellidos}`.trim(),
+      unidad: '',
+      correo: perfil.correo,
+      rol: this.convertirRol(perfil.rol),
+    });
+  }
+
+  private convertirRol(rol: string): RolUsuario {
+    switch (rol) {
+      case 'RESIDENTE':
+        return 'residente';
+      case 'MANTENIMIENTO':
+        return 'mantenimiento';
+      case 'ADMINISTRADOR':
+        return 'administrador';
+      case 'PORTERIA_SEGURIDAD':
+        return 'seguridad';
+      default:
+        throw new Error(`Rol no reconocido: ${rol}`);
     }
   }
 }

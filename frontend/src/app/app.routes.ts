@@ -1,7 +1,8 @@
 import { Route, Routes } from '@angular/router';
 import { NAV_ITEMS, NOTIFICACIONES_ITEM } from './core/data/navigation.data';
-import { authGuard, guestGuard } from './core/guards/auth.guard';
+import { authGuard, guestGuard, roleGuard } from './core/guards/auth.guard';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
+
 
 // Módulos del menú que aún no tienen pantalla propia: comparten la pantalla "en construcción"
 const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM]
@@ -29,9 +30,52 @@ export const routes: Routes = [
       {
         path: 'inicio',
         title: 'Inicio',
-        data: { fondo: 'ciudad' },
-        loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
+        canActivate: [roleGuard],
+        data: {
+          fondo: 'ciudad',
+          roles: ['residente'],
+        },
+        loadComponent: () =>
+          import('./features/home/home.component')
+            .then((m) => m.HomeComponent),
       },
+      {
+        path: 'administrador/inicio',
+        title: 'Inicio del administrador',
+        canActivate: [roleGuard],
+        data: {
+          fondo: 'ciudad',
+          roles: ['administrador'],
+        },
+        loadComponent: () =>
+          import('./features/home/home.component')
+            .then((m) => m.HomeComponent),
+      },
+      {
+        path: 'mantenimiento/inicio',
+        title: 'Inicio de mantenimiento',
+        canActivate: [roleGuard],
+        data: {
+          fondo: 'ciudad',
+          roles: ['mantenimiento'],
+        },
+        loadComponent: () =>
+          import('./features/home/home.component')
+            .then((m) => m.HomeComponent),
+      },
+      {
+        path: 'seguridad/inicio',
+        title: 'Inicio de portería y seguridad',
+        canActivate: [roleGuard],
+        data: {
+          fondo: 'ciudad',
+          roles: ['seguridad'],
+        },
+        loadComponent: () =>
+          import('./features/home/home.component')
+            .then((m) => m.HomeComponent),
+      },
+
       {
         path: 'incidencias',
         pathMatch: 'full',

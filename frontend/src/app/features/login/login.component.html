@@ -46,12 +46,24 @@
 
       @if (error()) { <p class="field-error" role="alert">{{ error() }}</p> }
 
-      <button type="submit" class="btn">Ingresar <span class="material-symbols-rounded">arrow_forward</span></button>
+      <!-- <button type="submit" class="btn">Ingresar <span class="material-symbols-rounded">arrow_forward</span></button> -->
+
+      <button type="submit" class="btn" [disabled]="cargando()">
+        @if (cargando()) {
+          Validando acceso...
+        } @else {
+          Ingresar <span class="material-symbols-rounded">arrow_forward</span>
+        }
+      </button>
 
       <button type="button" class="forgot" (click)="recuperar()">¿Olvidaste tu contraseña?</button>
       @if (aviso()) { <p class="aviso">{{ aviso() }}</p> }
 
-      <p class="demo">Demo: ingresa cualquier correo válido y una contraseña de 6 o más caracteres.</p>
+      <!-- <p class="demo">Demo: ingresa cualquier correo válido y una contraseña de 6 o más caracteres.</p> -->
+        <p class="demo">
+          Ingresa con tu cuenta registrada en Pro-Mantenimiento.
+        </p>
+
     </form>
   </section>
 </main>

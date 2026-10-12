@@ -1,6 +1,7 @@
 package pe.com.promantenimineto.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,5 +12,7 @@ public interface UsuarioPerfilRepository extends JpaRepository<UsuarioPerfilEnti
 
     @Query("select d from UsuarioPerfilEntity d where d.activo=true")
     List<UsuarioPerfilEntity> findAllCustom();
+    
+    Optional<UsuarioPerfilEntity> findByFirebaseUid(String firebaseUid);
 
 }

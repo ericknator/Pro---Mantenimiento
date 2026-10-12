@@ -73,6 +73,13 @@
 		    <scope>compile</scope>
 		</dependency>
 		
+		<!--sdk firebase-->
+		<dependency>
+		    <groupId>com.google.firebase</groupId>
+		    <artifactId>firebase-admin</artifactId>
+		    <version>8.0.1</version>
+		</dependency>
+		
 	</dependencies>
 
 	<build>
