@@ -22,5 +22,10 @@ public interface IncidenciaRepository extends JpaRepository<IncidenciaEntity, Lo
     	    WHERE codigo LIKE CONCAT('INC-', :anio, '-%')
     	    """, nativeQuery = true)
     	int obtenerUltimoCorrelativo(@Param("anio") int anio);
+    
+    @Query("SELECT i FROM IncidenciaEntity i WHERE i.solicitante.id = :usuarioId")
+    List<IncidenciaEntity> findBySolicitanteId(
+        @Param("usuarioId") Long usuarioId
+    );
 
 }

@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.EntityGraph;
 
 import pe.com.promantenimineto.entity.UsuarioPerfilEntity;
 
@@ -13,6 +14,7 @@ public interface UsuarioPerfilRepository extends JpaRepository<UsuarioPerfilEnti
     @Query("select d from UsuarioPerfilEntity d where d.activo=true")
     List<UsuarioPerfilEntity> findAllCustom();
     
+    @EntityGraph(attributePaths = {"rol"})
     Optional<UsuarioPerfilEntity> findByFirebaseUid(String firebaseUid);
 
 }

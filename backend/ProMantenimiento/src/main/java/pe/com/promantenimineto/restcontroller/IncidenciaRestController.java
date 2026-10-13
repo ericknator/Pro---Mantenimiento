@@ -22,37 +22,37 @@ public class IncidenciaRestController {
 
 	@Autowired
 	private IncidenciaService servicio;
-	
+
 	@GetMapping
-	public List<IncidenciaEntity> findAll(){
+	public List<IncidenciaEntity> findAll() {
 		return servicio.findAll();
 	}
-	
+
 	@GetMapping("/custom")
-	public List<IncidenciaEntity> findAllCustom(){
+	public List<IncidenciaEntity> findAllCustom() {
 		return servicio.findAllCustom();
 	}
-	
+
 	@GetMapping("/{id}")
 	public IncidenciaEntity findById(@PathVariable Long id) {
 		return servicio.findById(id);
 	}
-	
+
 	@PostMapping
 	public IncidenciaEntity add(@RequestBody IncidenciaEntity obj) {
 		return servicio.add(obj);
 	}
-	
+
 	@PutMapping("{id}")
 	public IncidenciaEntity update(@RequestBody IncidenciaEntity obj, @PathVariable Long id) {
 		return servicio.update(obj, id);
 	}
-	
+
 	@DeleteMapping("{id}")
 	public IncidenciaEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}
-	
+
 	@PatchMapping("{id}")
 	public IncidenciaEntity enable(@PathVariable Long id) {
 		return servicio.enable(id);

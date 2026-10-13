@@ -1,15 +1,27 @@
 package pe.com.promantenimineto.repository;
 
-import java.util.List;
-
+import pe.com.promantenimineto.entity.UsuarioUnidadEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import pe.com.promantenimineto.entity.UsuarioUnidadEntity;
+import java.util.List;
 
-public interface UsuarioUnidadRepository extends JpaRepository<UsuarioUnidadEntity, Long> {
+public interface UsuarioUnidadRepository
+        extends JpaRepository<UsuarioUnidadEntity, Long> {
 
-    @Query("select d from UsuarioUnidadEntity d where d.activo=true")
+    @Query("SELECT uu FROM UsuarioUnidadEntity uu WHERE uu.activo = true")
     List<UsuarioUnidadEntity> findAllCustom();
 
+    @Query("""
+        SELECT COUNT(uu) > 0
+        FROM UsuarioUnidadEntity uu
+        WHERE uu.usuario.id = :usuarioId
+          AND uu.unidad.id = :unidadId
+          AND uu.activo = true
+        """)
+    boolean existeRelacionActiva(
+        @Param("usuarioId") Long usuarioId,
+        @Param("unidadId") Long unidadId
+    );
 }
