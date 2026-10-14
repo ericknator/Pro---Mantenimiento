@@ -2,6 +2,7 @@ import { Route, Routes } from '@angular/router';
 import { NAV_ITEMS, NOTIFICACIONES_ITEM } from './core/data/navigation.data';
 import { authGuard, guestGuard, roleGuard } from './core/guards/auth.guard';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
+import { ProgramarMantenimientoComponent } from './features/mantenimiento/programar/programar.component';
 
 
 // Módulos del menú que aún no tienen pantalla propia: comparten la pantalla "en construcción"
@@ -112,6 +113,17 @@ export const routes: Routes = [
         title: 'Seguimiento de incidencia',
         data: { fondo: 'edificio' },
         loadComponent: () => import('./features/incidencias/detalle/detalle.component').then((m) => m.DetalleIncidenciaComponent),
+      },
+      {
+        path: 'administrador/mantenimiento/programar',
+        title: 'Programar mantenimiento preventivo',
+        data: { menu: 'rail', fondo: 'terraza' },
+        component: ProgramarMantenimientoComponent
+      },
+      // Dejamos un alias por si se accede directo:
+      {
+        path: 'mantenimiento/programar',
+        redirectTo: 'administrador/mantenimiento/programar'
       },
       ...modulosPendientes,
     ],
