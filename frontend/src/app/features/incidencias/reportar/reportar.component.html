@@ -59,44 +59,56 @@
       @if (invalido('descripcion')) { <small class="field-error">Describe el problema (mínimo 10 caracteres).</small> }
     </label>
 
-    <label class="drop">
-      <input id="archivos" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple (change)="seleccionarArchivos($event)" />
-      <span class="material-symbols-rounded">photo_camera</span>
+    <label class="drop" for="archivos">
+  <input
+    id="archivos"
+    type="file"
+    accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+    multiple
+    style="display:none"
+    (change)="seleccionarArchivos($event)"
+  />
+  <span class="material-symbols-rounded">photo_camera</span>
+  <span>Adjuntar foto o video</span>
+</label>
 
-      @if (archivos().length > 0) {
-        <div class="lista-evidencias">
-          <p>Archivos adjuntos ({{ archivos().length }}/3)</p>
-
-          @for (archivo of archivos(); track archivo.name + archivo.size; let i = $index) {
-            <div class="evidencia-item">
-              <span>
-                {{ archivo.name }}
-                ({{ (archivo.size / 1024 / 1024).toFixed(2) }} MB)
-              </span>
-
-              <button
-                type="button"
-                (click)="eliminarArchivo(i)"
-                [disabled]="enviando()"
-              >
-                Quitar
-              </button>
-            </div>
-          }
-        </div>
-      }
-    </label>
-    <!-- Mensaje de error debajo de las evidencias -->
-    @if (mensajeError()) {
-      <div class="aviso-error" role="alert" aria-live="polite">
-        <strong>No se pudo registrar la incidencia</strong>
-        <p>{{ mensajeError() }}</p>
-      </div>
+@if (archivos().length > 0) {
+  <ul class="lista-evidencias">
+    <li class="evidencia-cabecera">
+      <span class="material-symbols-rounded">attach_file</span>
+      Archivos adjuntos ({{ archivos().length }}/3)
+    </li>
+    @for (archivo of archivos(); track archivo.name + archivo.size; let i = $index) {
+      <li class="evidencia-item">
+        <span class="evidencia-nombre">
+          {{ archivo.name }}
+          <small>({{ (archivo.size / 1024 / 1024).toFixed(2) }} MB)</small>
+        </span>
+        <button type="button" class="btn-quitar" (click)="eliminarArchivo(i)" [disabled]="enviando()">
+          Quitar
+        </button>
+      </li>
     }
-
-    <button type="submit" [disabled]="enviando()">
-      {{ enviando() ? 'Registrando...' : 'Reportar incidencia' }}
-    </button>
+  </ul>
+}
+    <!-- Mensaje de error debajo de las evidencias -->
+@if (mensajeError()) {
+  <div class="aviso-error" role="alert" aria-live="polite">
+    <span class="material-symbols-rounded">error</span>
+    <div>
+      <strong>No se pudo registrar la incidencia</strong>
+      <p>{{ mensajeError() }}</p>
+    </div>
+  </div>
+}
+  <button type="submit" class="btn-enviar" [disabled]="enviando()">
+    @if (enviando()) {
+      Registrando...
+    } @else {
+      ENVIAR REPORTE
+      <span class="material-symbols-rounded">arrow_forward</span>
+    }
+  </button>
   </form>
 
   <section class="panel side">

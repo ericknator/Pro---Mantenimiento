@@ -1,5 +1,6 @@
 
 import { Injectable, computed, signal, inject } from '@angular/core';
+import { Router } from '@angular/router'; 
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -15,6 +16,7 @@ import { PerfilApiService } from './perfil-api.service';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly perfilApi = inject(PerfilApiService);
+  private readonly router = inject(Router); 
   private readonly _usuario = signal<Usuario | null>(null);
 
   private resolverInicializacion!: () => void;
@@ -78,11 +80,12 @@ export class AuthService {
       return false;
     }
   }
-
-  async salir(): Promise<void> {
-    await signOut(auth);
-    this._usuario.set(null);
-  }
+  
+async salir(): Promise<void> {
+  await signOut(auth);
+  this._usuario.set(null);
+  await this.router.navigate(['/login']);
+}
 
   private establecerUsuario(perfil: {
     id: number;
