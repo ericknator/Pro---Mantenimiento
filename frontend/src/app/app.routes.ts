@@ -2,8 +2,8 @@ import { Route, Routes } from '@angular/router';
 import { NAV_ITEMS, NOTIFICACIONES_ITEM } from './core/data/navigation.data';
 import { authGuard, guestGuard, roleGuard } from './core/guards/auth.guard';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
-import { ProgramarMantenimientoComponent } from './features/mantenimiento/programar/programar.component';
-
+import { AdminLayoutComponent } from './features/administrador/admin-layout/admin-layout.component';
+import { ADMIN_MANTENIMIENTO_ACTIONS, ADMIN_NAV_ITEMS } from './core/data/admin-navigation.data';
 
 // Módulos del menú que aún no tienen pantalla propia: comparten la pantalla "en construcción"
 const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM]
@@ -15,13 +15,59 @@ const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM]
     loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
   }));
 
+const adminPendientes: Route[] = [
+  ...ADMIN_NAV_ITEMS.filter((i) => i.route !== '/administrador/mantenimiento').map((i) => ({
+    path: i.route.replace('/administrador/', ''),
+    title: i.label,
+    data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/dashboard', volverTexto: 'Volver al dashboard' },
+  })),
+  ...ADMIN_MANTENIMIENTO_ACTIONS.filter((i) => i.route !== '/administrador/mantenimiento/programar').map((i) => ({
+    path: i.route.replace('/administrador/', ''),
+    title: i.label,
+    data: { titulo: i.label, fondo: 'edificio', menu: 'rail', volver: '/administrador/mantenimiento', volverTexto: 'Volver a Mantenimiento' },
+  })),
+].map((r) => ({
+  ...r,
+  loadComponent: () =>
+    import('./features/administrador/pendiente/admin-pendiente.component').then((m) => m.AdminPendienteComponent),
+}));
+
 export const routes: Routes = [
+  // Espacio del Administrador (con su propio layout y menú)
+  {
+    path: 'administrador',
+    component: AdminLayoutComponent,
+    canActivate: [authGuard],
+    children: [
+      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      {
+        path: 'mantenimiento',
+        pathMatch: 'full',
+        title: 'Mantenimiento',
+        data: { fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/administrador/mantenimiento/mantenimiento-hub.component').then((m) => m.MantenimientoHubComponent),
+      },
+      {
+        path: 'mantenimiento/programar',
+        title: 'Programar mantenimiento preventivo',
+        data: { menu: 'rail', fondo: 'terraza' },
+        loadComponent: () =>
+          import('./features/mantenimiento/programar/programar.component').then((m) => m.ProgramarMantenimientoComponent),
+      },
+      ...adminPendientes,
+    ],
+  },
+
+  // Login
   {
     path: 'login',
     title: 'Iniciar sesión',
     canActivate: [guestGuard],
     loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
   },
+
+  // Espacio de Residentes y otros roles
   {
     path: '',
     component: MainLayoutComponent,
@@ -114,17 +160,7 @@ export const routes: Routes = [
         data: { fondo: 'edificio' },
         loadComponent: () => import('./features/incidencias/detalle/detalle.component').then((m) => m.DetalleIncidenciaComponent),
       },
-      {
-        path: 'administrador/mantenimiento/programar',
-        title: 'Programar mantenimiento preventivo',
-        data: { menu: 'rail', fondo: 'terraza' },
-        component: ProgramarMantenimientoComponent
-      },
-      // Dejamos un alias por si se accede directo:
-      {
-        path: 'mantenimiento/programar',
-        redirectTo: 'administrador/mantenimiento/programar'
-      },
+
       ...modulosPendientes,
     ],
   },
