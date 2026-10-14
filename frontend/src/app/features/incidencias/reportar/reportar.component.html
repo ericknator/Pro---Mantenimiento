@@ -59,10 +59,21 @@
       <h2 class="label">Mis incidencias recientes</h2>
       <a class="label link" routerLink="/incidencias/mis-incidencias">Ver todas</a>
     </header>
-    @for (i of recientes(); track i.id) {
-      <app-incidencia-row [incidencia]="i" />
-    } @empty {
-      <p class="empty">Aún no tienes incidencias registradas.</p>
+
+    @if (cargando()) {
+      <p class="empty">Cargando tus incidencias...</p>
+    } @else if (error()) {
+      <p class="empty" role="alert">{{ error() }}</p>
+      <button type="button" class="btn" (click)="service.cargar()">
+        Reintentar
+      </button>
+    } @else {
+      @for (i of recientes(); track i.id) {
+        <app-incidencia-row [incidencia]="i" />
+      } @empty {
+        <p class="empty">Aún no tienes incidencias registradas.</p>
+      }
     }
+
   </section>
 </div>

@@ -14,11 +14,20 @@ import { PageHeroComponent } from '../../../shared/page-hero/page-hero.component
   styleUrl: './reportar.component.scss',
 })
 export class ReportarComponent {
+
   private readonly fb = inject(FormBuilder);
-  private readonly service = inject(IncidenciasService);
+  readonly service = inject(IncidenciasService);
 
   categorias = CATEGORIAS_INCIDENCIA;
   recientes = () => this.service.propias().slice(0, 3);
+
+  readonly cargando = this.service.cargando;
+  readonly error = this.service.error;
+
+  constructor() {
+    console.log('[ReportarComponent] Se inicializó la vista');
+    void this.service.cargar();
+  }
 
   // HU-INC-01: categoría, ubicación, descripción y evidencia.
   // La prioridad NO se captura aquí: la define la administración (HU-INC-03).
@@ -43,13 +52,12 @@ export class ReportarComponent {
 
   enviar(): void {
     if (this.form.invalid) {
-      this.form.markAllAsTouched(); // HU-INC-01-CA-02: se indica el campo faltante y no se crea el caso
+      this.form.markAllAsTouched();
       this.creada.set(null);
       return;
     }
-    const nueva = this.service.crear({ ...this.form.getRawValue(), evidencias: this.archivos() });
-    this.creada.set(nueva);
-    this.form.reset();
-    this.archivos.set([]);
+
+    // Pendiente: conectar el registro con el backend.
+    console.log('Formulario validado. Registro pendiente de implementar.');
   }
 }

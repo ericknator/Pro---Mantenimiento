@@ -23,3 +23,30 @@ export interface Incidencia extends NuevaIncidencia {
   actualizada: Date;
   historial: CambioEstado[];
 }
+
+/** Estructura devuelta por Spring Boot */
+export interface IncidenciaApi {
+  id: number;
+  codigo: string;
+  solicitante: {
+    id: number;
+    nombres: string;
+    apellidos: string;
+    correo: string;
+  };
+  categoria: {
+    nombre: string;
+  };
+  estado: {
+    nombre: string;
+    codigo: string;
+  };
+  ubicacion: string;
+  descripcion: string;
+  fechaReporte: string;
+  fechaSolucion: string | null;
+  fechaCierre: string | null;
+  creadoEn: string;
+  actualizadoEn: string;
+}
+

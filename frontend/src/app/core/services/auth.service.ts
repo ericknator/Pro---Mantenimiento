@@ -11,6 +11,7 @@ import { auth } from './firebase.config';
 import { Usuario, RolUsuario } from '../../models/usuario.model';
 import { PerfilApiService } from './perfil-api.service';
 
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly perfilApi = inject(PerfilApiService);
@@ -114,4 +115,8 @@ export class AuthService {
         throw new Error(`Rol no reconocido: ${rol}`);
     }
   }
+
+
+
+
 }

@@ -20,9 +20,15 @@ export class BottomNavComponent {
   alternar(): void { this.abierto.update((v) => !v); }
   cerrar(): void { this.abierto.set(false); }
 
-  salir(): void {
+
+  async salir(): Promise<void> {
     this.cerrar();
-    this.auth.salir();
-    this.router.navigateByUrl('/login');
+
+    try {
+      await this.auth.salir();
+      await this.router.navigateByUrl('/login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
   }
 }
