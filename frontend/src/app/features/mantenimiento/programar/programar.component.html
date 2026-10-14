@@ -1,0 +1,110 @@
+<app-page-hero
+  tone="dark"
+  backLink="/administrador/mantenimiento"
+  backLabel="Mantenimiento"
+  title="Programar mantenimiento preventivo"
+  subtitle="Define y calendariza las fechas de atención e inspección para los equipos del condominio."
+/>
+
+<div class="grid">
+  <!-- Formulario de programación -->
+  <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+
+    @if (mensajeExito()) {
+      <div class="ok" role="status">
+        <span class="material-symbols-rounded">check_circle</span>
+        <div>
+          <strong>¡Programación exitosa!</strong>
+          <small>{{ mensajeExito() }}</small>
+        </div>
+      </div>
+    }
+
+    @if (mensajeError()) {
+      <div class="aviso-error" role="alert" aria-live="polite">
+        <span class="material-symbols-rounded">error</span>
+        <div>
+          <strong>Error de validación</strong>
+          <p>{{ mensajeError() }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Selector de Activo -->
+    <label class="field">
+      <span>Activo o Equipo</span>
+      <select class="control" formControlName="activoId">
+        <option value="" disabled selected>Selecciona el activo a intervenir</option>
+        @for (act of service.activos(); track act.id) {
+          <option [value]="act.id">{{ act.codigo }} - {{ act.nombre }}</option>
+        }
+      </select>
+      @if (invalido('activoId')) {
+        <small class="field-error">Debes seleccionar un activo.</small>
+      }
+    </label>
+
+    <!-- Tipo de Mantenimiento -->
+    <label class="field">
+      <span>Tipo de Mantenimiento</span>
+      <select class="control" formControlName="tipoMantenimiento">
+        <option value="" disabled selected>Selecciona el tipo de trabajo</option>
+        @for (tipo of tiposMantenimiento; track tipo) {
+          <option [value]="tipo">{{ tipo }}</option>
+        }
+      </select>
+      @if (invalido('tipoMantenimiento')) {
+        <small class="field-error">Selecciona un tipo de mantenimiento.</small>
+      }
+    </label>
+
+    <!-- Selector de Fecha -->
+    <label class="field">
+      <span>Fecha Programada</span>
+      <input
+        class="control"
+        type="date"
+        formControlName="fechaProgramada"
+      />
+      @if (invalido('fechaProgramada')) {
+        <small class="field-error">Ingresa una fecha de programación válida.</small>
+      }
+    </label>
+
+    <!-- Botón de Envío estilo Figma -->
+    <button type="submit" class="btn-enviar" [disabled]="enviando()">
+      @if (enviando()) {
+        Programando...
+      } @else {
+        PROGRAMAR MANTENIMIENTO
+        <span class="material-symbols-rounded">arrow_forward</span>
+      }
+    </button>
+  </form>
+
+  <!-- Panel lateral con programaciones próximas -->
+  <section class="panel side">
+    <header class="panel__head">
+      <h2 class="label">Mantenimientos programados</h2>
+    </header>
+
+    @if (service.cargando()) {
+      <p class="empty">Cargando cronograma...</p>
+    } @else {
+      @for (m of service.mantenimientos(); track m.id) {
+        <div class="mantenimiento-item">
+          <div class="item-icon">
+            <span class="material-symbols-rounded">calendar_month</span>
+          </div>
+          <div class="item-info">
+            <strong>{{ m.tipoMantenimiento }}</strong>
+            <p>Activo: {{ m.nombreActivo || ('ID ' + m.activoId) }}</p>
+            <small class="fecha">📅 {{ m.fechaProgramada }}</small>
+          </div>
+        </div>
+      } @empty {
+        <p class="empty">No hay mantenimientos preventivos programados.</p>
+      }
+    }
+  </section>
+</div>

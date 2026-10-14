@@ -1,7 +1,9 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NAV_ITEMS } from '../../core/data/navigation.data';
 import { AuthService } from '../../core/services/auth.service';
+import { NavItem } from '../../models/nav-item.model';
+
 
 @Component({
   selector: 'app-bottom-nav',
@@ -13,8 +15,9 @@ export class BottomNavComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  principales = NAV_ITEMS.filter((i) => i.bottom);
-  otros = NAV_ITEMS.filter((i) => !i.bottom);
+  items = input<NavItem[]>(NAV_ITEMS);
+  principales = computed(() => this.items().filter((i) => i.bottom));
+  otros = computed(() => this.items().filter((i) => !i.bottom));
   abierto = signal(false);
 
   alternar(): void { this.abierto.update((v) => !v); }

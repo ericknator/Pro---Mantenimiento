@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NOTIFICACIONES_ITEM } from '../../core/data/navigation.data';
 import { AuthService } from '../../core/services/auth.service';
@@ -14,6 +14,7 @@ export class HeaderComponent {
   private readonly router = inject(Router);
 
   usuario = this.auth.usuario;
+  etiqueta = input('');
   notificaciones = NOTIFICACIONES_ITEM;
 
   salir(): void {

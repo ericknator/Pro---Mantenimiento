@@ -1,5 +1,5 @@
 <nav class="bottom glass" aria-label="Navegación principal">
-  @for (item of principales; track item.route) {
+  @for (item of principales(); track item.route) {
     <a
       class="tab"
       [routerLink]="item.route"
@@ -20,7 +20,7 @@
 @if (abierto()) {
   <div class="backdrop" (click)="cerrar()"></div>
   <section class="sheet" aria-label="Más opciones">
-    @for (item of otros; track item.route) {
+    @for (item of otros(); track item.route) {
       <a class="sheet__item" [class.sheet__item--danger]="item.danger" [routerLink]="item.route" (click)="cerrar()">
         <span class="material-symbols-rounded">{{ item.icon }}</span>
         {{ item.label }}

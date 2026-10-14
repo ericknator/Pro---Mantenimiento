@@ -83,7 +83,7 @@ export class LoginComponent {
 
       const rutasPorRol: Record<string, string> = {
         residente: '/inicio',
-        administrador: '/administrador/inicio',
+        administrador: '/administrador/dashboard',
         mantenimiento: '/mantenimiento/inicio',
         seguridad: '/seguridad/inicio',
       };

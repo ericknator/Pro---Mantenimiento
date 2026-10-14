@@ -1,5 +1,5 @@
 <nav class="sidebar glass" [class.sidebar--collapsed]="collapsed()" aria-label="Menú principal">
-  @for (item of items; track item.route) {
+  @for (item of items(); track item.route){
     <a
       class="item"
       [class.item--danger]="item.danger"
