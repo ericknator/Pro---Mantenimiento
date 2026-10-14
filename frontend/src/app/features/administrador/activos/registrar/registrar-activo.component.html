@@ -1,0 +1,105 @@
+<app-page-hero
+  tone="dark"
+  backLink="/administrador/mantenimiento"
+  backLabel="Mantenimiento"
+  title="Registrar nuevo activo o equipo"
+  subtitle="Incorpora un equipo crítico al inventario del condominio para su programación preventiva."
+/>
+
+<div class="grid">
+  <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+
+    @if (mensajeExito()) {
+      <div class="ok" role="status">
+        <span class="material-symbols-rounded">check_circle</span>
+        <div>
+          <strong>¡Registro exitoso!</strong>
+          <small>{{ mensajeExito() }}</small>
+        </div>
+      </div>
+    }
+
+    @if (mensajeError()) {
+      <div class="aviso-error" role="alert" aria-live="polite">
+        <span class="material-symbols-rounded">error</span>
+        <div>
+          <strong>Atención</strong>
+          <p>{{ mensajeError() }}</p>
+        </div>
+      </div>
+    }
+
+    <!-- Código del Activo -->
+    <label class="field">
+      <span>Código Único</span>
+      <input class="control" type="text" formControlName="codigo" placeholder="Ej: ASC-03, BOM-02" />
+      @if (invalido('codigo')) {
+        <small class="field-error">El código del activo es obligatorio.</small>
+      }
+    </label>
+
+    <!-- Nombre del Activo -->
+    <label class="field">
+      <span>Nombre del Equipo</span>
+      <input class="control" type="text" formControlName="nombre" placeholder="Ej: Ascensor Torre B" />
+      @if (invalido('nombre')) {
+        <small class="field-error">Ingresa un nombre identificable.</small>
+      }
+    </label>
+
+    <!-- Tipo de Activo -->
+    <label class="field">
+      <span>Tipo de Activo</span>
+      <select class="control" formControlName="tipo">
+        <option value="" disabled selected>Selecciona el tipo de equipo</option>
+        @for (t of tiposActivo; track t) {
+          <option [value]="t">{{ t }}</option>
+        }
+      </select>
+      @if (invalido('tipo')) {
+        <small class="field-error">Selecciona una categoría de activo.</small>
+      }
+    </label>
+
+    <!-- Ubicación -->
+    <label class="field">
+      <span>Ubicación</span>
+      <input class="control" type="text" formControlName="ubicacion" placeholder="Ej: Torre 2 · Pasadizo central / Sótano 1" />
+      @if (invalido('ubicacion')) {
+        <small class="field-error">Indica en qué torre, piso o área se encuentra.</small>
+      }
+    </label>
+
+    <!-- Descripción opcional -->
+    <label class="field">
+      <span>Descripción técnica (opcional)</span>
+      <textarea class="control" rows="2" formControlName="descripcion" placeholder="Marca, capacidad o detalles adicionales"></textarea>
+    </label>
+
+    <button type="submit" class="btn-enviar" [disabled]="enviando()">
+      @if (enviando()) {
+        Registrando...
+      } @else {
+        REGISTRAR ACTIVO
+        <span class="material-symbols-rounded">arrow_forward</span>
+      }
+    </button>
+  </form>
+
+  <!-- Panel lateral con activos registrados -->
+  <section class="panel side">
+    <header class="panel__head">
+      <h2 class="label">Activos en el sistema ({{ activoService.activos().length }})</h2>
+    </header>
+
+    @for (act of activoService.activos(); track act.codigo) {
+      <div class="activo-item">
+        <div class="item-badge">{{ act.codigo }}</div>
+        <div class="item-info">
+          <strong>{{ act.nombre }}</strong>
+          <p>{{ act.tipo }} · {{ act.ubicacion }}</p>
+        </div>
+      </div>
+    }
+  </section>
+</div>
