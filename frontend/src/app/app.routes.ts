@@ -55,6 +55,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/mantenimiento/programar/programar.component').then((m) => m.ProgramarMantenimientoComponent),
       },
+      {
+        path: 'mantenimiento/activos',
+        title: 'Registrar activo',
+        data: { menu: 'rail', fondo: 'terraza' },
+        loadComponent: () =>
+          import('./features/administrador/activos/registrar/registrar-activo.component')
+            .then((m) => m.RegistrarActivoComponent),
+      },
       ...adminPendientes,
     ],
   },
