@@ -24,4 +24,28 @@ public interface UsuarioUnidadRepository
         @Param("usuarioId") Long usuarioId,
         @Param("unidadId") Long unidadId
     );
+
+    @Query("""
+        SELECT uu
+        FROM UsuarioUnidadEntity uu
+        WHERE uu.usuario.id = :usuarioId
+          AND uu.activo = true
+        """)
+    List<UsuarioUnidadEntity> findByUsuarioIdAndActivoTrue(
+        @Param("usuarioId") Long usuarioId
+    );
+    
+    @Query("""
+        SELECT uu
+        FROM UsuarioUnidadEntity uu
+        WHERE uu.usuario.id = :usuarioId
+          AND uu.activo = true
+          AND uu.esPrincipal = true
+        """)
+    List<UsuarioUnidadEntity> findUnidadPrincipalActiva(
+        @Param("usuarioId") Long usuarioId
+    );
+    
+    
+
 }

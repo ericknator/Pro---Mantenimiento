@@ -11,5 +11,9 @@ public interface EvidenciaIncidenciaRepository extends JpaRepository<EvidenciaIn
 
     @Query("select d from EvidenciaIncidenciaEntity d")
     List<EvidenciaIncidenciaEntity> findAllCustom();
+    
+    List<EvidenciaIncidenciaEntity> findByIncidencia_IdOrderByCreadoEnAsc(
+    	    Long incidenciaId
+    );
 
 }

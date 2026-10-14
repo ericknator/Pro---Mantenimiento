@@ -2,6 +2,11 @@ package pe.com.promantenimineto.restcontroller;
 
 import java.util.List;
 
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
+
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import pe.com.promantenimineto.entity.IncidenciaEntity;
 import pe.com.promantenimineto.service.IncidenciaService;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
 
 @RestController
 @RequestMapping("/api/incidencia")
@@ -38,9 +45,22 @@ public class IncidenciaRestController {
 		return servicio.findById(id);
 	}
 
-	@PostMapping
+	@PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
 	public IncidenciaEntity add(@RequestBody IncidenciaEntity obj) {
-		return servicio.add(obj);
+	    return servicio.add(obj);
+	}
+
+	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	public IncidenciaEntity addWithEvidencias(
+	        @RequestPart("incidencia") String jsonIncidencia,
+	        @RequestPart(value = "archivos", required = false)
+	        List<MultipartFile> archivos
+	) throws JacksonException {
+
+	    IncidenciaEntity obj = new ObjectMapper()
+	            .readValue(jsonIncidencia, IncidenciaEntity.class);
+
+	    return servicio.addWithEvidencias(obj, archivos);
 	}
 
 	@PutMapping("{id}")

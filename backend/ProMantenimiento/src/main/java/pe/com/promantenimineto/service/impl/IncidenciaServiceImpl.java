@@ -1,11 +1,14 @@
 package pe.com.promantenimineto.service.impl;
 
+import java.util.ArrayList;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
-
-import org.springframework.beans.BeanUtils;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -14,16 +17,24 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import pe.com.promantenimineto.entity.UsuarioPerfilEntity;
+import pe.com.promantenimineto.entity.UsuarioUnidadEntity;
+import pe.com.promantenimineto.entity.CategoriaIncidenciaEntity;
 import pe.com.promantenimineto.entity.EstadoIncidenciaEntity;
+import pe.com.promantenimineto.entity.EvidenciaIncidenciaEntity;
 import pe.com.promantenimineto.entity.IncidenciaEntity;
+import pe.com.promantenimineto.entity.PrioridadIncidenciaEntity;
+import pe.com.promantenimineto.entity.TipoEvidenciaEntity;
 import pe.com.promantenimineto.entity.UnidadResidencialEntity;
 import pe.com.promantenimineto.repository.CategoriaIncidenciaRepository;
 import pe.com.promantenimineto.repository.EstadoIncidenciaRepository;
+import pe.com.promantenimineto.repository.EvidenciaIncidenciaRepository;
 import pe.com.promantenimineto.repository.IncidenciaRepository;
 import pe.com.promantenimineto.repository.PrioridadIncidenciaRepository;
+import pe.com.promantenimineto.repository.TipoEvidenciaRepository;
 import pe.com.promantenimineto.repository.UnidadResidencialRepository;
 import pe.com.promantenimineto.repository.UsuarioPerfilRepository;
 import pe.com.promantenimineto.repository.UsuarioUnidadRepository;
+import pe.com.promantenimineto.service.EvidenciaArchivoService;
 import pe.com.promantenimineto.service.IncidenciaService;
 
 @Service
@@ -49,6 +60,15 @@ public class IncidenciaServiceImpl implements IncidenciaService{
     
     @Autowired
     private UsuarioPerfilRepository usuarioPerfilRepository;
+    
+    @Autowired
+    private EvidenciaIncidenciaRepository evidenciaRepositorio;
+
+    @Autowired
+    private TipoEvidenciaRepository tipoEvidenciaRepositorio;
+
+    @Autowired
+    private EvidenciaArchivoService evidenciaArchivoService;
     
     
     private String generarCodigo() {
@@ -182,138 +202,129 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 
     
 
-    @Override
-    public IncidenciaEntity add(IncidenciaEntity obj) {
-		Authentication authentication =
-		        SecurityContextHolder.getContext().getAuthentication();
-		
-		if (authentication == null || !(authentication.getPrincipal() instanceof UsuarioPerfilEntity usuarioAutenticado)) {
-		    throw new ResponseStatusException(
-		            HttpStatus.UNAUTHORIZED,
-		            "Debes iniciar sesión para registrar una incidencia."
-		    );
-		}
-		
-		// No confiamos en el ID recibido desde Postman o Angular.
-		// El solicitante siempre será el usuario autenticado.
-		obj.setSolicitante(usuarioAutenticado);
+	@Override
+	public IncidenciaEntity add(IncidenciaEntity obj) {
 
-		if (usuarioAutenticado.getRol() == null
-		        || usuarioAutenticado.getRol().getCodigo() == null) {
-		    throw new ResponseStatusException(
-		        HttpStatus.FORBIDDEN,
-		        "El usuario no tiene un rol válido."
-		    );
-		}
+	    Authentication authentication =
+	            SecurityContextHolder.getContext().getAuthentication();
 
-		String rol = usuarioAutenticado.getRol().getCodigo();
+	    if (authentication == null
+	            || !(authentication.getPrincipal() instanceof UsuarioPerfilEntity usuarioAutenticado)) {
+	        throw new ResponseStatusException(
+	                HttpStatus.UNAUTHORIZED,
+	                "Debes iniciar sesión para reportar una incidencia."
+	        );
+	    }
 
-		if (!"RESIDENTE".equals(rol) && !"ADMINISTRADOR".equals(rol)) {
-		    throw new ResponseStatusException(
-		        HttpStatus.FORBIDDEN,
-		        "No tienes permisos para registrar incidencias."
-		    );
-		}
+	    obj.setSolicitante(usuarioAutenticado);
 
-		// Validar que se haya seleccionado una unidad.
-		if (obj.getUnidad() == null || obj.getUnidad().getId() == null) {
-		    throw new ResponseStatusException(
-		        HttpStatus.BAD_REQUEST,
-		        "Debes seleccionar una unidad."
-		    );
-		}
+	    String rol = usuarioAutenticado.getRol().getNombre();
 
-		Long unidadId = obj.getUnidad().getId();
+	    if (!"RESIDENTE".equalsIgnoreCase(rol)
+	            && !"ADMINISTRADOR".equalsIgnoreCase(rol)) {
+	        throw new ResponseStatusException(
+	                HttpStatus.FORBIDDEN,
+	                "No tienes permisos para registrar incidencias."
+	        );
+	    }
 
-		// El residente solo puede reportar incidencias
-		// en unidades vinculadas a su perfil.
-		if ("RESIDENTE".equals(rol)) {
-		    boolean tieneRelacion = usuarioUnidadRepository.existeRelacionActiva(
-		        usuarioAutenticado.getId(),
-		        unidadId
-		    );
+	    // 1. Obtener la unidad correspondiente al usuario.
+	    if ("RESIDENTE".equalsIgnoreCase(rol)) {
 
-		    if (!tieneRelacion) {
-		        throw new ResponseStatusException(
-		            HttpStatus.FORBIDDEN,
-		            "No puedes registrar incidencias para esta unidad."
-		        );
-		    }
-		}
+	        List<UsuarioUnidadEntity> relaciones =
+	                usuarioUnidadRepository.findUnidadPrincipalActiva(
+	                        usuarioAutenticado.getId()
+	                );
 
-		// Buscar la unidad real en la base de datos.
-		UnidadResidencialEntity unidad = unidadResidencialRepository
-		    .findById(unidadId)
-		    .orElseThrow(() -> new ResponseStatusException(
-		        HttpStatus.BAD_REQUEST,
-		        "La unidad indicada no existe."
-		    ));
+	        if (relaciones.isEmpty()) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.BAD_REQUEST,
+	                    "No tienes una unidad principal activa asociada."
+	            );
+	        }
 
-		obj.setUnidad(unidad);
+	        if (relaciones.size() > 1) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.CONFLICT,
+	                    "Tienes más de una unidad principal activa. Contacta al administrador."
+	            );
+	        }
 
+	        obj.setUnidad(relaciones.get(0).getUnidad());
 
-    	 // Validar categoría
-        if (obj.getCategoria() == null || obj.getCategoria().getId() == null) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "La categoría es obligatoria"
-            );
-        }
+	    } else {
+	        // El administrador debe indicar la unidad si registra una incidencia.
+	        if (obj.getUnidad() == null || obj.getUnidad().getId() == null) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.BAD_REQUEST,
+	                    "Debes indicar la unidad de la incidencia."
+	            );
+	        }
 
-        // Validar prioridad
-        if (obj.getPrioridad() == null || obj.getPrioridad().getId() == null) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "La prioridad es obligatoria"
-            );
-        }
-        
-        Long categoriaId = obj.getCategoria().getId();
-        Long prioridadId = obj.getPrioridad().getId();
+	        UnidadResidencialEntity unidad =
+	                unidadResidencialRepository.findById(obj.getUnidad().getId())
+	                        .orElseThrow(() -> new ResponseStatusException(
+	                                HttpStatus.BAD_REQUEST,
+	                                "La unidad indicada no existe."
+	                        ));
 
-        // Asignar automáticamente el estado inicial (ID 1).
-        EstadoIncidenciaEntity estadoInicial = estadoRepositorio.findById(1L)
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "No se encontró el estado inicial de la incidencia."
-            ));
+	        obj.setUnidad(unidad);
+	    }
 
-        if (!Boolean.TRUE.equals(estadoInicial.getActivo())) {
-            throw new ResponseStatusException(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "El estado inicial de la incidencia está inactivo."
-            );
-        }
-        obj.setEstado(estadoInicial);
-        
-        obj.setCategoria(
-            categoriaRepositorio.findById(categoriaId)
-                .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "La categoría indicada no existe"
-                ))
-        );
+	    // 2. Validar y obtener la categoría.
+	    if (obj.getCategoria() == null || obj.getCategoria().getId() == null) {
+	        throw new ResponseStatusException(
+	                HttpStatus.BAD_REQUEST,
+	                "La categoría es obligatoria."
+	        );
+	    }
 
-        obj.setPrioridad(
-            prioridadRepositorio.findById(prioridadId)
-                .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "La prioridad indicada no existe"
-                ))
-        );
-        
+	    CategoriaIncidenciaEntity categoria =
+	            categoriaRepositorio.findById(obj.getCategoria().getId())
+	                    .orElseThrow(() -> new ResponseStatusException(
+	                            HttpStatus.BAD_REQUEST,
+	                            "La categoría indicada no existe."
+	                    ));
 
-        // Completar fechas si no fueron enviadas
-        LocalDateTime ahora = LocalDateTime.now();
-        
-        obj.setCodigo(generarCodigo());
+	    obj.setCategoria(categoria);
 
-        obj.setFechaReporte(ahora);
-        obj.setCreadoEn(ahora);
-        obj.setActualizadoEn(ahora);
-        
-        return repositorio.save(obj);
-    }
+	    // 3. Asignar automáticamente la prioridad predeterminada (ID 1).
+	    PrioridadIncidenciaEntity prioridad =
+	            prioridadRepositorio.findById(1L)
+	                    .orElseThrow(() -> new ResponseStatusException(
+	                            HttpStatus.INTERNAL_SERVER_ERROR,
+	                            "No existe la prioridad predeterminada."
+	                    ));
+
+	    obj.setPrioridad(prioridad);
+
+	    // 4. Asignar automáticamente el estado inicial (ID 1).
+	    EstadoIncidenciaEntity estado =
+	            estadoRepositorio.findById(1L)
+	                    .orElseThrow(() -> new ResponseStatusException(
+	                            HttpStatus.INTERNAL_SERVER_ERROR,
+	                            "No existe el estado inicial de las incidencias."
+	                    ));
+
+	    if (!Boolean.TRUE.equals(estado.getActivo())) {
+	        throw new ResponseStatusException(
+	                HttpStatus.INTERNAL_SERVER_ERROR,
+	                "El estado inicial de las incidencias está inactivo."
+	        );
+	    }
+
+	    obj.setEstado(estado);
+
+	    // 5. Generar código y fechas en el backend.
+	    LocalDateTime ahora = LocalDateTime.now();
+
+	    obj.setCodigo(generarCodigo());
+	    obj.setFechaReporte(ahora);
+	    obj.setCreadoEn(ahora);
+	    obj.setActualizadoEn(ahora);
+
+	    return repositorio.save(obj);
+	}
 
     @Override
     public IncidenciaEntity update(IncidenciaEntity obj, Long id) {
@@ -365,5 +376,137 @@ public class IncidenciaServiceImpl implements IncidenciaService{
     @Override
     public IncidenciaEntity enable(Long id) {
         return null;
+    }
+    
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public IncidenciaEntity addWithEvidencias(
+            IncidenciaEntity obj,
+            List<MultipartFile> archivos) {
+
+        List<String> rutasGuardadas = new ArrayList<>();
+
+        try {
+            // Validar cantidad de archivos.
+            if (archivos != null && archivos.size() > 3) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Solo puedes adjuntar un máximo de 3 evidencias."
+                );
+            }
+
+            // Validar que no se envíen elementos vacíos.
+            if (archivos != null) {
+                for (MultipartFile archivo : archivos) {
+                    if (archivo == null || archivo.isEmpty()) {
+                        throw new ResponseStatusException(
+                            HttpStatus.BAD_REQUEST,
+                            "No puedes adjuntar archivos vacíos."
+                        );
+                    }
+                }
+            }
+
+            // Reutilizar la lógica existente de registro.
+            IncidenciaEntity incidencia = add(obj);
+
+            if (archivos == null || archivos.isEmpty()) {
+                return incidencia;
+            }
+
+            // Obtener el usuario autenticado como autor.
+            Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null
+                    || !(authentication.getPrincipal()
+                        instanceof UsuarioPerfilEntity autor)) {
+                throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "No se pudo identificar al autor de las evidencias."
+                );
+            }
+
+            for (MultipartFile archivo : archivos) {
+
+                String mime = archivo.getContentType();
+                String codigoTipo;
+
+                if (mime != null && mime.startsWith("image/")) {
+                    codigoTipo = "FOTO";
+                } else if (mime != null && mime.startsWith("video/")) {
+                    codigoTipo = "VIDEO";
+                } else {
+                    throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Solo se permiten imágenes y videos."
+                    );
+                }
+
+                TipoEvidenciaEntity tipo =
+                    tipoEvidenciaRepositorio
+                        .findByCodigoAndActivoTrue(codigoTipo)
+                        .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR,
+                            "No existe un tipo de evidencia activo: "
+                                + codigoTipo
+                        ));
+
+                // Guardar físicamente el archivo.
+                String ruta = evidenciaArchivoService.guardar(
+                    archivo,
+                    incidencia.getCodigo()
+                );
+
+                rutasGuardadas.add(ruta);
+
+                // Registrar los metadatos en MySQL.
+                EvidenciaIncidenciaEntity evidencia =
+                    new EvidenciaIncidenciaEntity();
+
+                evidencia.setIncidencia(incidencia);
+                evidencia.setAutor(autor);
+                evidencia.setTipoEvidencia(tipo);
+                evidencia.setNombreArchivo(
+                    Path.of(ruta).getFileName().toString()
+                );
+                evidencia.setUrlRecurso(ruta);
+                evidencia.setCreadoEn(LocalDateTime.now());
+
+                evidenciaRepositorio.save(evidencia);
+            }
+
+            return incidencia;
+
+        } catch (Exception e) {
+
+            // Intentar limpiar los archivos ya almacenados.
+            for (String ruta : rutasGuardadas) {
+                try {
+                    evidenciaArchivoService.eliminar(ruta);
+                } catch (IOException errorLimpieza) {
+                    e.addSuppressed(errorLimpieza);
+                }
+            }
+
+            if (e instanceof ResponseStatusException errorHttp) {
+                throw errorHttp;
+            }
+
+            if (e instanceof IllegalArgumentException errorValidacion) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    errorValidacion.getMessage(),
+                    errorValidacion
+                );
+            }
+
+            throw new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "No se pudo registrar la incidencia con sus evidencias.",
+                e
+            );
+        }
     }
 }

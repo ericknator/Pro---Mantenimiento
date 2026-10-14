@@ -20,13 +20,31 @@
 
     <label class="field">
       <span>Categoría</span>
-      <select class="control" formControlName="categoria">
-        <option value="" disabled>Selecciona una categoría</option>
-        @for (c of categorias; track c) {
-          <option [value]="c">{{ c }}</option>
+        <select class="control" formControlName="categoria">
+          <option value="" disabled>Selecciona una categoría</option>
+
+          @for (c of categoriasService.categorias(); track c.id) {
+            <option [value]="c.id">{{ c.nombre }}</option>
+          }
+        </select>
+
+        @if (categoriasService.cargando()) {
+          <small>Cargando categorías...</small>
         }
-      </select>
-      @if (invalido('categoria')) { <small class="field-error">Selecciona una categoría.</small> }
+
+        @if (categoriasService.error()) {
+          <small class="field-error" role="alert">
+            {{ categoriasService.error() }}
+          </small>
+
+          <button type="button" class="btn" (click)="categoriasService.cargar()">
+            Reintentar
+          </button>
+        }
+
+        @if (invalido('categoria')) {
+          <small class="field-error">Selecciona una categoría.</small>
+        }
     </label>
 
     <label class="field">
@@ -42,16 +60,43 @@
     </label>
 
     <label class="drop">
-      <input type="file" accept="image/*,video/*" multiple hidden (change)="onArchivos($event)" />
+      <input id="archivos" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" multiple (change)="seleccionarArchivos($event)" />
       <span class="material-symbols-rounded">photo_camera</span>
-      @if (archivos().length) {
-        {{ archivos().join(', ') }}
-      } @else {
-        Adjuntar foto o video (opcional, máx. 3)
+
+      @if (archivos().length > 0) {
+        <div class="lista-evidencias">
+          <p>Archivos adjuntos ({{ archivos().length }}/3)</p>
+
+          @for (archivo of archivos(); track archivo.name + archivo.size; let i = $index) {
+            <div class="evidencia-item">
+              <span>
+                {{ archivo.name }}
+                ({{ (archivo.size / 1024 / 1024).toFixed(2) }} MB)
+              </span>
+
+              <button
+                type="button"
+                (click)="eliminarArchivo(i)"
+                [disabled]="enviando()"
+              >
+                Quitar
+              </button>
+            </div>
+          }
+        </div>
       }
     </label>
+    <!-- Mensaje de error debajo de las evidencias -->
+    @if (mensajeError()) {
+      <div class="aviso-error" role="alert" aria-live="polite">
+        <strong>No se pudo registrar la incidencia</strong>
+        <p>{{ mensajeError() }}</p>
+      </div>
+    }
 
-    <button type="submit" class="btn">Enviar reporte <span class="material-symbols-rounded">arrow_forward</span></button>
+    <button type="submit" [disabled]="enviando()">
+      {{ enviando() ? 'Registrando...' : 'Reportar incidencia' }}
+    </button>
   </form>
 
   <section class="panel side">
