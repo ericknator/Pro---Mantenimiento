@@ -56,6 +56,48 @@
         @if (invalido('prioridad')) { <small class="field-error">Selecciona una prioridad.</small> }
       </fieldset>
 
+      <label class="field">
+        <span>Rol responsable</span>
+
+        <select class="control" formControlName="rolId" (change)="cambiarRol(form.controls.rolId.value)" >
+          <option [ngValue]="null">Selecciona un rol</option>
+
+          @for (rol of roles(); track rol.id) {
+            @if ( rol.codigo === 'MANTENIMIENTO' || rol.codigo === 'PORTERIA_SEGURIDAD' ) {
+              <option [ngValue]="rol.id">{{ rol.nombre }}</option>
+            }
+          }
+        </select>
+
+        @if (invalido('rolId')) {
+          <small class="field-error">Selecciona un rol.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Responsable</span>
+
+        <select class="control" formControlName="responsableId" [disabled]="cargandoResponsables() || !responsables().length" >
+          <option [ngValue]="null">
+            {{
+              cargandoResponsables()
+                ? 'Cargando responsables…'
+                : 'Selecciona un responsable'
+            }}
+          </option>
+
+          @for (usuario of responsables(); track usuario.id) {
+            <option [ngValue]="usuario.id">
+              {{ usuario.nombres }} {{ usuario.apellidos }}
+            </option>
+          }
+        </select>
+
+        @if (invalido('responsableId')) {
+          <small class="field-error">Selecciona un responsable.</small>
+        }
+      </label>
+
       <button type="submit" class="btn" [disabled]="enviando() || !puedeClasificar()">
         {{ enviando() ? 'Guardando…' : 'Guardar clasificación' }}
         <span class="material-symbols-rounded">arrow_forward</span>
@@ -74,6 +116,7 @@
         <dt>Fecha</dt><dd>{{ inc.fecha | date: 'd MMM yyyy, HH:mm' }}</dd>
         <dt>Categoría actual</dt><dd>{{ inc.categoria }}</dd>
         <dt>Prioridad actual</dt><dd>{{ inc.prioridad }}</dd>
+        <dt>Asignado a</dt><dd>{{ inc.responsable || 'No asignado' }}</dd>
       </dl>
     </section>
   </div>

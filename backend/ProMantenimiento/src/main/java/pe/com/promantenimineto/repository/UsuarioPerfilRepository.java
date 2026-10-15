@@ -16,5 +16,10 @@ public interface UsuarioPerfilRepository extends JpaRepository<UsuarioPerfilEnti
     
     @EntityGraph(attributePaths = {"rol"})
     Optional<UsuarioPerfilEntity> findByFirebaseUid(String firebaseUid);
+    
+    @EntityGraph(attributePaths = {"rol"})
+    List<UsuarioPerfilEntity> findByActivoTrueAndRol_IdAndRol_ActivoTrueOrderByNombresAsc(
+        Long rolId
+    );
 
 }

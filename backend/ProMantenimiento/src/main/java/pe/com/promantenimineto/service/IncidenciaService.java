@@ -29,4 +29,5 @@ public interface IncidenciaService {
 	
 	IncidenciaEntity clasificar(IncidenciaEntity obj, Long id);
 	
+	
 }

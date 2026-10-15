@@ -3,7 +3,6 @@ import { Injectable, inject, signal } from '@angular/core';
 import { getAuth } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { IncidenciaAdmin } from '../../models/incidencia-admin.model';
-import { CATEGORIAS_BD, PRIORIDADES_BD } from '../data/catalogos-bd.data';
 
 // ⚠️ Usar la misma URL base que el resto de servicios (p. ej. activo.service.ts).
 // Con proxy de Angular sería '/promantenimiento/api'.
@@ -20,6 +19,7 @@ interface IncidenciaApi {
   estado?: { codigo?: string; nombre?: string } | null;
   solicitante?: { nombres?: string; apellidos?: string; correo?: string } | null;
   fechaReporte?: string | number[] | null;
+  responsableActual?: { id?: number; nombres?: string; apellidos?: string; correo?: string; } | null;
 }
 
 function aFecha(v: string | number[] | null | undefined): Date {
@@ -30,9 +30,23 @@ function aFecha(v: string | number[] | null | undefined): Date {
   return v ? new Date(v) : new Date();
 }
 
+
 function aModelo(r: IncidenciaApi): IncidenciaAdmin {
   const s = r.solicitante;
-  const nombre = [s?.nombres, s?.apellidos].filter(Boolean).join(' ') || s?.correo || '—';
+  const nombre =
+    [s?.nombres, s?.apellidos].filter(Boolean).join(' ') ||
+    s?.correo ||
+    '—';
+
+  const responsable = r.responsableActual
+    ? [
+        r.responsableActual.nombres,
+        r.responsableActual.apellidos,
+      ].filter(Boolean).join(' ') ||
+      r.responsableActual.correo ||
+      'No asignado'
+    : 'No asignado';
+
   return {
     id: String(r.id),
     codigo: r.codigo ?? `#${r.id}`,
@@ -46,6 +60,7 @@ function aModelo(r: IncidenciaApi): IncidenciaAdmin {
     descripcion: r.descripcion ?? '',
     solicitante: nombre,
     fecha: aFecha(r.fechaReporte),
+    responsable,
   };
 }
 
@@ -81,30 +96,30 @@ export class IncidenciasAdminService {
    * ⚠️ Confirmar con Gean (PMS-109) el endpoint y el cuerpo definitivos.
    */
   async clasificar(
-      id: string,
-      categoriaId: number,
-      prioridadId: number
-    ): Promise<IncidenciaAdmin> {
-    const anterior = this.incidencias().find((i) => i.id === id);
+    id: string,
+    categoriaId: number,
+    prioridadId: number,
+    responsableId: number
+  ): Promise<IncidenciaAdmin> {
 
     const cuerpo = {
       categoria: { id: categoriaId },
       prioridad: { id: prioridadId },
+      responsableActual: { id: responsableId }
     };
 
     const respuesta = await firstValueFrom(
       this.http.put<IncidenciaApi>(
-      `${API_BASE}/incidencia/${id}/clasificacion`,
-      cuerpo,
-      { headers: await this.cabeceras() }
+        `${API_BASE}/incidencia/${id}/clasificacion`,
+        cuerpo,
+        { headers: await this.cabeceras() }
       )
     );
 
-    // Usar la respuesta del backend como fuente de verdad.
     const desdeServidor = aModelo(respuesta);
 
     this.incidencias.update((lista) =>
-    lista.map((i) => (i.id === id ? desdeServidor : i))
+      lista.map((i) => (i.id === id ? desdeServidor : i))
     );
 
     return desdeServidor;

@@ -13,5 +13,6 @@ public interface ActuacionIncidenciaRepository extends JpaRepository<ActuacionIn
 
     @Query("select d from ActuacionIncidenciaEntity d")
     List<ActuacionIncidenciaEntity> findAllCustom();
+    
 
 }

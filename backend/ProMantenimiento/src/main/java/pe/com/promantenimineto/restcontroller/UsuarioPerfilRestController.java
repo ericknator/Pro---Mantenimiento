@@ -57,4 +57,9 @@ public class UsuarioPerfilRestController {
 	public UsuarioPerfilEntity enable(@PathVariable Long id) {
 		return servicio.enable(id);
 	}
+	
+	@GetMapping("/responsables/rol/{rolId}")
+	public List<UsuarioPerfilEntity> findResponsablesByRol(@PathVariable Long rolId) {
+	    return servicio.findResponsablesByRol(rolId);
+	}
 }

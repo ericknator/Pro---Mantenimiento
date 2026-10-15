@@ -45,5 +45,6 @@ public class ActuacionIncidenciaEntity {
 	
 	@Column(name = "creado_en", nullable = false)
 	private LocalDateTime creadoEn;
+	
 
 }

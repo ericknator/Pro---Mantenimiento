@@ -10,6 +10,8 @@ public interface UsuarioPerfilService {
 	
 	List<UsuarioPerfilEntity> findAllCustom();
 	
+	List<UsuarioPerfilEntity> findResponsablesByRol(Long rolId);
+	
 	UsuarioPerfilEntity findById(Long id);
 	
 	UsuarioPerfilEntity add(UsuarioPerfilEntity obj);

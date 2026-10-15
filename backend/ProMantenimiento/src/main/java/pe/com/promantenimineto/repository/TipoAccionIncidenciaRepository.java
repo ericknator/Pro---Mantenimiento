@@ -14,5 +14,6 @@ public interface TipoAccionIncidenciaRepository extends JpaRepository<TipoAccion
     List<TipoAccionIncidenciaEntity> findAllCustom();
     
     Optional<TipoAccionIncidenciaEntity> findByCodigo(String codigo);
+    
 
 }

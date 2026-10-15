@@ -56,4 +56,11 @@ public class UsuarioPerfilServiceImpl implements UsuarioPerfilService{
         objUsuarioPerfil.setActivo(true);
         return repositorio.save(objUsuarioPerfil);
     }
+    
+    @Override
+    public List<UsuarioPerfilEntity> findResponsablesByRol(Long rolId) {
+        return repositorio
+                .findByActivoTrueAndRol_IdAndRol_ActivoTrueOrderByNombresAsc(rolId);
+    }
+    
 }

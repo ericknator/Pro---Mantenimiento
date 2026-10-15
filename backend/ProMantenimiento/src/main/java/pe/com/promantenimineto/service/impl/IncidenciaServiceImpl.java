@@ -19,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import pe.com.promantenimineto.entity.UsuarioPerfilEntity;
 import pe.com.promantenimineto.entity.UsuarioUnidadEntity;
 import pe.com.promantenimineto.entity.ActuacionIncidenciaEntity;
+import pe.com.promantenimineto.entity.AsignacionIncidenciaEntity;
 import pe.com.promantenimineto.entity.CategoriaIncidenciaEntity;
 import pe.com.promantenimineto.entity.EstadoIncidenciaEntity;
 import pe.com.promantenimineto.entity.EvidenciaIncidenciaEntity;
@@ -28,6 +29,7 @@ import pe.com.promantenimineto.entity.TipoAccionIncidenciaEntity;
 import pe.com.promantenimineto.entity.TipoEvidenciaEntity;
 import pe.com.promantenimineto.entity.UnidadResidencialEntity;
 import pe.com.promantenimineto.repository.ActuacionIncidenciaRepository;
+import pe.com.promantenimineto.repository.AsignacionIncidenciaRepository;
 import pe.com.promantenimineto.repository.CategoriaIncidenciaRepository;
 import pe.com.promantenimineto.repository.EstadoIncidenciaRepository;
 import pe.com.promantenimineto.repository.EvidenciaIncidenciaRepository;
@@ -77,6 +79,11 @@ public class IncidenciaServiceImpl implements IncidenciaService{
     @Autowired
     private TipoAccionIncidenciaRepository tipoAccionRepositorio;
     
+    @Autowired
+    private UsuarioPerfilRepository usuarioPerfilRepositorio;    
+    
+    @Autowired
+    private AsignacionIncidenciaRepository asignacionRepositorio;
     
     
     private String generarCodigo() {
@@ -572,6 +579,47 @@ public class IncidenciaServiceImpl implements IncidenciaService{
                 "Solo se pueden clasificar incidencias en estado REPORTADA."
             );
         }
+     // Validar que se haya seleccionado un responsable.
+        if (obj.getResponsableActual() == null
+                || obj.getResponsableActual().getId() == null) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Debes seleccionar un responsable."
+            );
+        }
+
+        Long responsableId = obj.getResponsableActual().getId();
+
+        UsuarioPerfilEntity responsable =
+            usuarioPerfilRepositorio.findById(responsableId)
+                .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "El responsable seleccionado no existe."
+                ));
+
+        // Solo permitir usuarios activos.
+        if (!Boolean.TRUE.equals(responsable.getActivo())) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El responsable seleccionado está inactivo."
+            );
+        }
+
+        // Solo permitir los roles autorizados.
+        if (responsable.getRol() == null
+                || !Boolean.TRUE.equals(responsable.getRol().getActivo())
+                || !(
+                    "MANTENIMIENTO".equals(
+                        responsable.getRol().getCodigo())
+                    || "PORTERIA_SEGURIDAD".equals(
+                        responsable.getRol().getCodigo())
+                )) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "El usuario seleccionado no tiene un rol autorizado para recibir incidencias."
+            );
+        }
+        
 
         Long categoriaId = obj.getCategoria().getId();
         Long prioridadId = obj.getPrioridad().getId();
@@ -612,12 +660,33 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 
         	actuacionRepositorio.save(actuacion);
 
-        // Actualizar únicamente los campos de clasificación.
-        existente.setCategoria(categoria);
-        existente.setPrioridad(prioridad);
-        existente.setActualizadoEn(LocalDateTime.now());
+        	// Actualizar la incidencia.
+        	existente.setCategoria(categoria);
+        	existente.setPrioridad(prioridad);
+        	existente.setResponsableActual(responsable);
+        	existente.setActualizadoEn(LocalDateTime.now());
 
-        return repositorio.save(existente);
+        	IncidenciaEntity incidenciaGuardada =
+        	        repositorio.save(existente);
+
+        	// Registrar la asignación en el historial.
+        	AsignacionIncidenciaEntity asignacion =
+        	        new AsignacionIncidenciaEntity();
+
+        	asignacion.setIncidencia(incidenciaGuardada);
+        	asignacion.setAsignadoPor(administrador);
+        	asignacion.setResponsableUsuario(responsable);
+
+        	asignacion.setObservacion(
+        	        "Asignación realizada durante la clasificación de la incidencia."
+        	);
+
+        	// Inicializar la fecha obligatoria antes de guardar.
+        	asignacion.setAsignadoEn(LocalDateTime.now());
+
+        	asignacionRepositorio.save(asignacion);
+
+        	return incidenciaGuardada;
     }
     
 }

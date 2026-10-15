@@ -9,6 +9,7 @@ import { EDIFICIO_NOMBRE } from '../../../../core/data/navigation.data';
 import { IncidenciasAdminService } from '../../../../core/services/incidencias-admin.service';
 import { PageHeroComponent } from '../../../../shared/page-hero/page-hero.component';
 import { Location } from '@angular/common';
+import { UsuarioPerfilService, RolResponsable, UsuarioResponsable } from '../../../../core/services/usuario-perfil.service';
 
 @Component({
   selector: 'app-clasificar-incidencia',
@@ -20,6 +21,12 @@ export class ClasificarComponent {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(IncidenciasAdminService);
   private readonly id = toSignal(inject(ActivatedRoute).paramMap.pipe(map((p) => p.get('id'))), { initialValue: null });
+  private readonly usuariosService = inject(UsuarioPerfilService);
+
+  roles = signal<RolResponsable[]>([]);
+  responsables = signal<UsuarioResponsable[]>([]);
+  cargandoRoles = signal(false);
+  cargandoResponsables = signal(false);
 
   eyebrow = `${EDIFICIO_NOMBRE} · Administración`;
   categorias = CATEGORIAS_BD;
@@ -33,6 +40,8 @@ export class ClasificarComponent {
   form = this.fb.group({
     categoria: this.fb.control<number | null>(null, Validators.required),
     prioridad: this.fb.control<number | null>(null, Validators.required),
+    rolId: this.fb.control<number | null>(null, Validators.required),
+    responsableId: this.fb.control<number | null>(null, Validators.required),
   });
 
   enviando = signal(false);
@@ -41,6 +50,8 @@ export class ClasificarComponent {
   private inicializado = false;
 
   constructor() {
+    void this.cargarRoles();
+
     if (this.service.incidencias().length === 0) void this.service.cargar();
 
     // Precarga el formulario con los valores actuales cuando la incidencia está disponible
@@ -53,7 +64,7 @@ export class ClasificarComponent {
     });
   }
 
-  invalido(campo: 'categoria' | 'prioridad'): boolean {
+  invalido( campo: 'categoria' | 'prioridad' | 'rolId' | 'responsableId' ): boolean {
     const c = this.form.controls[campo];
     return c.invalid && c.touched;
   }
@@ -61,21 +72,36 @@ export class ClasificarComponent {
   async guardar(): Promise<void> {
     const inc = this.incidencia();
     if (!inc) return;
+
     this.error.set('');
     this.confirmada.set(false);
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-    const { categoria, prioridad } = this.form.getRawValue();
+
+    const { categoria, prioridad, responsableId } =
+      this.form.getRawValue();
+
     this.enviando.set(true);
+
     try {
-      await this.service.clasificar(inc.id, categoria!, prioridad!);
+      await this.service.clasificar(
+        inc.id,
+        categoria!,
+        prioridad!,
+        responsableId!
+      );
+
       this.confirmada.set(true);
     } catch (e) {
-      // Sin cambios en pantalla: la incidencia conserva sus valores anteriores
-      this.error.set(this.service.mensaje(e, 'No se pudo guardar la clasificación'));
-      this.form.patchValue({ categoria: inc.categoriaId, prioridad: inc.prioridadId });
+      this.error.set(
+        this.service.mensaje(
+          e,
+          'No se pudo guardar la clasificación y asignación.'
+        )
+      );
     } finally {
       this.enviando.set(false);
     }
@@ -86,4 +112,38 @@ export class ClasificarComponent {
   volver(): void {
     this.location.back();
   }
+
+  async cargarRoles(): Promise<void> {
+    this.cargandoRoles.set(true);
+
+    try {
+      this.roles.set(await this.usuariosService.listarRoles());
+    } catch (e) {
+      this.error.set('No se pudieron cargar los roles disponibles.');
+    } finally {
+      this.cargandoRoles.set(false);
+    }
+  }
+
+  async cambiarRol(rolId: number | null): Promise<void> {
+    this.form.controls.responsableId.setValue(null);
+    this.responsables.set([]);
+
+    if (rolId === null) return;
+
+    this.cargandoResponsables.set(true);
+
+    try {
+      this.responsables.set(
+        await this.usuariosService.listarResponsables(rolId)
+      );
+    } catch {
+      this.error.set('No se pudieron cargar los responsables del rol seleccionado.');
+    } finally {
+      this.cargandoResponsables.set(false);
+    }
+  }
+
+
+
 }

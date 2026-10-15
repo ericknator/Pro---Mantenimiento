@@ -14,4 +14,5 @@ export interface IncidenciaAdmin {
   descripcion: string;
   solicitante: string;
   fecha: Date;
+  responsable: string;
 }
