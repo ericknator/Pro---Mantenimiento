@@ -1,0 +1,36 @@
+<app-page-hero
+  [eyebrow]="eyebrow"
+  title="Pendientes"
+  [subtitle]="cargando() ? 'Cargando…' : items().length + ' pendientes de clasificar'"
+/>
+
+<section class="panel dock">
+  <header class="panel__head">
+    <h2 class="label">Pendientes</h2>
+    <span class="acciones">
+      <button type="button" class="label enlace" (click)="actualizar()" [disabled]="cargando()">Actualizar</button>
+      <a class="label enlace" routerLink="/administrador/incidencias">← Volver</a>
+    </span>
+  </header>
+
+  @if (error()) {
+    <div class="aviso" role="alert">
+      <span class="material-symbols-rounded">error</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  @for (i of items(); track i.id) {
+    <a class="fila" [routerLink]="['/administrador/incidencias/clasificar', i.id]">
+      <span class="fila__texto">
+        <strong>{{ i.descripcion }}</strong>
+        <small>{{ i.codigo }} · {{ i.ubicacion }} · {{ i.fecha | date: 'd MMM, HH:mm' }}</small>
+      </span>
+      <span class="chip">Clasificar</span>
+    </a>
+  } @empty {
+    @if (!cargando() && !error()) {
+      <p class="vacio">No hay incidencias pendientes de clasificar.</p>
+    }
+  }
+</section>

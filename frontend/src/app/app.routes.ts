@@ -4,6 +4,7 @@ import { authGuard, guestGuard, roleGuard } from './core/guards/auth.guard';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { AdminLayoutComponent } from './features/administrador/admin-layout/admin-layout.component';
 import { ADMIN_MANTENIMIENTO_ACTIONS, ADMIN_NAV_ITEMS } from './core/data/admin-navigation.data';
+import { ADMIN_INCIDENCIAS_ACTIONS } from './core/data/admin-incidencias.data';
 
 // Módulos del menú que aún no tienen pantalla propia: comparten la pantalla "en construcción"
 const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM]
@@ -16,10 +17,15 @@ const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM]
   }));
 
 const adminPendientes: Route[] = [
-  ...ADMIN_NAV_ITEMS.filter((i) => i.route !== '/administrador/mantenimiento').map((i) => ({
+  ...ADMIN_NAV_ITEMS.filter((i) => !['/administrador/mantenimiento', '/administrador/incidencias'].includes(i.route)).map((i) => ({
     path: i.route.replace('/administrador/', ''),
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/dashboard', volverTexto: 'Volver al dashboard' },
+  })),
+  ...ADMIN_INCIDENCIAS_ACTIONS.filter((i) => i.route !== '/administrador/incidencias/pendientes').map((i) => ({
+    path: i.route.replace('/administrador/', ''),
+    title: i.label,
+    data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/incidencias', volverTexto: 'Volver a Incidencias' },
   })),
   ...ADMIN_MANTENIMIENTO_ACTIONS.filter((i) => i.route !== '/administrador/mantenimiento/programar').map((i) => ({
     path: i.route.replace('/administrador/', ''),
@@ -40,6 +46,28 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+       {
+        path: 'incidencias',
+        pathMatch: 'full',
+        title: 'Incidencias',
+        data: { fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/administrador/incidencias/incidencias-hub.component').then((m) => m.IncidenciasHubComponent),
+      },
+      {
+        path: 'incidencias/pendientes',
+        title: 'Pendientes',
+        data: { fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/administrador/incidencias/pendientes/pendientes.component').then((m) => m.PendientesComponent),
+      },
+      {
+        path: 'incidencias/clasificar/:id',
+        title: 'Clasificar incidencia',
+        data: { menu: 'rail', fondo: 'terraza' },
+        loadComponent: () =>
+          import('./features/administrador/incidencias/clasificar/clasificar.component').then((m) => m.ClasificarComponent),
+      },
       {
         path: 'mantenimiento',
         pathMatch: 'full',
