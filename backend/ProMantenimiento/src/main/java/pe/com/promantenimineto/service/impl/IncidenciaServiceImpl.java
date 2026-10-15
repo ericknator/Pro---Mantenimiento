@@ -624,19 +624,24 @@ public class IncidenciaServiceImpl implements IncidenciaService{
         Long categoriaId = obj.getCategoria().getId();
         Long prioridadId = obj.getPrioridad().getId();
 
-        CategoriaIncidenciaEntity categoria =
-            categoriaRepositorio.findById(categoriaId)
+        CategoriaIncidenciaEntity categoria = categoriaRepositorio.findById(categoriaId)
                 .orElseThrow(() -> new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "La categoría indicada no existe."
                 ));
 
-        PrioridadIncidenciaEntity prioridad =
-            prioridadRepositorio.findById(prioridadId)
+        	PrioridadIncidenciaEntity prioridad = prioridadRepositorio.findById(prioridadId)
                 .orElseThrow(() -> new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "La prioridad indicada no existe."
                 ));
+        	
+        	EstadoIncidenciaEntity estadoAsignada =
+        			estadoRepositorio.findByCodigo("ASIGNADA")
+        		        .orElseThrow(() -> new ResponseStatusException(
+        		            HttpStatus.INTERNAL_SERVER_ERROR,
+        		            "No existe el estado ASIGNADA."
+        		        ));
         
         	TipoAccionIncidenciaEntity tipoAccion = tipoAccionRepositorio
         	    .findByCodigo("CLASIFICACION")
@@ -654,7 +659,7 @@ public class IncidenciaServiceImpl implements IncidenciaService{
         	            + categoria.getNombre()
         	            + ", prioridad: " + prioridad.getNombre())
         	        .estadoAnterior(existente.getEstado())
-        	        .estadoNuevo(existente.getEstado())
+        	        .estadoNuevo(estadoAsignada)
         	        .creadoEn(LocalDateTime.now())
         	        .build();
 
@@ -664,22 +669,18 @@ public class IncidenciaServiceImpl implements IncidenciaService{
         	existente.setCategoria(categoria);
         	existente.setPrioridad(prioridad);
         	existente.setResponsableActual(responsable);
+        	existente.setEstado(estadoAsignada);
         	existente.setActualizadoEn(LocalDateTime.now());
 
-        	IncidenciaEntity incidenciaGuardada =
-        	        repositorio.save(existente);
+        	IncidenciaEntity incidenciaGuardada = repositorio.save(existente);
 
         	// Registrar la asignación en el historial.
-        	AsignacionIncidenciaEntity asignacion =
-        	        new AsignacionIncidenciaEntity();
+        	AsignacionIncidenciaEntity asignacion = new AsignacionIncidenciaEntity();
 
         	asignacion.setIncidencia(incidenciaGuardada);
         	asignacion.setAsignadoPor(administrador);
         	asignacion.setResponsableUsuario(responsable);
-
-        	asignacion.setObservacion(
-        	        "Asignación realizada durante la clasificación de la incidencia."
-        	);
+        	asignacion.setObservacion("Asignación realizada durante la clasificación de la incidencia.");
 
         	// Inicializar la fecha obligatoria antes de guardar.
         	asignacion.setAsignadoEn(LocalDateTime.now());
