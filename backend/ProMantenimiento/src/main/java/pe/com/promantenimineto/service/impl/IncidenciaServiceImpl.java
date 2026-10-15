@@ -18,18 +18,22 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import pe.com.promantenimineto.entity.UsuarioPerfilEntity;
 import pe.com.promantenimineto.entity.UsuarioUnidadEntity;
+import pe.com.promantenimineto.entity.ActuacionIncidenciaEntity;
 import pe.com.promantenimineto.entity.CategoriaIncidenciaEntity;
 import pe.com.promantenimineto.entity.EstadoIncidenciaEntity;
 import pe.com.promantenimineto.entity.EvidenciaIncidenciaEntity;
 import pe.com.promantenimineto.entity.IncidenciaEntity;
 import pe.com.promantenimineto.entity.PrioridadIncidenciaEntity;
+import pe.com.promantenimineto.entity.TipoAccionIncidenciaEntity;
 import pe.com.promantenimineto.entity.TipoEvidenciaEntity;
 import pe.com.promantenimineto.entity.UnidadResidencialEntity;
+import pe.com.promantenimineto.repository.ActuacionIncidenciaRepository;
 import pe.com.promantenimineto.repository.CategoriaIncidenciaRepository;
 import pe.com.promantenimineto.repository.EstadoIncidenciaRepository;
 import pe.com.promantenimineto.repository.EvidenciaIncidenciaRepository;
 import pe.com.promantenimineto.repository.IncidenciaRepository;
 import pe.com.promantenimineto.repository.PrioridadIncidenciaRepository;
+import pe.com.promantenimineto.repository.TipoAccionIncidenciaRepository;
 import pe.com.promantenimineto.repository.TipoEvidenciaRepository;
 import pe.com.promantenimineto.repository.UnidadResidencialRepository;
 import pe.com.promantenimineto.repository.UsuarioPerfilRepository;
@@ -59,9 +63,6 @@ public class IncidenciaServiceImpl implements IncidenciaService{
     private UnidadResidencialRepository unidadResidencialRepository;
     
     @Autowired
-    private UsuarioPerfilRepository usuarioPerfilRepository;
-    
-    @Autowired
     private EvidenciaIncidenciaRepository evidenciaRepositorio;
 
     @Autowired
@@ -69,6 +70,13 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 
     @Autowired
     private EvidenciaArchivoService evidenciaArchivoService;
+    
+    @Autowired
+    private ActuacionIncidenciaRepository actuacionRepositorio;
+
+    @Autowired
+    private TipoAccionIncidenciaRepository tipoAccionRepositorio;
+    
     
     
     private String generarCodigo() {
@@ -509,4 +517,107 @@ public class IncidenciaServiceImpl implements IncidenciaService{
             );
         }
     }
+    
+    
+    @Override
+    @Transactional
+    public IncidenciaEntity clasificar(IncidenciaEntity obj, Long id) {
+
+        Authentication authentication =
+            SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal()
+                    instanceof UsuarioPerfilEntity administrador)) {
+            throw new ResponseStatusException(
+                HttpStatus.UNAUTHORIZED,
+                "Debes iniciar sesión."
+            );
+        }
+
+        if (administrador.getRol() == null
+                || !"ADMINISTRADOR".equals(
+                    administrador.getRol().getCodigo())) {
+            throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "Solo el administrador puede clasificar incidencias."
+            );
+        }
+
+        // CA-02: validar los campos obligatorios.
+        if (obj == null
+                || obj.getCategoria() == null
+                || obj.getCategoria().getId() == null
+                || obj.getPrioridad() == null
+                || obj.getPrioridad().getId() == null) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "La categoría y la prioridad son obligatorias."
+            );
+        }
+
+        IncidenciaEntity existente = repositorio.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Incidencia no encontrada."
+            ));
+
+        // Solo se clasifican incidencias reportadas.
+        if (existente.getEstado() == null
+                || !"REPORTADA".equals(
+                    existente.getEstado().getCodigo())) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Solo se pueden clasificar incidencias en estado REPORTADA."
+            );
+        }
+
+        Long categoriaId = obj.getCategoria().getId();
+        Long prioridadId = obj.getPrioridad().getId();
+
+        CategoriaIncidenciaEntity categoria =
+            categoriaRepositorio.findById(categoriaId)
+                .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La categoría indicada no existe."
+                ));
+
+        PrioridadIncidenciaEntity prioridad =
+            prioridadRepositorio.findById(prioridadId)
+                .orElseThrow(() -> new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "La prioridad indicada no existe."
+                ));
+        
+        	TipoAccionIncidenciaEntity tipoAccion = tipoAccionRepositorio
+        	    .findByCodigo("CLASIFICACION")
+        	    .orElseThrow(() -> new ResponseStatusException(	
+        	        HttpStatus.INTERNAL_SERVER_ERROR,
+        	        "No existe el tipo de acción CLASIFICACION."
+        	    ));
+
+        	ActuacionIncidenciaEntity actuacion =
+        	    ActuacionIncidenciaEntity.builder()
+        	        .incidencia(existente)
+        	        .actor(administrador)
+        	        .tipoAccion(tipoAccion)
+        	        .descripcion("Clasificación de incidencia. Categoría: "
+        	            + categoria.getNombre()
+        	            + ", prioridad: " + prioridad.getNombre())
+        	        .estadoAnterior(existente.getEstado())
+        	        .estadoNuevo(existente.getEstado())
+        	        .creadoEn(LocalDateTime.now())
+        	        .build();
+
+        	actuacionRepositorio.save(actuacion);
+
+        // Actualizar únicamente los campos de clasificación.
+        existente.setCategoria(categoria);
+        existente.setPrioridad(prioridad);
+        existente.setActualizadoEn(LocalDateTime.now());
+
+        return repositorio.save(existente);
+    }
+    
 }

@@ -22,7 +22,7 @@ const adminPendientes: Route[] = [
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/dashboard', volverTexto: 'Volver al dashboard' },
   })),
-  ...ADMIN_INCIDENCIAS_ACTIONS.filter((i) => i.route !== '/administrador/incidencias/pendientes').map((i) => ({
+  ...ADMIN_INCIDENCIAS_ACTIONS.filter( (i) => i.route !== '/administrador/incidencias/pendientes' && i.route !== '/administrador/incidencias/todas' ).map((i) => ({
     path: i.route.replace('/administrador/', ''),
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/incidencias', volverTexto: 'Volver a Incidencias' },
@@ -46,7 +46,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-       {
+      {
         path: 'incidencias',
         pathMatch: 'full',
         title: 'Incidencias',
@@ -60,6 +60,14 @@ export const routes: Routes = [
         data: { fondo: 'edificio' },
         loadComponent: () =>
           import('./features/administrador/incidencias/pendientes/pendientes.component').then((m) => m.PendientesComponent),
+      },
+      {
+        path: 'incidencias/todas',
+        title: 'Todas las incidencias',
+        data: { fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/administrador/incidencias/todas/todas.component')
+            .then((m) => m.TodasComponent),
       },
       {
         path: 'incidencias/clasificar/:id',

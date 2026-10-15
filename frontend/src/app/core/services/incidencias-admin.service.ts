@@ -80,26 +80,34 @@ export class IncidenciasAdminService {
    * y los valores anteriores se conservan.
    * ⚠️ Confirmar con Gean (PMS-109) el endpoint y el cuerpo definitivos.
    */
-  async clasificar(id: string, categoriaId: number, prioridadId: number): Promise<IncidenciaAdmin> {
+  async clasificar(
+      id: string,
+      categoriaId: number,
+      prioridadId: number
+    ): Promise<IncidenciaAdmin> {
     const anterior = this.incidencias().find((i) => i.id === id);
-    const cuerpo = { categoria: { id: categoriaId }, prioridad: { id: prioridadId } };
-    const respuesta = await firstValueFrom(
-      this.http.put<IncidenciaApi | null>(`${API_BASE}/incidencia/${id}`, cuerpo, { headers: await this.cabeceras() }),
-    );
-    const base = anterior ?? aModelo({ id: Number(id) });
-    const desdeServidor = respuesta ? aModelo(respuesta) : null;
-    const actualizada: IncidenciaAdmin = {
-      ...base,
-      categoriaId,
-      categoria: CATEGORIAS_BD.find((c) => c.id === categoriaId)?.nombre ?? base.categoria,
-      prioridadId,
-      prioridad: PRIORIDADES_BD.find((p) => p.id === prioridadId)?.nombre ?? base.prioridad,
-      // El estado solo cambia si el servidor lo informa
-      estadoCodigo: desdeServidor?.estadoCodigo || base.estadoCodigo,
-      estado: desdeServidor?.estadoCodigo ? desdeServidor.estado : base.estado,
+
+    const cuerpo = {
+      categoria: { id: categoriaId },
+      prioridad: { id: prioridadId },
     };
-    this.incidencias.update((lista) => lista.map((i) => (i.id === id ? actualizada : i)));
-    return actualizada;
+
+    const respuesta = await firstValueFrom(
+      this.http.put<IncidenciaApi>(
+      `${API_BASE}/incidencia/${id}/clasificacion`,
+      cuerpo,
+      { headers: await this.cabeceras() }
+      )
+    );
+
+    // Usar la respuesta del backend como fuente de verdad.
+    const desdeServidor = aModelo(respuesta);
+
+    this.incidencias.update((lista) =>
+    lista.map((i) => (i.id === id ? desdeServidor : i))
+    );
+
+    return desdeServidor;
   }
 
   mensaje(error: unknown, porDefecto: string): string {

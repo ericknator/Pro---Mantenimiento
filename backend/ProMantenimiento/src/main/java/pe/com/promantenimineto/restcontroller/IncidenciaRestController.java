@@ -77,4 +77,12 @@ public class IncidenciaRestController {
 	public IncidenciaEntity enable(@PathVariable Long id) {
 		return servicio.enable(id);
 	}
+	
+	@PutMapping("/{id}/clasificacion")
+	public IncidenciaEntity clasificar(
+	        @RequestBody IncidenciaEntity obj,
+	        @PathVariable Long id) {
+
+	    return servicio.clasificar(obj, id);
+	}
 }

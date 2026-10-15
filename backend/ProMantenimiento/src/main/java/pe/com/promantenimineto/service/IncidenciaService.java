@@ -23,8 +23,10 @@ public interface IncidenciaService {
 	IncidenciaEntity enable(Long id);
 	
 	IncidenciaEntity addWithEvidencias(
-		    IncidenciaEntity obj,
-		    List<MultipartFile> archivos
-		);
+	    IncidenciaEntity obj,
+	    List<MultipartFile> archivos
+	);
+	
+	IncidenciaEntity clasificar(IncidenciaEntity obj, Long id);
 	
 }

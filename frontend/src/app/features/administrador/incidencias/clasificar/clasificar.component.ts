@@ -8,6 +8,7 @@ import { CATEGORIAS_BD, PRIORIDADES_BD } from '../../../../core/data/catalogos-b
 import { EDIFICIO_NOMBRE } from '../../../../core/data/navigation.data';
 import { IncidenciasAdminService } from '../../../../core/services/incidencias-admin.service';
 import { PageHeroComponent } from '../../../../shared/page-hero/page-hero.component';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-clasificar-incidencia',
@@ -78,5 +79,11 @@ export class ClasificarComponent {
     } finally {
       this.enviando.set(false);
     }
+  }
+
+  private readonly location = inject(Location);
+
+  volver(): void {
+    this.location.back();
   }
 }

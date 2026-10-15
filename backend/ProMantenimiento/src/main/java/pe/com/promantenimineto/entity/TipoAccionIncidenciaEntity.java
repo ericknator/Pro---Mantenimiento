@@ -35,5 +35,6 @@ public class TipoAccionIncidenciaEntity {
 
     @Column(nullable = false)
     private Boolean activo;
+    
 
 }

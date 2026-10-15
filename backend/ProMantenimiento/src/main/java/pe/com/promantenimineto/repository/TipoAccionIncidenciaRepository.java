@@ -1,6 +1,7 @@
 package pe.com.promantenimineto.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,5 +12,7 @@ public interface TipoAccionIncidenciaRepository extends JpaRepository<TipoAccion
 
     @Query("select d from TipoAccionIncidenciaEntity d where d.activo=true")
     List<TipoAccionIncidenciaEntity> findAllCustom();
+    
+    Optional<TipoAccionIncidenciaEntity> findByCodigo(String codigo);
 
 }
