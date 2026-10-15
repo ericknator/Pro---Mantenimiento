@@ -578,44 +578,49 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 
         CategoriaIncidenciaEntity categoria =
             categoriaRepositorio.findById(categoriaId)
+                .filter(c -> Boolean.TRUE.equals(c.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "La categoría indicada no existe."
+                    "La categoría indicada no existe o está inactiva."
                 ));
 
         PrioridadIncidenciaEntity prioridad =
             prioridadRepositorio.findById(prioridadId)
+                .filter(p -> Boolean.TRUE.equals(p.getActivo()))
                 .orElseThrow(() -> new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "La prioridad indicada no existe."
+                    "La prioridad indicada no existe o está inactiva."
                 ));
         
-        	TipoAccionIncidenciaEntity tipoAccion = tipoAccionRepositorio
-        	    .findByCodigo("CLASIFICACION")
-        	    .orElseThrow(() -> new ResponseStatusException(	
-        	        HttpStatus.INTERNAL_SERVER_ERROR,
-        	        "No existe el tipo de acción CLASIFICACION."
-        	    ));
+        TipoAccionIncidenciaEntity tipoAccion = tipoAccionRepositorio
+            .findByCodigo("CLASIFICACION")
+            .filter(t -> Boolean.TRUE.equals(t.getActivo()))
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "No existe un tipo de acción CLASIFICACION activo."
+            ));
 
-        	ActuacionIncidenciaEntity actuacion =
-        	    ActuacionIncidenciaEntity.builder()
-        	        .incidencia(existente)
-        	        .actor(administrador)
-        	        .tipoAccion(tipoAccion)
-        	        .descripcion("Clasificación de incidencia. Categoría: "
-        	            + categoria.getNombre()
-        	            + ", prioridad: " + prioridad.getNombre())
-        	        .estadoAnterior(existente.getEstado())
-        	        .estadoNuevo(existente.getEstado())
-        	        .creadoEn(LocalDateTime.now())
-        	        .build();
+        LocalDateTime ahora = LocalDateTime.now();
 
-        	actuacionRepositorio.save(actuacion);
+        ActuacionIncidenciaEntity actuacion =
+            ActuacionIncidenciaEntity.builder()
+                .incidencia(existente)
+                .actor(administrador)
+                .tipoAccion(tipoAccion)
+                .descripcion("Clasificación de incidencia. Categoría: "
+                    + categoria.getNombre()
+                    + ", prioridad: " + prioridad.getNombre())
+                .estadoAnterior(existente.getEstado())
+                .estadoNuevo(existente.getEstado())
+                .creadoEn(ahora)
+                .build();
+
+        actuacionRepositorio.save(actuacion);
 
         // Actualizar únicamente los campos de clasificación.
         existente.setCategoria(categoria);
         existente.setPrioridad(prioridad);
-        existente.setActualizadoEn(LocalDateTime.now());
+        existente.setActualizadoEn(ahora);
 
         return repositorio.save(existente);
     }

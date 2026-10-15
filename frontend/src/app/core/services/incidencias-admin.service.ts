@@ -3,7 +3,6 @@ import { Injectable, inject, signal } from '@angular/core';
 import { getAuth } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { IncidenciaAdmin } from '../../models/incidencia-admin.model';
-import { CATEGORIAS_BD, PRIORIDADES_BD } from '../data/catalogos-bd.data';
 
 // ⚠️ Usar la misma URL base que el resto de servicios (p. ej. activo.service.ts).
 // Con proxy de Angular sería '/promantenimiento/api'.
@@ -74,40 +73,20 @@ export class IncidenciasAdminService {
     }
   }
 
-  /**
-   * HU-INC-03: guarda categoría y prioridad.
-   * La interfaz solo cambia si el servidor responde con éxito; si falla se lanza el error
-   * y los valores anteriores se conservan.
-   * ⚠️ Confirmar con Gean (PMS-109) el endpoint y el cuerpo definitivos.
-   */
-  async clasificar(
-      id: string,
-      categoriaId: number,
-      prioridadId: number
-    ): Promise<IncidenciaAdmin> {
-    const anterior = this.incidencias().find((i) => i.id === id);
-
-    const cuerpo = {
-      categoria: { id: categoriaId },
-      prioridad: { id: prioridadId },
-    };
-
+  /** Guarda clasificación y muestra únicamente los valores confirmados por el servidor. */
+  async clasificar(id: string, categoriaId: number, prioridadId: number): Promise<IncidenciaAdmin> {
+    const cuerpo = { categoria: { id: categoriaId }, prioridad: { id: prioridadId } };
     const respuesta = await firstValueFrom(
-      this.http.put<IncidenciaApi>(
-      `${API_BASE}/incidencia/${id}/clasificacion`,
-      cuerpo,
-      { headers: await this.cabeceras() }
-      )
+      this.http.put<IncidenciaApi | null>(`${API_BASE}/incidencia/${id}/clasificacion`, cuerpo,
+        { headers: await this.cabeceras() }),
     );
-
-    // Usar la respuesta del backend como fuente de verdad.
-    const desdeServidor = aModelo(respuesta);
-
-    this.incidencias.update((lista) =>
-    lista.map((i) => (i.id === id ? desdeServidor : i))
-    );
-
-    return desdeServidor;
+    if (!respuesta || String(respuesta.id) !== id
+        || respuesta.categoria?.id !== categoriaId || respuesta.prioridad?.id !== prioridadId) {
+      throw new Error('El servidor no confirmó la clasificación solicitada. Actualiza la página para comprobar el estado.');
+    }
+    const actualizada = aModelo(respuesta);
+    this.incidencias.update((lista) => lista.map((i) => (i.id === id ? actualizada : i)));
+    return actualizada;
   }
 
   mensaje(error: unknown, porDefecto: string): string {
@@ -124,7 +103,7 @@ export class IncidenciasAdminService {
         default: return `${porDefecto} (error ${error.status}).`;
       }
     }
-    return porDefecto;
+    return error instanceof Error ? error.message : porDefecto;
   }
 
   private async cabeceras(): Promise<HttpHeaders> {
