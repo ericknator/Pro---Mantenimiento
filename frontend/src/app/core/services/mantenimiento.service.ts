@@ -2,108 +2,114 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { auth } from './firebase.config';
-import { MantenimientoPreventivo, ActivoItem } from '../../models/mantenimiento.model';
+import { AuthService } from './auth.service';
+import { MantenimientoPreventivo } from '../../models/mantenimiento.model';
+import { Activo } from '../../models/activo.model';
 
 @Injectable({ providedIn: 'root' })
 export class MantenimientoService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8085/promantenimiento/api/mantenimiento';
-  private readonly apiUrlPlural = 'http://localhost:8085/promantenimiento/api/mantenimientos';
-  private readonly activosUrl = 'http://localhost:8085/promantenimiento/api/activos';
+  private readonly authService = inject(AuthService);
+
+  // 🎯 El endpoint real que vimos en TareaPreventivaRestController.java
+  private readonly apiUrl = 'http://localhost:8085/promantenimiento/api/tarea-preventiva';
+  private readonly activosUrl = 'http://localhost:8085/promantenimiento/api/activo';
 
   readonly mantenimientos = signal<MantenimientoPreventivo[]>([]);
-  readonly activos = signal<ActivoItem[]>([]);
-  readonly cargando = signal<boolean>(false);
-  readonly error = signal<string | null>(null);
+  readonly activos = signal<Activo[]>([]);
+  readonly cargando = signal(false);
 
-  /** Helper para obtener las cabeceras con el Bearer Token de Firebase */
   private async obtenerHeaders(): Promise<HttpHeaders> {
     const token = await auth.currentUser?.getIdToken();
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      Authorization: token ? `Bearer ${token}` : ''
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
     });
   }
 
-  /** Carga la lista de mantenimientos programados */
-  async cargarMantenimientos(): Promise<void> {
-    this.cargando.set(true);
-    this.error.set(null);
+  /** GET: Carga los activos reales desde MySQL para el selector */
+  async cargarActivos(): Promise<void> {
     try {
       const headers = await this.obtenerHeaders();
       const data = await firstValueFrom(
-        this.http.get<MantenimientoPreventivo[]>(this.apiUrl, { headers })
+        this.http.get<any[]>(this.activosUrl, { headers })
       );
-      this.mantenimientos.set(data ?? []);
-    } catch (err: unknown) {
-      console.warn('No se pudo cargar la lista de mantenimientos:', err);
-      this.mantenimientos.set([]);
+      if (Array.isArray(data)) {
+        this.activos.set(data.map(item => ({
+          id: item.id,
+          codigo: item.codigo,
+          nombre: item.nombre,
+          tipo: item.tipoActivo?.nombre || 'General',
+          ubicacion: item.ubicacion,
+          estado: item.estadoActivo?.nombre || 'OPERATIVO'
+        })));
+      }
+    } catch (err) {
+      console.warn('Error al cargar activos para el selector:', err);
+    }
+  }
+
+  /** GET: Lista las tareas preventivas guardadas en MySQL */
+  async cargarMantenimientos(): Promise<void> {
+    this.cargando.set(true);
+    try {
+      const headers = await this.obtenerHeaders();
+      const data = await firstValueFrom(
+        this.http.get<any[]>(this.apiUrl, { headers })
+      );
+      if (Array.isArray(data)) {
+        this.mantenimientos.set(data.map(item => ({
+          id: item.id,
+          activoId: item.activo?.id,
+          nombreActivo: item.activo ? `${item.activo.codigo} - ${item.activo.nombre}` : `Activo #${item.activo?.id}`,
+          tipoMantenimiento: item.titulo,
+          fechaProgramada: String(item.programadaPara || '').slice(0, 10),
+          estado: item.estado?.nombre || 'PROGRAMADO'
+        })));
+      }
+    } catch (err) {
+      console.warn('Error al cargar tareas preventivas de MySQL:', err);
     } finally {
       this.cargando.set(false);
     }
   }
 
-  /** Carga los activos disponibles para el selector */
-  async cargarActivos(): Promise<void> {
-    try {
-      const headers = await this.obtenerHeaders();
-      const data = await firstValueFrom(
-        this.http.get<ActivoItem[]>(this.activosUrl, { headers })
-      );
-      if (data && data.length > 0) {
-        this.activos.set(data);
-        return;
-      }
-    } catch (err) {
-      console.warn('Usando catálogo local de activos de prueba');
-    }
-
-    // Activos de prueba del condominio mientras el endpoint de activos esté listo
-    this.activos.set([
-      { id: 1, codigo: 'ASC-01', nombre: 'Ascensor Torre 1 Principal' },
-      { id: 2, codigo: 'ASC-02', nombre: 'Ascensor Torre 2' },
-      { id: 3, codigo: 'BOM-01', nombre: 'Sistema de Bombeo de Cisterna' },
-      { id: 4, codigo: 'POR-01', nombre: 'Portón Vehicular Acceso Principal' },
-      { id: 5, codigo: 'GEN-01', nombre: 'Grupo Electrógeno de Emergencia' }
-    ]);
-  }
-
-  /** Registra una nueva programación preventiva (POST) con autenticación */
-async programarMantenimiento(datos: MantenimientoPreventivo): Promise<MantenimientoPreventivo> {
+  /** POST: Guarda la programación en MySQL cumpliendo TareaPreventivaEntity */
+  async programarMantenimiento(datos: { activoId: number | string; tipoMantenimiento: string; fechaProgramada: string }): Promise<any> {
     const headers = await this.obtenerHeaders();
-    
+
+    const ahoraIso = new Date().toISOString().slice(0, 19);
+    // Convertimos la fecha YYYY-MM-DD a LocalDateTime: "2026-11-15T09:00:00"
+    const fechaHoraProgramada = datos.fechaProgramada.includes('T') 
+      ? datos.fechaProgramada 
+      : `${datos.fechaProgramada}T09:00:00`;
+
+    const usuarioId = Number(this.authService.usuario()?.id || 1);
+
+    // 🎯 PAYLOAD EXACTO que pide TareaPreventivaEntity.java
     const payload = {
-      activoId: Number(datos.activoId),
-      activo: { id: Number(datos.activoId) },
-      tipoMantenimiento: datos.tipoMantenimiento,
-      fechaProgramada: datos.fechaProgramada
+      activo: {
+        id: Number(datos.activoId)
+      },
+      titulo: datos.tipoMantenimiento,
+      descripcion: `Programación preventiva de ${datos.tipoMantenimiento}`,
+      programadaPara: fechaHoraProgramada,
+      estado: {
+        id: 1 // 1 = Programada / Pendiente
+      },
+      creadoPor: {
+        id: usuarioId
+      },
+      creadoEn: ahoraIso,
+      actualizadoEn: ahoraIso
     };
-    try {
-      // 1. Intenta enviar al endpoint de Gean
-      const res = await firstValueFrom(
-        this.http.post<MantenimientoPreventivo>(this.apiUrl, payload, { headers })
-      );
-      this.mantenimientos.update(prev => [res, ...prev]);
-      return res;
-    } catch (error: any) {
-      // Si el endpoint no existe aún en el backend de Gean (404), guardamos en memoria (Modo Mock / Demo)
-      if (error?.status === 404 || error?.message?.includes('No static resource')) {
-        console.warn('El backend aún no tiene implementado el endpoint. Guardando en memoria para la demo.');
-        
-        const activoEncontrado = this.activos().find(a => String(a.id) === String(datos.activoId));
-        const nuevoMock: MantenimientoPreventivo = {
-          id: Date.now(),
-          activoId: datos.activoId,
-          nombreActivo: activoEncontrado ? `${activoEncontrado.codigo} - ${activoEncontrado.nombre}` : `Activo #${datos.activoId}`,
-          tipoMantenimiento: datos.tipoMantenimiento,
-          fechaProgramada: datos.fechaProgramada,
-          estado: 'PROGRAMADO'
-        };
-        this.mantenimientos.update(prev => [nuevoMock, ...prev]);
-        return nuevoMock;
-      }
-      // Si es otro error (por ejemplo validación de negocio 400), lo propagamos
-      throw error;
-    }
+
+    const res = await firstValueFrom(
+      this.http.post<any>(this.apiUrl, payload, { headers })
+    );
+
+    // Refrescamos la lista directamente desde la base de datos
+    await this.cargarMantenimientos();
+    return res;
   }
 }

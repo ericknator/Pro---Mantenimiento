@@ -1,16 +1,16 @@
 export interface MantenimientoPreventivo {
-  id?: number | string;
-  activoId: number | string;
+  id?: number;
+  activoId: number;
   tipoMantenimiento: string;
-  fechaProgramada: string;
-  // Campos opcionales para la visualización en la tabla/lista
+  fechaProgramada: string; // Formato YYYY-MM-DD
+  estado?: string;         // 'PROGRAMADO', 'PENDIENTE'
   nombreActivo?: string;
-  estado?: string;
 }
 
-export interface ActivoItem {
-  id: number | string;
-  codigo: string;
-  nombre: string;
-  ubicacion?: string;
+export interface NuevoMantenimientoDto {
+  activoId: number;
+  activo?: { id: number }; // Por si Spring Boot mapea @ManyToOne con la entidad Activo
+  tipoMantenimiento: string;
+  fechaProgramada: string;
+  estado?: string;
 }
