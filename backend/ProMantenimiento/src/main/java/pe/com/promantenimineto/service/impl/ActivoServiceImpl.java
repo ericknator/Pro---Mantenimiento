@@ -1,5 +1,6 @@
 package pe.com.promantenimineto.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.BeanUtils;
@@ -11,7 +12,7 @@ import pe.com.promantenimineto.repository.ActivoRepository;
 import pe.com.promantenimineto.service.ActivoService;
 
 @Service
-public class ActivoServiceImpl implements ActivoService{
+public class ActivoServiceImpl implements ActivoService {
 
     @Autowired
     private ActivoRepository repositorio;
@@ -33,27 +34,42 @@ public class ActivoServiceImpl implements ActivoService{
 
     @Override
     public ActivoEntity add(ActivoEntity obj) {
+        LocalDateTime ahora = LocalDateTime.now();
+
+        obj.setCreadoEn(ahora);
+        obj.setActualizadoEn(ahora);
+
         return repositorio.save(obj);
     }
 
     @Override
     public ActivoEntity update(ActivoEntity obj, Long id) {
         ActivoEntity objActivo = repositorio.findById(id).get();
-        BeanUtils.copyProperties(obj, objActivo);
+
+        BeanUtils.copyProperties(obj, objActivo, "id", "creadoEn");
+
+        objActivo.setActualizadoEn(LocalDateTime.now());
+
         return repositorio.save(objActivo);
     }
 
     @Override
     public ActivoEntity delete(Long id) {
         ActivoEntity objActivo = repositorio.findById(id).get();
+
         objActivo.setActivo(false);
+        objActivo.setActualizadoEn(LocalDateTime.now());
+
         return repositorio.save(objActivo);
     }
 
     @Override
     public ActivoEntity enable(Long id) {
         ActivoEntity objActivo = repositorio.findById(id).get();
+
         objActivo.setActivo(true);
+        objActivo.setActualizadoEn(LocalDateTime.now());
+
         return repositorio.save(objActivo);
     }
 }

@@ -43,17 +43,17 @@ public class TipoActivoRestController {
 		return servicio.add(obj);
 	}
 	
-	@PutMapping("{id}")
+	@PutMapping("/{id}")
 	public TipoActivoEntity update(@RequestBody TipoActivoEntity obj, @PathVariable Long id) {
 		return servicio.update(obj, id);
 	}
 	
-	@DeleteMapping
+	@DeleteMapping("/{id}")
 	public TipoActivoEntity delete(@PathVariable Long id) {
 		return servicio.delete(id);
 	}
 	
-	@PatchMapping("{id}")
+	@PatchMapping("/{id}")
 	public TipoActivoEntity enable(@PathVariable Long id) {
 		return servicio.enable(id);
 	}

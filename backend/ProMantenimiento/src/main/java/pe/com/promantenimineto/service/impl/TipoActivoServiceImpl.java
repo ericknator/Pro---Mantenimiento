@@ -38,8 +38,11 @@ public class TipoActivoServiceImpl implements TipoActivoService{
 
     @Override
     public TipoActivoEntity update(TipoActivoEntity obj, Long id) {
-        TipoActivoEntity objTipoActivo = repositorio.findById(id).get();
-        BeanUtils.copyProperties(obj, objTipoActivo);
+        TipoActivoEntity objTipoActivo = repositorio.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tipo de activo no encontrado con ID: " + id));
+
+        BeanUtils.copyProperties(obj, objTipoActivo, "id");
+
         return repositorio.save(objTipoActivo);
     }
 
