@@ -68,7 +68,7 @@ export class ProgramarMantenimientoComponent implements OnInit {
     this.mensajeExito.set(null);
 
     const nuevaProgramacion: MantenimientoPreventivo = {
-      activoId,
+      activoId: Number(activoId), // 👈 Convertir a número
       tipoMantenimiento,
       fechaProgramada
     };

@@ -2,92 +2,97 @@ import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { auth } from './firebase.config';
-import { Activo, NuevoActivo } from '../../models/activo.model';
+import { Activo } from '../../models/activo.model';
 
 @Injectable({ providedIn: 'root' })
 export class ActivoService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = 'http://localhost:8085/promantenimiento/api/activo';
-  private readonly apiUrlPlural = 'http://localhost:8085/promantenimiento/api/activos';
 
-  readonly activos = signal<Activo[]>([
-    { id: 1, codigo: 'ASC-01', nombre: 'Ascensor Principal', tipo: 'Ascensor', ubicacion: 'Torre 1', estado: 'OPERATIVO' },
-    { id: 2, codigo: 'BOM-01', nombre: 'Bomba de Cisterna', tipo: 'Bomba de agua', ubicacion: 'Sótano 2', estado: 'OPERATIVO' },
-    { id: 3, codigo: 'POR-01', nombre: 'Portón Vehicular', tipo: 'Puerta automática', ubicacion: 'Entrada principal', estado: 'OPERATIVO' }
-  ]);
-
+  readonly activos = signal<Activo[]>([]);
   readonly cargando = signal(false);
-  readonly error = signal<string | null>(null);
 
   private async obtenerHeaders(): Promise<HttpHeaders> {
     const token = await auth.currentUser?.getIdToken();
     return new HttpHeaders({
       'Content-Type': 'application/json',
-      Authorization: token ? `Bearer ${token}` : ''
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
     });
   }
 
+  /** Mapea el tipo de texto al ID foráneo de la tabla tipo_activo en MySQL */
+  private mapearTipoActivoId(tipo: string): number {
+    const mapa: Record<string, number> = {
+      'Ascensor': 1,
+      'Bomba de agua': 2,
+      'Portón vehicular': 3,
+      'Grupo electrógeno': 4,
+      'Sistema contra incendios': 5,
+      'Cerco eléctrico': 6,
+      'Cámaras de seguridad': 7,
+      'Extracción de monóxido': 8
+    };
+    return mapa[tipo] || 1;
+  }
+
+  /** GET: Lista los activos reales guardados en MySQL */
   async cargar(): Promise<void> {
     this.cargando.set(true);
     try {
       const headers = await this.obtenerHeaders();
       const data = await firstValueFrom(
-        this.http.get<Activo[]>(this.apiUrlPlural, { headers })
+        this.http.get<any[]>(this.apiUrl, { headers })
       );
-      if (data && data.length > 0) {
-        this.activos.set(data);
+      if (Array.isArray(data)) {
+        this.activos.set(data.map(item => ({
+          id: item.id,
+          codigo: item.codigo,
+          nombre: item.nombre,
+          tipo: item.tipoActivo?.nombre || 'General',
+          ubicacion: item.ubicacion,
+          descripcion: item.descripcion,
+          estado: item.estadoActivo?.nombre || 'OPERATIVO'
+        })));
       }
-    } catch {
-      // Si la API aún no está lista, conservamos los datos iniciales
+    } catch (err) {
+      console.warn('Aún no hay registros o fallo en GET activo:', err);
     } finally {
       this.cargando.set(false);
     }
   }
 
-  async registrar(datos: NuevoActivo): Promise<Activo> {
+  /** POST: Guarda directamente en MySQL a través de ActivoRestController */
+  async registrar(datos: { codigo: string; nombre: string; tipo: string; ubicacion: string; descripcion?: string }): Promise<any> {
     const headers = await this.obtenerHeaders();
 
-    // 1. Validación previa local de código duplicado
-    const codigoExiste = this.activos().some(
-      a => a.codigo.trim().toUpperCase() === datos.codigo.trim().toUpperCase()
-    );
-    if (codigoExiste) {
-      throw new Error(`Ya existe un activo registrado con el código "${datos.codigo}".`);
-    }
+    const ahoraIso = new Date().toISOString().slice(0, 19);
+    const hoyFecha = new Date().toISOString().slice(0, 10);
 
-    // 2. Payload completo con el campo obligatorio 'estado'
+    // Payload que cumple estrictamente con ActivoEntity.java
     const payload = {
       codigo: datos.codigo.trim().toUpperCase(),
       nombre: datos.nombre.trim(),
-      tipo: datos.tipo,
       ubicacion: datos.ubicacion.trim(),
-      descripcion: datos.descripcion ? datos.descripcion.trim() : '',
-      estado: 'OPERATIVO' // 👈 Crucial para que MySQL no rechace por NOT NULL
+      descripcion: datos.descripcion?.trim() || '',
+      tipoActivo: {
+        id: this.mapearTipoActivoId(datos.tipo)
+      },
+      estadoActivo: {
+        id: 1 // 1 = Operativo
+      },
+      esCritico: true,
+      activo: true,
+      fechaInstalacion: hoyFecha,
+      creadoEn: ahoraIso,
+      actualizadoEn: ahoraIso
     };
 
-    try {
-      const res = await firstValueFrom(
-        this.http.post<Activo>(this.apiUrl, payload, { headers })
-      );
-      this.activos.update(prev => [res, ...prev]);
-      return res;
-    } catch (err: any) {
-      console.warn('Error recibido del backend al registrar activo:', err);
+    const res = await firstValueFrom(
+      this.http.post<any>(this.apiUrl, payload, { headers })
+    );
 
-      // Si el backend da 500 o 409 (código ya tomado en BD o error de constraint de Gean)
-      if (err?.status === 409) {
-        throw new Error(`El código "${datos.codigo}" ya está registrado en el condominio.`);
-      }
-
-      // Si es un error 500 del backend pero queremos validar la UI en la demo (Modo Resiliente)
-      const nuevoLocal: Activo = {
-        id: Date.now(),
-        ...payload
-      };
-
-      // Si prefieres que se registre visualmente para la demostración:
-      this.activos.update(prev => [nuevoLocal, ...prev]);
-      return nuevoLocal;
-    }
+    // Tras guardar en MySQL con éxito, refrescamos la lista
+    await this.cargar();
+    return res;
   }
 }
