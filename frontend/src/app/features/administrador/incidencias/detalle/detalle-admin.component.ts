@@ -12,12 +12,12 @@ import { Location } from '@angular/common';
 import { UsuarioPerfilService, RolResponsable, UsuarioResponsable } from '../../../../core/services/usuario-perfil.service';
 
 @Component({
-  selector: 'app-clasificar-incidencia',
+  selector: 'app-detalle-incidencia-admin',
   imports: [ReactiveFormsModule, RouterLink, DatePipe, PageHeroComponent],
-  templateUrl: './clasificar.component.html',
-  styleUrl: './clasificar.component.scss',
+  templateUrl: './detalle-admin.component.html',
+  styleUrl: './detalle-admin.component.scss'
 })
-export class ClasificarComponent {
+export class DetalleAdminComponent {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(IncidenciasAdminService);
   private readonly id = toSignal(inject(ActivatedRoute).paramMap.pipe(map((p) => p.get('id'))), { initialValue: null });
