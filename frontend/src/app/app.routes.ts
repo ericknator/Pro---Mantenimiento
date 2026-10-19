@@ -206,7 +206,13 @@ export const routes: Routes = [
         data: { fondo: 'edificio' },
         loadComponent: () => import('./features/incidencias/detalle/detalle.component').then((m) => m.DetalleIncidenciaComponent),
       },
-
+      {
+        path: 'incidencias/asignadas',
+        title: 'Incidencias asignadas',
+        data: { fondo: 'edificio', titulo: 'Incidencias asignadas', filtro: 'asignadas' },
+        loadComponent: () =>
+          import('./features/incidencias/listado/listado.component').then((m) => m.ListadoIncidenciasComponent),
+      },
       ...modulosPendientes,
     ],
   },

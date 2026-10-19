@@ -25,6 +25,7 @@ export const INCIDENT_ACTIONS: NavItem[] = [
   { label: 'Mis incidencias', icon: 'list_alt', route: '/incidencias/mis-incidencias' },
   { label: 'Seguimiento de incidencias', icon: 'track_changes', route: '/incidencias/seguimiento' },
   { label: 'Historial de incidencias', icon: 'history', route: '/incidencias/historial' },
+  { label: 'Incidencias asignadas', icon: 'assignment_ind', route: '/incidencias/asignadas' },
 ];
 
 export const CATEGORIAS_INCIDENCIA = [
@@ -39,3 +40,5 @@ export const CATEGORIAS_INCIDENCIA = [
 ];
 
 export const EDIFICIO_NOMBRE = 'Condominio Nuevo Alcázar';
+
+
