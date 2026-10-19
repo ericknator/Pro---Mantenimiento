@@ -4,7 +4,7 @@ import { IncidenciasService } from '../../../core/services/incidencias.service';
 import { IncidenciaRowComponent } from '../../../shared/incidencia-row/incidencia-row.component';
 import { PageHeroComponent } from '../../../shared/page-hero/page-hero.component';
 
-type Filtro = 'todas' | 'activas' | 'cerradas';
+type Filtro = 'todas' | 'activas' | 'cerradas' | 'asignadas';
 
 @Component({
   selector: 'app-listado-incidencias',
@@ -22,19 +22,26 @@ export class ListadoIncidenciasComponent {
   constructor() {
     void this.service.cargar();
   }
-
   items = computed(() => {
-    const propias = this.service.propias();
+    // Si tu servicio tiene this.service.todas() o this.service.items(), úsalo, sino propias():
+    const lista = this.service.propias();
 
     switch (this.filtro) {
       case 'activas':
-        return propias.filter((i) => i.estado !== 'Cerrada');
+        return lista.filter((i) => i.estado !== 'Cerrada');
       case 'cerradas':
-        return propias.filter(
+        return lista.filter(
           (i) => i.estado === 'Solucionada' || i.estado === 'Cerrada'
         );
+      case 'asignadas':
+        return lista.filter(
+          (i) =>
+            (i.estado as string) === 'Asignada' ||
+            (i.estado as string) === 'En proceso' ||
+            (i.estado as string) === 'En atención'
+        );
       default:
-        return propias;
+        return lista;
     }
   });
 }
