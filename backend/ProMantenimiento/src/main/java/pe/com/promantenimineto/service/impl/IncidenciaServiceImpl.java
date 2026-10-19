@@ -99,48 +99,94 @@ public class IncidenciaServiceImpl implements IncidenciaService{
     }
     
 
-    @Override
-    public List<IncidenciaEntity> findAll() {
-        Authentication authentication =
-            SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null ||
-            !authentication.isAuthenticated() ||
-            !(authentication.getPrincipal()
-                instanceof UsuarioPerfilEntity usuario)) {
+	@Override
+	public List<IncidenciaEntity> findAll() {
+	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	
+	    if (authentication == null || !authentication.isAuthenticated() || !(authentication.getPrincipal()
+	            instanceof UsuarioPerfilEntity usuario)) {
+	
+	        throw new ResponseStatusException(
+	            HttpStatus.UNAUTHORIZED,
+	            "Debes iniciar sesión."
+	        );
+	    }
+	
+	    if (usuario.getRol() == null || usuario.getRol().getCodigo() == null) {	
+	        throw new ResponseStatusException(
+	            HttpStatus.FORBIDDEN,
+	            "El usuario no tiene un rol válido."
+	        );
+	    }
+	
+	    String rol = usuario.getRol().getCodigo();
+	
+	    // El administrador puede consultar todas las incidencias.
+	    if ("ADMINISTRADOR".equals(rol)) {
+	        return repositorio.findAll();
+	    }
+	
+	    // El residente consulta únicamente sus incidencias reportadas.
+	    if ("RESIDENTE".equals(rol)) {
+	        return repositorio.findBySolicitanteId(usuario.getId());
+	    }
+	
+	    // Mantenimiento y seguridad consultan las incidencias
+	    // que ellos mismos reportaron.
+	    if ("MANTENIMIENTO".equals(rol) || "PORTERIA_SEGURIDAD".equals(rol)) {
+	
+	        return repositorio.findBySolicitanteId(usuario.getId());
+	    }
+	
+	    throw new ResponseStatusException(
+	        HttpStatus.FORBIDDEN,
+	        "No tienes permisos para consultar las incidencias."
+	    );
+	}
+	
+	
 
-            throw new ResponseStatusException(
-                HttpStatus.UNAUTHORIZED,
-                "Debes iniciar sesión."
-            );
-        }
+	@Override
+	public List<IncidenciaEntity> findIncidenciasAsignadas() {
+	    Authentication authentication =
+	        SecurityContextHolder.getContext().getAuthentication();
+	
+	    if (authentication == null ||
+	        !authentication.isAuthenticated() ||
+	        !(authentication.getPrincipal()
+	            instanceof UsuarioPerfilEntity usuario)) {
+	
+	        throw new ResponseStatusException(
+	            HttpStatus.UNAUTHORIZED,
+	            "Debes iniciar sesión."
+	        );
+	    }
+	
+	    if (usuario.getRol() == null ||
+	        usuario.getRol().getCodigo() == null) {
+	
+	        throw new ResponseStatusException(
+	            HttpStatus.FORBIDDEN,
+	            "El usuario no tiene un rol válido."
+	        );
+	    }
+	
+	    String rol = usuario.getRol().getCodigo();
+	
+	    if (!"MANTENIMIENTO".equals(rol) &&
+	        !"PORTERIA_SEGURIDAD".equals(rol)) {
+	
+	        throw new ResponseStatusException(
+	            HttpStatus.FORBIDDEN,
+	            "Solo Mantenimiento y Portería/Seguridad pueden consultar sus incidencias asignadas."
+	        );
+	    }
+	
+	    return repositorio.findByResponsableActualId(usuario.getId());
+	}
 
-        if (usuario.getRol() == null ||
-            usuario.getRol().getCodigo() == null) {
 
-            throw new ResponseStatusException(
-                HttpStatus.FORBIDDEN,
-                "El usuario no tiene un rol válido."
-            );
-        }
-
-        String rol = usuario.getRol().getCodigo();
-
-        // Todos los roles consultan únicamente sus propias incidencias.
-        if ("ADMINISTRADOR".equals(rol) || "RESIDENTE".equals(rol) || "MANTENIMIENTO".equals(rol) || "PORTERIA_SEGURIDAD".equals(rol)) {
-            return repositorio.findBySolicitanteId(usuario.getId());
-        }
-        
-        // El personal de mantenimiento o seguridad consulta las incidencias asignadas a él.
-        if ("MANTENIMIENTO".equals(rol) || "PORTERIA_SEGURIDAD".equals(rol)) {
-            return repositorio.findByResponsableActualId(usuario.getId());
-        }
-    
-        throw new ResponseStatusException(
-            HttpStatus.FORBIDDEN,
-            "No tienes permisos para consultar las incidencias."
-        );
-    }
 
     @Override
     public List<IncidenciaEntity> findAllCustom() {

@@ -86,4 +86,12 @@ public class IncidenciaRestController {
 
 	    return servicio.clasificar(obj, id);
 	}
+	
+
+	@GetMapping("/asignadas")
+	public List<IncidenciaEntity> findIncidenciasAsignadas() {
+	    return servicio.findIncidenciasAsignadas();
+	}
+
+	
 }

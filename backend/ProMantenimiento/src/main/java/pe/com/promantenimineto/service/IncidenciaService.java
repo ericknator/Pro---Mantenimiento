@@ -12,6 +12,8 @@ public interface IncidenciaService {
 	
 	List<IncidenciaEntity> findAllCustom();
 	
+	List<IncidenciaEntity> findIncidenciasAsignadas();
+	
 	IncidenciaEntity findById(Long id);
 	
 	IncidenciaEntity add(IncidenciaEntity obj);
