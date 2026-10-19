@@ -28,4 +28,9 @@ public interface IncidenciaRepository extends JpaRepository<IncidenciaEntity, Lo
         @Param("usuarioId") Long usuarioId
     );
 
+	    @Query("SELECT i FROM IncidenciaEntity i WHERE i.responsableActual.id = :usuarioId")
+    List<IncidenciaEntity> findByResponsableActualId(
+        @Param("usuarioId") Long usuarioId
+    );
+
 }

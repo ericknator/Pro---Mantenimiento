@@ -135,7 +135,12 @@ public class IncidenciaServiceImpl implements IncidenciaService{
         if ("RESIDENTE".equals(rol)) {
             return repositorio.findBySolicitanteId(usuario.getId());
         }
-
+        
+        // El personal de mantenimiento o seguridad consulta las incidencias asignadas a él.
+        if ("MANTENIMIENTO".equals(rol) || "PORTERIA_SEGURIDAD".equals(rol)) {
+            return repositorio.findByResponsableActualId(usuario.getId());
+        }
+    
         throw new ResponseStatusException(
             HttpStatus.FORBIDDEN,
             "No tienes permisos para consultar las incidencias."
