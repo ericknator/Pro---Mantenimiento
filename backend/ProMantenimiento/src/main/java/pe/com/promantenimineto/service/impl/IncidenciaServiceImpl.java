@@ -126,13 +126,8 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 
         String rol = usuario.getRol().getCodigo();
 
-        // El administrador puede consultar todas las incidencias.
-        if ("ADMINISTRADOR".equals(rol)) {
-            return repositorio.findAll();
-        }
-
-        // El residente solo consulta sus propias incidencias.
-        if ("RESIDENTE".equals(rol)) {
+        // Todos los roles consultan únicamente sus propias incidencias.
+        if ("ADMINISTRADOR".equals(rol) || "RESIDENTE".equals(rol) || "MANTENIMIENTO".equals(rol) || "PORTERIA_SEGURIDAD".equals(rol)) {
             return repositorio.findBySolicitanteId(usuario.getId());
         }
         
@@ -224,127 +219,157 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 
 	@Override
 	public IncidenciaEntity add(IncidenciaEntity obj) {
-
+	
 	    Authentication authentication =
 	            SecurityContextHolder.getContext().getAuthentication();
-
+	
 	    if (authentication == null
-	            || !(authentication.getPrincipal() instanceof UsuarioPerfilEntity usuarioAutenticado)) {
+	            || !authentication.isAuthenticated()
+	            || !(authentication.getPrincipal()
+	                    instanceof UsuarioPerfilEntity usuarioAutenticado)) {
 	        throw new ResponseStatusException(
 	                HttpStatus.UNAUTHORIZED,
 	                "Debes iniciar sesión para reportar una incidencia."
 	        );
 	    }
-
-	    obj.setSolicitante(usuarioAutenticado);
-
-	    String rol = usuarioAutenticado.getRol().getNombre();
-
-	    if (!"RESIDENTE".equalsIgnoreCase(rol)
-	            && !"ADMINISTRADOR".equalsIgnoreCase(rol)) {
+	
+	    if (obj == null) {
+	        throw new ResponseStatusException(
+	                HttpStatus.BAD_REQUEST,
+	                "Los datos de la incidencia son obligatorios."
+	        );
+	    }
+	
+	    if (usuarioAutenticado.getRol() == null
+	            || usuarioAutenticado.getRol().getCodigo() == null) {
+	        throw new ResponseStatusException(
+	                HttpStatus.FORBIDDEN,
+	                "El usuario no tiene un rol válido."
+	        );
+	    }
+	
+	    String rol = usuarioAutenticado.getRol().getCodigo();
+	
+	    if (!"RESIDENTE".equals(rol)
+	            && !"ADMINISTRADOR".equals(rol)
+	            && !"MANTENIMIENTO".equals(rol)
+	            && !"PORTERIA_SEGURIDAD".equals(rol)) {
 	        throw new ResponseStatusException(
 	                HttpStatus.FORBIDDEN,
 	                "No tienes permisos para registrar incidencias."
 	        );
 	    }
-
-	    // 1. Obtener la unidad correspondiente al usuario.
-	    if ("RESIDENTE".equalsIgnoreCase(rol)) {
-
+	
+	    // El solicitante siempre es el usuario autenticado.
+	    obj.setSolicitante(usuarioAutenticado);
+	
+	    // 1. Determinar la unidad según el rol.
+	    if ("RESIDENTE".equals(rol)) {
+	
 	        List<UsuarioUnidadEntity> relaciones =
 	                usuarioUnidadRepository.findUnidadPrincipalActiva(
 	                        usuarioAutenticado.getId()
 	                );
-
+	
 	        if (relaciones.isEmpty()) {
 	            throw new ResponseStatusException(
 	                    HttpStatus.BAD_REQUEST,
 	                    "No tienes una unidad principal activa asociada."
 	            );
 	        }
-
+	
 	        if (relaciones.size() > 1) {
 	            throw new ResponseStatusException(
 	                    HttpStatus.CONFLICT,
 	                    "Tienes más de una unidad principal activa. Contacta al administrador."
 	            );
 	        }
-
+	
 	        obj.setUnidad(relaciones.get(0).getUnidad());
-
-	    } else {
-	        // El administrador debe indicar la unidad si registra una incidencia.
-	        if (obj.getUnidad() == null || obj.getUnidad().getId() == null) {
-	            throw new ResponseStatusException(
-	                    HttpStatus.BAD_REQUEST,
-	                    "Debes indicar la unidad de la incidencia."
-	            );
+	
+	    } else if ("ADMINISTRADOR".equals(rol)) {
+	
+	        // La unidad es opcional para el administrador.
+	        if (obj.getUnidad() != null
+	                && obj.getUnidad().getId() != null) {
+	
+	            UnidadResidencialEntity unidad =
+	                    unidadResidencialRepository.findById(
+	                            obj.getUnidad().getId()
+	                    ).orElseThrow(() -> new ResponseStatusException(
+	                            HttpStatus.BAD_REQUEST,
+	                            "La unidad indicada no existe."
+	                    ));
+	
+	            obj.setUnidad(unidad);
+	
+	        } else {
+	            obj.setUnidad(null);
 	        }
-
-	        UnidadResidencialEntity unidad =
-	                unidadResidencialRepository.findById(obj.getUnidad().getId())
-	                        .orElseThrow(() -> new ResponseStatusException(
-	                                HttpStatus.BAD_REQUEST,
-	                                "La unidad indicada no existe."
-	                        ));
-
-	        obj.setUnidad(unidad);
+	
+	    } else {
+	        // Portería y mantenimiento no tienen unidad residencial propia.
+	        obj.setUnidad(null);
 	    }
-
-	    // 2. Validar y obtener la categoría.
-	    if (obj.getCategoria() == null || obj.getCategoria().getId() == null) {
+	
+	    // 2. Validar la categoría.
+	    if (obj.getCategoria() == null
+	            || obj.getCategoria().getId() == null) {
 	        throw new ResponseStatusException(
 	                HttpStatus.BAD_REQUEST,
 	                "La categoría es obligatoria."
 	        );
 	    }
-
+	
 	    CategoriaIncidenciaEntity categoria =
-	            categoriaRepositorio.findById(obj.getCategoria().getId())
-	                    .orElseThrow(() -> new ResponseStatusException(
-	                            HttpStatus.BAD_REQUEST,
-	                            "La categoría indicada no existe."
-	                    ));
-
+	            categoriaRepositorio.findById(
+	                    obj.getCategoria().getId()
+	            ).orElseThrow(() -> new ResponseStatusException(
+	                    HttpStatus.BAD_REQUEST,
+	                    "La categoría indicada no existe."
+	            ));
+	
 	    obj.setCategoria(categoria);
-
-	    // 3. Asignar automáticamente la prioridad predeterminada (ID 1).
+	
+	    // 3. Asignar la prioridad predeterminada.
 	    PrioridadIncidenciaEntity prioridad =
 	            prioridadRepositorio.findById(1L)
 	                    .orElseThrow(() -> new ResponseStatusException(
 	                            HttpStatus.INTERNAL_SERVER_ERROR,
 	                            "No existe la prioridad predeterminada."
 	                    ));
-
+	
 	    obj.setPrioridad(prioridad);
-
-	    // 4. Asignar automáticamente el estado inicial (ID 1).
+	
+	    // 4. Asignar el estado inicial.
 	    EstadoIncidenciaEntity estado =
 	            estadoRepositorio.findById(1L)
 	                    .orElseThrow(() -> new ResponseStatusException(
 	                            HttpStatus.INTERNAL_SERVER_ERROR,
 	                            "No existe el estado inicial de las incidencias."
 	                    ));
-
+	
 	    if (!Boolean.TRUE.equals(estado.getActivo())) {
 	        throw new ResponseStatusException(
 	                HttpStatus.INTERNAL_SERVER_ERROR,
 	                "El estado inicial de las incidencias está inactivo."
 	        );
 	    }
-
+	
 	    obj.setEstado(estado);
-
-	    // 5. Generar código y fechas en el backend.
+	
+	    // 5. Generar código y fechas.
 	    LocalDateTime ahora = LocalDateTime.now();
-
+	
 	    obj.setCodigo(generarCodigo());
 	    obj.setFechaReporte(ahora);
 	    obj.setCreadoEn(ahora);
 	    obj.setActualizadoEn(ahora);
-
+	
 	    return repositorio.save(obj);
 	}
+
+
 
     @Override
     public IncidenciaEntity update(IncidenciaEntity obj, Long id) {
