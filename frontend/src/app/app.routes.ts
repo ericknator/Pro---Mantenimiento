@@ -70,12 +70,14 @@ export const routes: Routes = [
             .then((m) => m.TodasComponent),
       },
       {
-        path: 'incidencias/clasificar/:id',
-        title: 'Clasificar incidencia',
+        path: 'incidencias/detalle/:id',
+        title: 'Detalle de la incidencia',
         data: { menu: 'rail', fondo: 'terraza' },
         loadComponent: () =>
-          import('./features/administrador/incidencias/clasificar/clasificar.component').then((m) => m.ClasificarComponent),
+          import('./features/administrador/incidencias/detalle/detalle-admin.component').then((m) => m.DetalleAdminComponent),
       },
+      // Redirige enlaces viejos
+      { path: 'incidencias/clasificar/:id', redirectTo: 'incidencias/detalle/:id' },
       {
         path: 'mantenimiento',
         pathMatch: 'full',

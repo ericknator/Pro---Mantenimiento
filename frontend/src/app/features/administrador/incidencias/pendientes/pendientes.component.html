@@ -21,7 +21,7 @@
   }
 
   @for (i of items(); track i.id) {
-    <a class="fila" [routerLink]="['/administrador/incidencias/clasificar', i.id]">
+    <a class="fila" [routerLink]="['/administrador/incidencias/detalle', i.id]">
       <span class="fila__texto">
         <strong>{{ i.descripcion }}</strong>
         <small>{{ i.codigo }} · {{ i.ubicacion }} · {{ i.fecha | date: 'd MMM, HH:mm' }}</small>
