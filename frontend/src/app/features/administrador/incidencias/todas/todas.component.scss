@@ -90,3 +90,25 @@ small {
   color: #a32020;
   font-size: 0.82rem;
 }
+
+.lista-scroll {
+  /* 👇 CAMBIA ESTA LÍNEA A 360px */
+  max-height: 360px; 
+  
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}

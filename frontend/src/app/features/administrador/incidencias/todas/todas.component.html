@@ -30,28 +30,27 @@
     </div>
   }
 
-  @for (i of items(); track i.id) {
-    <a class="fila" [routerLink]="['/administrador/incidencias/clasificar', i.id]" >
-      <span class="fila__texto">
-        <strong>{{ i.descripcion }}</strong>
-
-        <small>
-          {{ i.codigo }} · {{ i.ubicacion }} ·
-          {{ i.fecha | date: 'd MMM, HH:mm' }}
-        </small>
-
-        <small>
-          Categoría: {{ i.categoria }} ·
-          Prioridad: {{ i.prioridad }} ·
-          Estado: {{ i.estado }}
-        </small>
-      </span>
-
-      <span class="chip">Ver detalle</span>
-    </a>
-  } @empty {
-    @if (!cargando() && !error()) {
-      <p class="vacio">No hay incidencias registradas.</p>
+  <div class="lista-scroll">
+    @for (i of items(); track i.id) {
+      <a class="fila" [routerLink]="['/administrador/incidencias/clasificar', i.id]" >
+        <span class="fila__texto">
+          <strong>{{ i.descripcion }}</strong>
+          <small>
+            {{ i.codigo }} · {{ i.ubicacion }} ·
+            {{ i.fecha | date: 'd MMM, HH:mm' }}
+          </small>
+          <small>
+            Categoría: {{ i.categoria }} ·
+            Prioridad: {{ i.prioridad }} ·
+            Estado: {{ i.estado }}
+          </small>
+        </span>
+        <span class="chip">Ver detalle</span>
+      </a>
+    } @empty {
+      @if (!cargando() && !error()) {
+        <p class="vacio">No hay incidencias registradas.</p>
+      }
     }
-  }
+  </div>
 </section>
