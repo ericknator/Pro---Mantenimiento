@@ -1,43 +1,220 @@
-<app-page-hero title="Seguimiento de incidencia" [subtitle]="incidencia()?.id ?? 'Caso no disponible'" />
+<app-page-hero
+  tone="dark"
+  [eyebrow]="eyebrow"
+  [backLink]="esPersonalTecnico() ? '/incidencias/asignadas' : '/incidencias/mis-incidencias'"
+  backLabel="Volver"
+  [title]="'Incidencia ' + (incidencia()?.id?.startsWith('INC-') ? incidencia()?.id : 'INC-2026-000' + (incidencia()?.id ?? ''))"
+  [subtitle]="incidencia()?.descripcion ?? 'Detalle del caso reportado'"
+/>
 
-<section class="panel dock">
-  <header class="panel__head">
-    <h2 class="label">Seguimiento de incidencia</h2>
-    <a class="label back" routerLink="/incidencias/mis-incidencias">← Volver</a>
-  </header>
+@if (incidencia(); as inc) {
+  <div class="grid">
+    <!-- COLUMNA IZQUIERDA: Panel de Intervención Técnica (Card) -->
+    <div class="card">
+      <header class="card__head">
+        <h2 class="card__titulo">ATENCIÓN Y SOLUCIÓN TÉCNICA</h2>
+        <span class="estado-tag" [attr.data-estado]="estadoActual()">{{ estadoActual() }}</span>
+      </header>
 
-  @if (incidencia(); as inc) {
-    <div class="resumen">
-      <span class="resumen__text">
-        <strong>{{ inc.descripcion }}</strong>
-        <small>{{ inc.id }} · {{ inc.categoria }} · {{ inc.ubicacion }}</small>
-        <small>Última actualización: {{ inc.actualizada | date: "d MMM yyyy, HH:mm" }}</small>
-      </span>
-      <app-estado-badge [estado]="inc.estado" />
-    </div>
-
-    <ol class="timeline">
-      @for (paso of inc.historial; track $index; let ultimo = $last) {
-        <li>
-          <span class="timeline__text">
-            <strong>{{ paso.estado }}</strong>
-            <small>{{ paso.fecha | date: "d MMM, HH:mm" }}</small>
-          </span>
-          <span class="chip" [class.chip--now]="ultimo">{{ ultimo ? 'Actual' : 'Hecho' }}</span>
-        </li>
+      <!-- Si está Solucionada (CA-01 cumplido) -->
+      @if (estadoActual() === 'Solucionada' || exito()) {
+        <div class="ok" role="status">
+          <span class="material-symbols-rounded">verified</span>
+          <div>
+            <strong>¡Incidencia Solucionada!</strong>
+            <small>La atención técnica ha sido documentada exitosamente. El caso pasa al paso 5 (pendiente de validación final).</small>
+          </div>
+        </div>
+        <a class="btn btn--outline" [routerLink]="esPersonalTecnico() ? '/incidencias/asignadas' : '/incidencias/mis-incidencias'">
+          <span class="material-symbols-rounded">arrow_back</span>
+          <span>Volver a incidencias asignadas</span>
+        </a>
       }
-    </ol>
 
-    @if (inc.estado === 'Solucionada') {
-      <p class="note">La confirmación o reapertura del caso se habilitará en una versión posterior.</p>
-    }
-  } @else {
-    <div class="denied" role="alert">
-      <span class="material-symbols-rounded">lock</span>
-      <div>
-        <strong>Acceso no permitido</strong>
-        <small>No tienes acceso a este caso o no existe.</small>
-      </div>
+      <!-- Paso 3: Asignada -> Botón para iniciar atención -->
+      @if (esPersonalTecnico() && estadoActual() === 'Asignada') {
+        <div class="info" role="status">
+          <span class="material-symbols-rounded">engineering</span>
+          <div>
+            <strong>Caso Asignado a tu cargo</strong>
+            <small>Pulsa el botón a continuación para dar inicio a la atención e intervención técnica en sitio.</small>
+          </div>
+        </div>
+
+        <button type="button" class="btn" (click)="iniciarAtencion()">
+          <span>Iniciar atención técnica</span>
+          <span class="material-symbols-rounded">arrow_forward</span>
+        </button>
+      }
+
+      <!-- Paso 4: En atención -> Formulario de HU-INC-06 (PMS-159 y PMS-160) -->
+      @if (esPersonalTecnico() && estadoActual() === 'En atención') {
+        <div class="info" role="status">
+          <span class="material-symbols-rounded">build</span>
+          <div>
+            <strong>Caso en proceso de atención</strong>
+            <small>Documenta el diagnóstico, las acciones ejecutadas y adjunta fotos para dar por solucionado el caso.</small>
+          </div>
+        </div>
+
+        @if (errorValidacion()) {
+          <div class="fail" role="alert">
+            <span class="material-symbols-rounded">error</span>
+            <span>{{ errorValidacion() }}</span>
+          </div>
+        }
+
+        <label class="field">
+          <span>Diagnóstico técnico (opcional)</span>
+          <textarea
+            class="control"
+            rows="2"
+            [(ngModel)]="diagnostico"
+            placeholder="Ej: Se identificó desgaste en el empaque de la válvula principal..."
+          ></textarea>
+        </label>
+
+        <label class="field">
+          <span>Acciones realizadas <strong class="req">* (Obligatorio)</strong></span>
+          <textarea
+            class="control"
+            rows="3"
+            [(ngModel)]="acciones"
+            placeholder="Ej: Se realizó el desmontaje de la pieza, cambio de repuesto y prueba de funcionamiento..."
+          ></textarea>
+        </label>
+
+        <!-- PMS-160: Carga y visualización de evidencias -->
+        <fieldset class="field">
+          <span>Evidencias fotográficas (máx. 3)</span>
+          <div class="evidencias-upload-box">
+            <label class="btn-adjuntar">
+              <span class="material-symbols-rounded">add_a_photo</span>
+              <span>Adjuntar foto</span>
+              <input
+                type="file"
+                accept="image/png, image/jpeg, image/webp"
+                multiple
+                (change)="onArchivosSeleccionados($event)"
+                hidden
+              />
+            </label>
+            <span class="contador-archivos">{{ archivos().length }}/3 archivos</span>
+          </div>
+
+          @if (previews().length > 0) {
+            <div class="previews-grid">
+              @for (preview of previews(); track $index) {
+                <div class="preview-item">
+                  <img [src]="preview" alt="Evidencia" />
+                  <button type="button" class="btn-eliminar-preview" (click)="eliminarArchivo($index)">✕</button>
+                </div>
+              }
+            </div>
+          }
+        </fieldset>
+
+        <div class="acciones-form">
+          <button
+            type="button"
+            class="btn"
+            [disabled]="guardando()"
+            (click)="finalizarSolucion()"
+          >
+            <span>{{ guardando() ? 'Guardando solución…' : 'Finalizar atención y solucionar' }}</span>
+            <span class="material-symbols-rounded">task_alt</span>
+          </button>
+          
+          <button
+            type="button"
+            class="btn-link"
+            (click)="estadoIntervencion.set('Asignada')"
+          >
+            Pausar atención y volver
+          </button>
+        </div>
+      }
+
+      <!-- Si el usuario no es técnico (Residente) -->
+      @if (!esPersonalTecnico() && estadoActual() !== 'Solucionada') {
+        <div class="info" role="status">
+          <span class="material-symbols-rounded">info</span>
+          <span>Esta incidencia se encuentra en atención por parte del personal de mantenimiento.</span>
+        </div>
+      }
     </div>
-  }
-</section>
+
+    <!-- COLUMNA DERECHA: Ficha y Línea de Estado (Panel Side) -->
+    <section class="panel side">
+      <header class="panel__head">
+        <h2 class="label">Datos del caso</h2>
+        <app-estado-badge [estado]="inc.estado" />
+      </header>
+
+      <dl>
+        <dt>Descripción</dt><dd>{{ inc.descripcion }}</dd>
+        <dt>Ubicación</dt><dd>{{ inc.ubicacion }}</dd>
+        <dt>Reportada por</dt><dd>{{ inc.autor }}</dd>
+        <dt>Fecha reporte</dt><dd>{{ inc.creada | date: 'd MMM yyyy, HH:mm' }}</dd>
+        <dt>Categoría</dt><dd>{{ inc.categoria }}</dd>
+        <dt>Asignado a</dt><dd>{{ esPersonalTecnico() ? 'Mantenimiento' : inc.autor }}</dd>
+      </dl>
+
+      <!-- Stepper Horizontal de 5 pasos -->
+      <div class="stepper-seccion">
+        <h3 class="stepper-subtitulo">LÍNEA DE ESTADO</h3>
+        <div class="stepper">
+          <!-- Paso 1 -->
+          <div class="step" [class.step--done]="pasoActivo() > 1" [class.step--active]="pasoActivo() === 1">
+            <div class="step__circle">
+              @if (pasoActivo() > 1) { <span class="material-symbols-rounded">check</span> } @else { 1 }
+            </div>
+            <span class="step__label">Reportada</span>
+          </div>
+          <div class="step__line" [class.step__line--done]="pasoActivo() > 1"></div>
+
+          <!-- Paso 2 -->
+          <div class="step" [class.step--done]="pasoActivo() > 2" [class.step--active]="pasoActivo() === 2">
+            <div class="step__circle">
+              @if (pasoActivo() > 2) { <span class="material-symbols-rounded">check</span> } @else { 2 }
+            </div>
+            <span class="step__label">Clasificada</span>
+          </div>
+          <div class="step__line" [class.step__line--done]="pasoActivo() > 2"></div>
+
+          <!-- Paso 3 -->
+          <div class="step" [class.step--done]="pasoActivo() > 3" [class.step--active]="pasoActivo() === 3">
+            <div class="step__circle">
+              @if (pasoActivo() > 3) { <span class="material-symbols-rounded">check</span> } @else { 3 }
+            </div>
+            <span class="step__label">Asignada</span>
+          </div>
+          <div class="step__line" [class.step__line--done]="pasoActivo() > 3"></div>
+
+          <!-- Paso 4 -->
+          <div class="step" [class.step--done]="pasoActivo() > 4" [class.step--active]="pasoActivo() === 4">
+            <div class="step__circle">
+              @if (pasoActivo() > 4) { <span class="material-symbols-rounded">check</span> } @else { 4 }
+            </div>
+            <span class="step__label">En atención</span>
+          </div>
+          <div class="step__line" [class.step__line--done]="pasoActivo() >= 5"></div>
+
+          <!-- Paso 5 -->
+          <div class="step" [class.step--done]="pasoActivo() === 5" [class.step--active]="pasoActivo() === 5">
+            <div class="step__circle">
+              @if (pasoActivo() === 5) { <span class="material-symbols-rounded">check</span> } @else { 5 }
+            </div>
+            <span class="step__label">Solucionada</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+} @else {
+  <section class="panel dock">
+    <header class="panel__head"><h2 class="label">Incidencia no disponible</h2></header>
+    <p class="vacio">No se encontró la incidencia solicitada o no tienes acceso.</p>
+    <a class="btn" [routerLink]="esPersonalTecnico() ? '/incidencias/asignadas' : '/incidencias/mis-incidencias'">Volver</a>
+  </section>
+}
