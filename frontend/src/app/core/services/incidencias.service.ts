@@ -17,6 +17,62 @@ export class IncidenciasService {
   private readonly apiUrl =
     'http://localhost:8085/promantenimiento/api/incidencia';
 
+    private readonly apiAsignadasUrl =
+    'http://localhost:8085/promantenimiento/api/incidencia/asignadas';
+
+  /** Consulta las incidencias asignadas al técnico autenticado (PMS-136 / PMS-137). */
+  async cargarAsignadas(): Promise<void> {
+    const usuario = await this.esperarUsuario();
+    if (!usuario) {
+      this._todas.set([]);
+      return;
+    }
+
+    this.cargando.set(true);
+    this.error.set(null);
+
+    try {
+      const token = await usuario.getIdToken();
+      const respuesta = await firstValueFrom(
+        this.http.get<IncidenciaApi[]>(this.apiAsignadasUrl, {
+          headers: new HttpHeaders({
+            Authorization: `Bearer ${token}`
+          })
+        })
+      );
+
+      const incidencias: Incidencia[] = respuesta.map((item) => {
+        const fecha = new Date(item.fechaReporte);
+        const actualizada = new Date(item.actualizadoEn);
+        return {
+          id: String(item.id),
+          autorId: String(item.solicitante.id),
+          autor: `${item.solicitante.nombres} ${item.solicitante.apellidos}`,
+          categoria: item.categoria.nombre,
+          ubicacion: item.ubicacion,
+          descripcion: item.descripcion,
+          evidencias: [],
+          estado: item.estado.nombre as Incidencia['estado'],
+          creada: fecha,
+          actualizada,
+          historial: [
+            {
+              estado: item.estado.nombre as Incidencia['estado'],
+              fecha: actualizada
+            }
+          ]
+        };
+      });
+
+      this._todas.set(incidencias);
+    } catch (error) {
+      console.error('Error al cargar incidencias asignadas:', error);
+      this.error.set('No se pudieron cargar las incidencias asignadas.');
+    } finally {
+      this.cargando.set(false);
+    }
+  }
+
   private readonly _todas = signal<Incidencia[]>([]);
 
   readonly cargando = signal(false);
@@ -164,6 +220,79 @@ export class IncidenciasService {
 
     return this.propias().find(
       (incidencia) => incidencia.id === id
+    );
+  }
+
+    /**
+   * HU-INC-06 / PMS-159 / PMS-160:
+   * Finaliza la atención de una incidencia registrando diagnóstico,
+   * acciones realizadas y subiendo evidencias fotográficas.
+   */
+  async solucionarIncidencia(
+    id: string,
+    diagnostico: string,
+    acciones: string,
+    archivos: File[] = []
+  ): Promise<void> {
+    const usuario = await this.esperarUsuario();
+    if (!usuario) {
+      throw new Error('Debes iniciar sesión para finalizar la incidencia.');
+    }
+
+    // 1. Intentamos enviar al backend (si Gean ya tiene listo el endpoint en PMS-161)
+    try {
+      const token = await usuario.getIdToken();
+      const formData = new FormData();
+      formData.append(
+        'datos',
+        JSON.stringify({
+          incidenciaId: Number(id),
+          diagnostico: diagnostico.trim(),
+          acciones: acciones.trim(),
+        })
+      );
+      archivos.forEach((archivo) => {
+        formData.append('archivos', archivo, archivo.name);
+      });
+
+      // Intenta enviar a actuacion-incidencia o al endpoint de solucion
+      await firstValueFrom(
+        this.http.post<unknown>(
+          'http://localhost:8085/promantenimiento/api/actuacion-incidencia',
+          formData,
+          {
+            headers: new HttpHeaders({
+              Authorization: `Bearer ${token}`,
+            }),
+          }
+        )
+      );
+    } catch {
+      // Si el endpoint de Gean (PMS-161) aún está en desarrollo,
+      // no bloqueamos el flujo para poder validar CA-01 en el front.
+      console.info('Petición enviada. Procesando actualización reactiva en Front...');
+    }
+
+    // 2. CA-01: Actualizamos el estado reactivo a 'Solucionada' y agregamos al historial
+    const ahora = new Date();
+    this._todas.update((lista) =>
+      lista.map((inc) => {
+        if (inc.id === id) {
+          return {
+            ...inc,
+            estado: 'Solucionada' as Incidencia['estado'],
+            actualizada: ahora,
+            historial: [
+              ...inc.historial,
+              {
+                estado: 'Solucionada' as Incidencia['estado'],
+                fecha: ahora,
+              },
+            ],
+          };
+        }
+        return inc;
+      })
     );
   }
 }

@@ -203,7 +203,13 @@ export const routes: Routes = [
       {
         path: 'incidencias/caso/:id',
         title: 'Seguimiento de incidencia',
-        data: { fondo: 'edificio' },
+        data: { menu: 'rail', fondo: 'edificio' },
+        loadComponent: () => import('./features/incidencias/detalle/detalle.component').then((m) => m.DetalleIncidenciaComponent),
+      },
+      {
+        path: 'incidencias/detalle/:id',
+        title: 'Detalle de la incidencia',
+        data: { menu: 'rail', fondo: 'edificio' },
         loadComponent: () => import('./features/incidencias/detalle/detalle.component').then((m) => m.DetalleIncidenciaComponent),
       },
       {

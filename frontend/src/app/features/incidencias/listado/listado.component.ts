@@ -20,8 +20,13 @@ export class ListadoIncidenciasComponent {
   private readonly filtro: Filtro = this.data['filtro'];
 
   constructor() {
-    void this.service.cargar();
+    if (this.filtro === 'asignadas') {
+      void this.service.cargarAsignadas();
+    } else {
+      void this.service.cargar();
+    }
   }
+
   items = computed(() => {
     // Si tu servicio tiene this.service.todas() o this.service.items(), úsalo, sino propias():
     const lista = this.service.propias();
