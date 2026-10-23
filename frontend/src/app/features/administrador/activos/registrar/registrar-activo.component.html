@@ -3,7 +3,7 @@
   backLink="/administrador/mantenimiento"
   backLabel="Mantenimiento"
   title="Registrar nuevo activo o equipo"
-  subtitle="Incorpora un equipo crítico al inventario del condominio para su programación preventiva."
+  subtitle="Incorpora un equipo al inventario del condominio para su programación preventiva."
 />
 
 <div class="grid">
@@ -29,51 +29,103 @@
       </div>
     }
 
-    <!-- Código del Activo -->
+    <!-- Nombre del activo -->
     <label class="field">
-      <span>Código Único</span>
-      <input class="control" type="text" formControlName="codigo" placeholder="Ej: ASC-03, BOM-02" />
-      @if (invalido('codigo')) {
-        <small class="field-error">El código del activo es obligatorio.</small>
-      }
-    </label>
-
-    <!-- Nombre del Activo -->
-    <label class="field">
-      <span>Nombre del Equipo</span>
-      <input class="control" type="text" formControlName="nombre" placeholder="Ej: Ascensor Torre B" />
+      <span>Nombre del equipo</span>
+      <input
+        class="control"
+        type="text"
+        formControlName="nombre"
+        placeholder="Ej: Ascensor Torre B"
+      />
       @if (invalido('nombre')) {
         <small class="field-error">Ingresa un nombre identificable.</small>
       }
     </label>
 
-    <!-- Tipo de Activo -->
+    <!-- Catálogo real de tipos de activo -->
     <label class="field">
-      <span>Tipo de Activo</span>
+      <span>Tipo de activo</span>
       <select class="control" formControlName="tipo">
-        <option value="" disabled selected>Selecciona el tipo de equipo</option>
-        @for (t of tiposActivo; track t) {
-          <option [value]="t">{{ t }}</option>
+        <option value="" disabled>
+          @if (activoService.cargandoTiposActivo()) {
+            Cargando tipos de activo...
+          } @else {
+            Selecciona el tipo de equipo
+          }
+        </option>
+        @for (tipo of activoService.tiposActivo(); track tipo.id) {
+          <option [value]="tipo.id">{{ tipo.nombre }}</option>
         }
       </select>
       @if (invalido('tipo')) {
         <small class="field-error">Selecciona una categoría de activo.</small>
+      }
+      @if (activoService.errorTiposActivo()) {
+        <small class="field-error">{{ activoService.errorTiposActivo() }}</small>
       }
     </label>
 
     <!-- Ubicación -->
     <label class="field">
       <span>Ubicación</span>
-      <input class="control" type="text" formControlName="ubicacion" placeholder="Ej: Torre 2 · Pasadizo central / Sótano 1" />
+      <input
+        class="control"
+        type="text"
+        formControlName="ubicacion"
+        placeholder="Ej: Torre 2 · Pasadizo central / Sótano 1"
+      />
       @if (invalido('ubicacion')) {
         <small class="field-error">Indica en qué torre, piso o área se encuentra.</small>
       }
     </label>
 
+    <!-- Criticidad -->
+    <label class="field">
+      <span>Criticidad</span>
+      <select class="control" formControlName="criticidad">
+        <option value="" disabled>Selecciona la criticidad</option>
+        <option value="true">Crítico</option>
+        <option value="false">No crítico</option>
+      </select>
+      @if (invalido('criticidad')) {
+        <small class="field-error">Indica si el activo es crítico para el condominio.</small>
+      }
+    </label>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Marca (opcional)</span>
+        <input class="control" type="text" formControlName="marca" placeholder="Ej: Otis" />
+      </label>
+
+      <label class="field">
+        <span>Modelo (opcional)</span>
+        <input class="control" type="text" formControlName="modelo" placeholder="Ej: Gen2" />
+      </label>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>Número de serie (opcional)</span>
+        <input class="control" type="text" formControlName="numeroSerie" placeholder="Ej: SN-123456" />
+      </label>
+
+      <label class="field">
+        <span>Fecha de instalación (opcional)</span>
+        <input class="control" type="date" formControlName="fechaInstalacion" />
+      </label>
+    </div>
+
     <!-- Descripción opcional -->
     <label class="field">
       <span>Descripción técnica (opcional)</span>
-      <textarea class="control" rows="2" formControlName="descripcion" placeholder="Marca, capacidad o detalles adicionales"></textarea>
+      <textarea
+        class="control"
+        rows="3"
+        formControlName="descripcion"
+        placeholder="Capacidad, características o detalles adicionales"
+      ></textarea>
     </label>
 
     <button type="submit" class="btn-enviar" [disabled]="enviando()">
