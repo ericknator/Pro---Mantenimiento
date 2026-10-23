@@ -253,6 +253,25 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	
 	        return incidencia;
 	    }
+	    
+
+	    // Portería y mantenimiento: solo pueden consultar
+	    // incidencias que tengan asignadas actualmente.
+	    if ("PORTERIA_SEGURIDAD".equals(rol)
+	            || "MANTENIMIENTO".equals(rol)) {
+
+	        if (incidencia.getResponsableActual() == null
+	                || !incidencia.getResponsableActual().getId()
+	                    .equals(usuario.getId())) {
+
+	            throw new ResponseStatusException(
+	                HttpStatus.FORBIDDEN,
+	                "La incidencia no te corresponde. Actualmente está asignada a otro personal."
+	            );
+	        }
+
+	        return incidencia;
+	    }
 	
 	    // Los demás roles requieren reglas específicas.
 	    throw new ResponseStatusException(

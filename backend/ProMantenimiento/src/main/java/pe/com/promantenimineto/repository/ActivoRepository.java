@@ -11,5 +11,7 @@ public interface ActivoRepository extends JpaRepository<ActivoEntity, Long> {
 
     @Query("select d from ActivoEntity d where d.activo=true")
     List<ActivoEntity> findAllCustom();
+    
+    boolean existsByCodigo(String codigo);
 
 }

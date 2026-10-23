@@ -1,6 +1,7 @@
 package pe.com.promantenimineto.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,5 +12,7 @@ public interface EstadoActivoRepository extends JpaRepository<EstadoActivoEntity
 
     @Query("select d from EstadoActivoEntity d where d.activo=true")
     List<EstadoActivoEntity> findAllCustom();
+    
+    Optional<EstadoActivoEntity> findByCodigoAndActivoTrue(String codigo);
 
 }
