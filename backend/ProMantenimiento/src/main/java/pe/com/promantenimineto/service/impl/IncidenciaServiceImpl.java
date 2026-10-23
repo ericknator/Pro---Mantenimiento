@@ -766,4 +766,101 @@ public class IncidenciaServiceImpl implements IncidenciaService{
         	return incidenciaGuardada;
     }
     
+    
+
+	@Override
+	@Transactional
+	public IncidenciaEntity aceptar(Long id) {
+	
+	    Authentication authentication =
+	        SecurityContextHolder.getContext().getAuthentication();
+	
+	    if (authentication == null
+	            || !authentication.isAuthenticated()
+	            || !(authentication.getPrincipal()
+	                instanceof UsuarioPerfilEntity tecnico)) {
+	        throw new ResponseStatusException(
+	            HttpStatus.UNAUTHORIZED,
+	            "Debes iniciar sesión."
+	        );
+	    }
+	
+
+		String rolCodigo = tecnico.getRol() != null
+		        ? tecnico.getRol().getCodigo()
+		        : null;
+		
+		if (!"MANTENIMIENTO".equals(rolCodigo)
+		        && !"PORTERIA_SEGURIDAD".equals(rolCodigo)) {
+		    throw new ResponseStatusException(
+		        HttpStatus.FORBIDDEN,
+		        "Solo el personal de mantenimiento o portería puede aceptar la incidencia."
+		    );
+		}
+
+	
+	    IncidenciaEntity incidencia = repositorio.findById(id)
+	        .orElseThrow(() -> new ResponseStatusException(
+	            HttpStatus.NOT_FOUND,
+	            "Incidencia no encontrada."
+	        ));
+	
+	    // CA-02: comprobar que la incidencia esté asignada al técnico autenticado.
+	    if (incidencia.getResponsableActual() == null
+	            || !tecnico.getId().equals(
+	                incidencia.getResponsableActual().getId())) {
+	        throw new ResponseStatusException(
+	            HttpStatus.FORBIDDEN,
+	            "No puedes aceptar una incidencia que no está asignada a tu usuario."
+	        );
+	    }
+	
+	    // Solo se pueden aceptar incidencias en estado ASIGNADA.
+	    if (incidencia.getEstado() == null
+	            || !"ASIGNADA".equals(incidencia.getEstado().getCodigo())) {
+	        throw new ResponseStatusException(
+	            HttpStatus.CONFLICT,
+	            "La incidencia no se encuentra en estado ASIGNADA."
+	        );
+	    }
+	
+	    EstadoIncidenciaEntity estadoEnAtencion =
+	        estadoRepositorio.findByCodigo("EN_ATENCION")
+	            .orElseThrow(() -> new ResponseStatusException(
+	                HttpStatus.INTERNAL_SERVER_ERROR,
+	                "No existe el estado EN_ATENCION."
+	            ));
+	
+	    TipoAccionIncidenciaEntity tipoAceptacion =
+	        tipoAccionRepositorio.findByCodigo("ACEPTACION")
+	            .orElseThrow(() -> new ResponseStatusException(
+	                HttpStatus.INTERNAL_SERVER_ERROR,
+	                "No existe el tipo de acción ACEPTACION."
+	            ));
+	
+	    EstadoIncidenciaEntity estadoAnterior = incidencia.getEstado();
+	    LocalDateTime ahora = LocalDateTime.now();
+	
+	    // Registrar la aceptación del técnico.
+	    ActuacionIncidenciaEntity actuacion =
+	        ActuacionIncidenciaEntity.builder()
+	            .incidencia(incidencia)
+	            .actor(tecnico)
+	            .tipoAccion(tipoAceptacion)
+	            .descripcion("El técnico aceptó la atención de la incidencia.")
+	            .estadoAnterior(estadoAnterior)
+	            .estadoNuevo(estadoEnAtencion)
+	            .creadoEn(ahora)
+	            .build();
+	
+	    actuacionRepositorio.save(actuacion);
+	
+	    // Actualizar el estado de la incidencia.
+	    incidencia.setEstado(estadoEnAtencion);
+	    incidencia.setActualizadoEn(ahora);
+	
+	    return repositorio.save(incidencia);
+	}
+
+    
 }

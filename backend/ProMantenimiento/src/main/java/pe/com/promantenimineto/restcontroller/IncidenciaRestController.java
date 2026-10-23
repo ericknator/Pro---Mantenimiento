@@ -92,6 +92,14 @@ public class IncidenciaRestController {
 	public List<IncidenciaEntity> findIncidenciasAsignadas() {
 	    return servicio.findIncidenciasAsignadas();
 	}
+	
+	
+
+	@PatchMapping("/{id}/aceptar")
+	public IncidenciaEntity aceptar(@PathVariable Long id) {
+	    return servicio.aceptar(id);
+	}
+
 
 	
 }
