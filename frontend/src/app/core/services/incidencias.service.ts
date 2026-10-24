@@ -4,7 +4,7 @@ import {
   IncidenciaApi,
   NuevaIncidencia
 } from '../../models/incidencia.model';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { auth } from './firebase.config';
 import { onAuthStateChanged, type User } from 'firebase/auth';
@@ -20,11 +20,51 @@ export class IncidenciasService {
     private readonly apiAsignadasUrl =
     'http://localhost:8085/promantenimiento/api/incidencia/asignadas';
 
+  private mapearIncidencias(respuesta: IncidenciaApi[]): Incidencia[] {
+    return respuesta.map((item) => {
+      const fecha = new Date(item.fechaReporte);
+      const actualizada = new Date(item.actualizadoEn);
+
+      return {
+        id: String(item.id),
+        autorId: String(item.solicitante.id),
+        autor: `${item.solicitante.nombres} ${item.solicitante.apellidos}`,
+        categoria: item.categoria.nombre,
+        ubicacion: item.ubicacion,
+        descripcion: item.descripcion,
+        evidencias: [],
+        estado: item.estado.nombre as Incidencia['estado'],
+        creada: fecha,
+        actualizada,
+        historial: [
+          {
+            estado: item.estado.nombre as Incidencia['estado'],
+            fecha: actualizada
+          }
+        ]
+      };
+    });
+  }
+
+  private async cargarAsignadasDesdeBackend(usuario: User): Promise<void> {
+    const token = await usuario.getIdToken();
+    const respuesta = await firstValueFrom(
+      this.http.get<IncidenciaApi[]>(this.apiAsignadasUrl, {
+        headers: new HttpHeaders({
+          Authorization: `Bearer ${token}`
+        })
+      })
+    );
+
+    this._todas.set(this.mapearIncidencias(respuesta));
+  }
+
   /** Consulta las incidencias asignadas al técnico autenticado (PMS-136 / PMS-137). */
   async cargarAsignadas(): Promise<void> {
+    // No conservar datos de otro usuario o de otra carga mientras se valida el acceso.
+    this._todas.set([]);
     const usuario = await this.esperarUsuario();
     if (!usuario) {
-      this._todas.set([]);
       return;
     }
 
@@ -32,39 +72,7 @@ export class IncidenciasService {
     this.error.set(null);
 
     try {
-      const token = await usuario.getIdToken();
-      const respuesta = await firstValueFrom(
-        this.http.get<IncidenciaApi[]>(this.apiAsignadasUrl, {
-          headers: new HttpHeaders({
-            Authorization: `Bearer ${token}`
-          })
-        })
-      );
-
-      const incidencias: Incidencia[] = respuesta.map((item) => {
-        const fecha = new Date(item.fechaReporte);
-        const actualizada = new Date(item.actualizadoEn);
-        return {
-          id: String(item.id),
-          autorId: String(item.solicitante.id),
-          autor: `${item.solicitante.nombres} ${item.solicitante.apellidos}`,
-          categoria: item.categoria.nombre,
-          ubicacion: item.ubicacion,
-          descripcion: item.descripcion,
-          evidencias: [],
-          estado: item.estado.nombre as Incidencia['estado'],
-          creada: fecha,
-          actualizada,
-          historial: [
-            {
-              estado: item.estado.nombre as Incidencia['estado'],
-              fecha: actualizada
-            }
-          ]
-        };
-      });
-
-      this._todas.set(incidencias);
+      await this.cargarAsignadasDesdeBackend(usuario);
     } catch (error) {
       console.error('Error al cargar incidencias asignadas:', error);
       this.error.set('No se pudieron cargar las incidencias asignadas.');
@@ -105,10 +113,11 @@ export class IncidenciasService {
 
   /** Consulta las incidencias del backend. */
   async cargar(): Promise<void> {
+    // Evita mostrar incidencias de una sesión anterior mientras llega la respuesta actual.
+    this._todas.set([]);
     const usuario = await this.esperarUsuario();
 
     if (!usuario) {
-      this._todas.set([]);
       this.error.set(
         'Debes iniciar sesión para consultar tus incidencias.'
       );
@@ -129,31 +138,7 @@ export class IncidenciasService {
         })
       );
 
-      const incidencias: Incidencia[] = respuesta.map((item) => {
-        const fecha = new Date(item.fechaReporte);
-        const actualizada = new Date(item.actualizadoEn);
-
-        return {
-          id: String(item.id),
-          autorId: String(item.solicitante.id),
-          autor: `${item.solicitante.nombres} ${item.solicitante.apellidos}`,
-          categoria: item.categoria.nombre,
-          ubicacion: item.ubicacion,
-          descripcion: item.descripcion,
-          evidencias: [],
-          estado: item.estado.nombre as Incidencia['estado'],
-          creada: fecha,
-          actualizada,
-          historial: [
-            {
-              estado: item.estado.nombre as Incidencia['estado'],
-              fecha: actualizada
-            }
-          ]
-        };
-      });
-
-      this._todas.set(incidencias);
+      this._todas.set(this.mapearIncidencias(respuesta));
     } catch (error) {
       console.error('Error al cargar incidencias:', error);
       this.error.set(
@@ -221,6 +206,52 @@ export class IncidenciasService {
     return this.propias().find(
       (incidencia) => incidencia.id === id
     );
+  }
+
+  /** Acepta una incidencia asignada y confirma el estado actualizado desde el backend. */
+  async aceptarIncidencia(id: string): Promise<Incidencia> {
+    const usuario = await this.esperarUsuario();
+
+    if (!usuario) {
+      throw new HttpErrorResponse({
+        status: 401,
+        statusText: 'Unauthorized',
+        error: { message: 'Debes iniciar sesión para aceptar la incidencia.' }
+      });
+    }
+
+    this.cargando.set(true);
+
+    try {
+      const token = await usuario.getIdToken();
+
+      await firstValueFrom(
+        this.http.patch<unknown>(
+          `${this.apiUrl}/${encodeURIComponent(id)}/aceptar`,
+          null,
+          {
+            headers: new HttpHeaders({
+              Authorization: `Bearer ${token}`
+            })
+          }
+        )
+      );
+
+      // No actualizamos el estado local con una suposición: volvemos a consultar
+      // las incidencias del técnico y devolvemos el registro confirmado.
+      await this.cargarAsignadasDesdeBackend(usuario);
+      const incidenciaActualizada = this.obtenerPropia(id);
+
+      if (!incidenciaActualizada) {
+        throw new Error(
+          'La incidencia aceptada no apareció en la respuesta actualizada.'
+        );
+      }
+
+      return incidenciaActualizada;
+    } finally {
+      this.cargando.set(false);
+    }
   }
 
     /**

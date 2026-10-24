@@ -32,7 +32,7 @@
       }
 
       <!-- Paso 3: Asignada -> Botón para iniciar atención -->
-      @if (esPersonalTecnico() && estadoActual() === 'Asignada') {
+      @if (puedeAceptar() && estadoActual() === 'Asignada') {
         <div class="info" role="status">
           <span class="material-symbols-rounded">engineering</span>
           <div>
@@ -41,8 +41,15 @@
           </div>
         </div>
 
-        <button type="button" class="btn" (click)="iniciarAtencion()">
-          <span>Iniciar atención técnica</span>
+        @if (aceptacionError()) {
+          <div class="fail" role="alert">
+            <span class="material-symbols-rounded">error</span>
+            <span>{{ aceptacionError() }}</span>
+          </div>
+        }
+
+        <button type="button" class="btn" [disabled]="aceptando()" (click)="aceptarIncidencia()">
+          <span>{{ aceptando() ? 'Aceptando incidencia…' : 'Aceptar e iniciar atención' }}</span>
           <span class="material-symbols-rounded">arrow_forward</span>
         </button>
       }
@@ -211,6 +218,11 @@
       </div>
     </section>
   </div>
+} @else if (cargando()) {
+  <section class="panel dock">
+    <header class="panel__head"><h2 class="label">Cargando incidencia</h2></header>
+    <p class="vacio">Consultando el caso y verificando que esté disponible para tu usuario.</p>
+  </section>
 } @else {
   <section class="panel dock">
     <header class="panel__head"><h2 class="label">Incidencia no disponible</h2></header>
