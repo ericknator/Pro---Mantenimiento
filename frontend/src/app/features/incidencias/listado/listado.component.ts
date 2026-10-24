@@ -19,6 +19,14 @@ export class ListadoIncidenciasComponent {
   titulo: string = this.data['titulo'];
   private readonly filtro: Filtro = this.data['filtro'];
 
+  readonly subtitulo = computed(() => {
+    const cantidad = this.items().length;
+
+    return this.filtro === 'asignadas'
+      ? `${cantidad} incidencias asignadas`
+      : `${cantidad} incidencias`;
+  });
+
   constructor() {
     if (this.filtro === 'asignadas') {
       void this.service.cargarAsignadas();
