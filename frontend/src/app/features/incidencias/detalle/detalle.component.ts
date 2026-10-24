@@ -144,6 +144,28 @@ export class DetalleIncidenciaComponent {
     }
   }
 
+  private mensajeErrorFinalizacion(error: unknown): string {
+    switch (this.statusError(error)) {
+      case 0:
+        return 'No se pudo conectar con el servidor. Verifica la conexión e inténtalo nuevamente.';
+      case 400:
+        return 'Las acciones realizadas son obligatorias.';
+      case 401:
+        return 'Tu sesión no es válida o ha expirado. Inicia sesión nuevamente.';
+      case 403:
+        return 'No tienes permiso para finalizar esta atención o la incidencia no está asignada a tu usuario.';
+      case 404:
+        return 'La incidencia ya no existe o no está disponible para tu usuario.';
+      case 409:
+        return 'La incidencia ya no está en atención. Actualiza la vista antes de intentar finalizarla.';
+      default:
+        if (error instanceof Error && error.message) {
+          return error.message;
+        }
+        return 'No se pudo confirmar la solución en el servidor. Inténtalo nuevamente.';
+    }
+  }
+
   onArchivosSeleccionados(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -188,20 +210,29 @@ export class DetalleIncidenciaComponent {
     if (!idActual) return;
 
     this.errorValidacion.set(null);
+    this.exito.set(false);
     this.guardando.set(true);
 
     try {
-      await this.service.solucionarIncidencia(
+      const incidenciaConfirmada = await this.service.solucionarIncidencia(
         idActual,
         this.diagnostico(),
-        this.acciones(),
-        this.archivos()
+        this.acciones()
       );
+
+      // El servicio solo resuelve después de volver a leer el estado desde el
+      // backend y verificar que sea Solucionada.
+      if (incidenciaConfirmada.estado.trim().toLowerCase() !== 'solucionada') {
+        throw new Error(
+          'El backend no confirmó la incidencia en estado Solucionada.'
+        );
+      }
+
       this.estadoIntervencion.set('Solucionada');
       this.exito.set(true);
     } catch (err) {
       console.error(err);
-      this.errorValidacion.set('Ocurrió un error al guardar la solución.');
+      this.errorValidacion.set(this.mensajeErrorFinalizacion(err));
     } finally {
       this.guardando.set(false);
     }

@@ -62,7 +62,7 @@
           <span class="material-symbols-rounded">build</span>
           <div>
             <strong>Caso en proceso de atención</strong>
-            <small>Documenta el diagnóstico, las acciones ejecutadas y adjunta fotos para dar por solucionado el caso.</small>
+            <small>Documenta el diagnóstico y las acciones ejecutadas. El endpoint actual confirma la solución mediante estos dos campos.</small>
           </div>
         </div>
 
@@ -95,11 +95,11 @@
 
         <!-- PMS-160: Carga y visualización de evidencias -->
         <fieldset class="field">
-          <span>Evidencias fotográficas (máx. 3)</span>
+          <span>Evidencias fotográficas (selección local, máx. 3)</span>
           <div class="evidencias-upload-box">
             <label class="btn-adjuntar">
               <span class="material-symbols-rounded">add_a_photo</span>
-              <span>Adjuntar foto</span>
+              <span>Seleccionar foto</span>
               <input
                 type="file"
                 accept="image/png, image/jpeg, image/webp"
@@ -121,6 +121,9 @@
               }
             </div>
           }
+          <small class="evidencias-pendientes" role="note">
+            Pendiente de integración: el endpoint de finalización todavía no admite archivos; estas fotos no se envían ni se guardan.
+          </small>
         </fieldset>
 
         <div class="acciones-form">

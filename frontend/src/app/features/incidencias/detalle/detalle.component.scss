@@ -257,6 +257,12 @@ dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
 
 .contador-archivos { font-size: 0.75rem; color: #64748b; }
 
+.evidencias-pendientes {
+  color: #92400e;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
 .previews-grid {
   display: flex;
   gap: 8px;
