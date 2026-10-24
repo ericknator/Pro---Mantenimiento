@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import pe.com.promantenimineto.entity.IncidenciaEntity;
@@ -101,18 +102,21 @@ public class IncidenciaRestController {
 	    return servicio.aceptar(id);
 	}
 	
-	@PatchMapping("/{id}/finalizar-atencion")
+	@PatchMapping( value = "/{id}/finalizar-atencion", consumes = MediaType.MULTIPART_FORM_DATA_VALUE )
 	public IncidenciaEntity finalizarAtencion(
 	        @PathVariable Long id,
-	        @RequestBody Map<String, String> datos) {
-
-	    String diagnosticoTecnico = datos.get("diagnosticoTecnico");
-	    String accionesRealizadas = datos.get("accionesRealizadas");
+	        @RequestParam(value = "diagnosticoTecnico", required = false)
+	        String diagnosticoTecnico,
+	        @RequestParam(value = "accionesRealizadas", required = false)
+	        String accionesRealizadas,
+	        @RequestParam(value = "archivos", required = false)
+	        List<MultipartFile> archivos) {
 
 	    return servicio.finalizarAtencion(
 	        id,
 	        diagnosticoTecnico,
-	        accionesRealizadas
+	        accionesRealizadas,
+	        archivos
 	    );
 	}
 

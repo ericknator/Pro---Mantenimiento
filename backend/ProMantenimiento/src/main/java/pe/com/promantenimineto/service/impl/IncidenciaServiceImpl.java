@@ -881,151 +881,270 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	    return repositorio.save(incidencia);
 	}
 	
+
 	@Override
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public IncidenciaEntity finalizarAtencion(
 	        Long id,
 	        String diagnosticoTecnico,
-	        String accionesRealizadas) {
+	        String accionesRealizadas,
+	        List<MultipartFile> archivos) {
 
-	    // 1. Obtener el usuario autenticado
-	    Object principal = SecurityContextHolder.getContext()
-	            .getAuthentication()
-	            .getPrincipal();
+	    List<String> rutasGuardadas = new ArrayList<>();
 
-	    if (!(principal instanceof UsuarioPerfilEntity tecnico)) {
-	        throw new org.springframework.web.server.ResponseStatusException(
-	                org.springframework.http.HttpStatus.UNAUTHORIZED,
-	                "Debes iniciar sesión."
+	    try {
+
+	        // 1. Obtener el usuario autenticado
+	        Object principal = SecurityContextHolder.getContext()
+	                .getAuthentication()
+	                .getPrincipal();
+
+	        if (!(principal instanceof UsuarioPerfilEntity tecnico)) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.UNAUTHORIZED,
+	                    "Debes iniciar sesión."
+	            );
+	        }
+
+	        // 2. Validar rol
+	        String rol = tecnico.getRol().getCodigo();
+
+	        if (!rol.equals("MANTENIMIENTO")
+	                && !rol.equals("PORTERIA_SEGURIDAD")) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.FORBIDDEN,
+	                    "No tienes permisos para finalizar esta atención."
+	            );
+	        }
+
+	        // 3. Buscar incidencia
+	        IncidenciaEntity incidencia = repositorio.findById(id)
+	                .orElseThrow(() -> new ResponseStatusException(
+	                        HttpStatus.NOT_FOUND,
+	                        "Incidencia no encontrada."
+	                ));
+
+	        // 4. Verificar responsable
+	        if (incidencia.getResponsableActual() == null
+	                || !incidencia.getResponsableActual().getId()
+	                        .equals(tecnico.getId())) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.FORBIDDEN,
+	                    "La incidencia no está asignada a tu usuario."
+	            );
+	        }
+
+	        // 5. Validar estado actual
+	        if (!"EN_ATENCION".equals(
+	                incidencia.getEstado().getCodigo())) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.CONFLICT,
+	                    "La incidencia debe estar en estado EN_ATENCION."
+	            );
+	        }
+
+	        // 6. Validar acciones realizadas
+	        if (accionesRealizadas == null
+	                || accionesRealizadas.isBlank()) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.BAD_REQUEST,
+	                    "Las acciones realizadas son obligatorias."
+	            );
+	        }
+
+	        // 7. Validar cantidad de archivos
+	        if (archivos != null && archivos.size() > 3) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.BAD_REQUEST,
+	                    "Solo puedes adjuntar un máximo de 3 evidencias."
+	            );
+	        }
+
+	        // 8. Validar archivos vacíos antes de guardarlos
+	        if (archivos != null) {
+	            for (MultipartFile archivo : archivos) {
+	                if (archivo == null || archivo.isEmpty()) {
+	                    throw new ResponseStatusException(
+	                            HttpStatus.BAD_REQUEST,
+	                            "No puedes adjuntar archivos vacíos."
+	                    );
+	                }
+	            }
+	        }
+
+	        EstadoIncidenciaEntity estadoAnterior =
+	                incidencia.getEstado();
+
+	        EstadoIncidenciaEntity estadoSolucionada =
+	                estadoRepositorio.findByCodigo("SOLUCIONADA")
+	                        .orElseThrow(() -> new ResponseStatusException(
+	                                HttpStatus.INTERNAL_SERVER_ERROR,
+	                                "No existe el estado SOLUCIONADA en el catálogo."
+	                        ));
+
+	        TipoAccionIncidenciaEntity tipoDiagnostico =
+	                tipoAccionRepositorio.findByCodigo("DIAGNOSTICO")
+	                        .orElseThrow(() -> new ResponseStatusException(
+	                                HttpStatus.INTERNAL_SERVER_ERROR,
+	                                "No existe el tipo de acción DIAGNOSTICO."
+	                        ));
+
+	        TipoAccionIncidenciaEntity tipoAccionRealizada =
+	                tipoAccionRepositorio.findByCodigo("ACCION_REALIZADA")
+	                        .orElseThrow(() -> new ResponseStatusException(
+	                                HttpStatus.INTERNAL_SERVER_ERROR,
+	                                "No existe el tipo de acción ACCION_REALIZADA."
+	                        ));
+
+	        TipoAccionIncidenciaEntity tipoSolucion =
+	                tipoAccionRepositorio.findByCodigo("SOLUCION")
+	                        .orElseThrow(() -> new ResponseStatusException(
+	                                HttpStatus.INTERNAL_SERVER_ERROR,
+	                                "No existe el tipo de acción SOLUCION."
+	                        ));
+
+	        // 9. Guardar las evidencias de la solución
+	        if (archivos != null && !archivos.isEmpty()) {
+
+	            for (MultipartFile archivo : archivos) {
+
+	                String mime = archivo.getContentType();
+	                String codigoTipo;
+
+	                if (mime != null && mime.startsWith("image/")) {
+	                    codigoTipo = "FOTO";
+	                } else if (mime != null && mime.startsWith("video/")) {
+	                    codigoTipo = "VIDEO";
+	                } else {
+	                    throw new ResponseStatusException(
+	                            HttpStatus.BAD_REQUEST,
+	                            "Solo se permiten imágenes y videos."
+	                    );
+	                }
+
+	                TipoEvidenciaEntity tipo =
+	                        tipoEvidenciaRepositorio
+	                                .findByCodigoAndActivoTrue(codigoTipo)
+	                                .orElseThrow(() -> new ResponseStatusException(
+	                                        HttpStatus.INTERNAL_SERVER_ERROR,
+	                                        "No existe un tipo de evidencia activo: "
+	                                                + codigoTipo
+	                                ));
+
+	                // Guardar físicamente el archivo
+	                String ruta = evidenciaArchivoService.guardar(
+	                        archivo,
+	                        incidencia.getCodigo()
+	                );
+
+	                rutasGuardadas.add(ruta);
+
+	                // Guardar los metadatos en MySQL
+	                EvidenciaIncidenciaEntity evidencia =
+	                        new EvidenciaIncidenciaEntity();
+
+	                evidencia.setIncidencia(incidencia);
+	                evidencia.setAutor(tecnico);
+	                evidencia.setTipoEvidencia(tipo);
+
+	                evidencia.setNombreArchivo(
+	                        Path.of(ruta).getFileName().toString()
+	                );
+
+	                evidencia.setUrlRecurso(ruta);
+
+	                // Identifica que la evidencia corresponde a la solución
+	                evidencia.setDescripcion("Evidencia de solución");
+
+	                // La evidencia se registra antes del cambio a SOLUCIONADA
+	                evidencia.setCreadoEn(LocalDateTime.now());
+
+	                evidenciaRepositorio.save(evidencia);
+	            }
+	        }
+
+	        // 10. Registrar las actuaciones después de guardar las evidencias
+	        LocalDateTime ahora = LocalDateTime.now();
+
+	        if (diagnosticoTecnico != null
+	                && !diagnosticoTecnico.isBlank()) {
+
+	            actuacionRepositorio.save(
+	                    ActuacionIncidenciaEntity.builder()
+	                            .incidencia(incidencia)
+	                            .actor(tecnico)
+	                            .tipoAccion(tipoDiagnostico)
+	                            .descripcion(diagnosticoTecnico.trim())
+	                            .estadoAnterior(estadoAnterior)
+	                            .estadoNuevo(estadoAnterior)
+	                            .creadoEn(ahora)
+	                            .build()
+	            );
+	        }
+
+	        actuacionRepositorio.save(
+	                ActuacionIncidenciaEntity.builder()
+	                        .incidencia(incidencia)
+	                        .actor(tecnico)
+	                        .tipoAccion(tipoAccionRealizada)
+	                        .descripcion(accionesRealizadas.trim())
+	                        .estadoAnterior(estadoAnterior)
+	                        .estadoNuevo(estadoAnterior)
+	                        .creadoEn(ahora)
+	                        .build()
+	        );
+
+	        // 11. Registrar la solución y el cambio de estado
+	        actuacionRepositorio.save(
+	                ActuacionIncidenciaEntity.builder()
+	                        .incidencia(incidencia)
+	                        .actor(tecnico)
+	                        .tipoAccion(tipoSolucion)
+	                        .descripcion(
+	                                "La incidencia fue solucionada por el técnico."
+	                        )
+	                        .estadoAnterior(estadoAnterior)
+	                        .estadoNuevo(estadoSolucionada)
+	                        .creadoEn(ahora)
+	                        .build()
+	        );
+
+	        // 12. Actualizar la incidencia
+	        incidencia.setEstado(estadoSolucionada);
+	        incidencia.setFechaSolucion(ahora);
+	        incidencia.setActualizadoEn(ahora);
+
+	        return repositorio.save(incidencia);
+
+	    } catch (Exception e) {
+
+	        // Limpiar archivos físicos si ocurre un error
+	        for (String ruta : rutasGuardadas) {
+	            try {
+	                evidenciaArchivoService.eliminar(ruta);
+	            } catch (IOException errorLimpieza) {
+	                e.addSuppressed(errorLimpieza);
+	            }
+	        }
+
+	        if (e instanceof ResponseStatusException errorHttp) {
+	            throw errorHttp;
+	        }
+
+	        if (e instanceof IllegalArgumentException errorValidacion) {
+	            throw new ResponseStatusException(
+	                    HttpStatus.BAD_REQUEST,
+	                    errorValidacion.getMessage(),
+	                    errorValidacion
+	            );
+	        }
+
+	        throw new ResponseStatusException(
+	                HttpStatus.INTERNAL_SERVER_ERROR,
+	                "No se pudo finalizar la atención con sus evidencias.",
+	                e
 	        );
 	    }
-
-	    // 2. Validar rol
-	    String rol = tecnico.getRol().getCodigo();
-
-	    if (!rol.equals("MANTENIMIENTO")
-	            && !rol.equals("PORTERIA_SEGURIDAD")) {
-	        throw new org.springframework.web.server.ResponseStatusException(
-	                org.springframework.http.HttpStatus.FORBIDDEN,
-	                "No tienes permisos para finalizar esta atención."
-	        );
-	    }
-
-	    // 3. Buscar incidencia
-	    IncidenciaEntity incidencia = repositorio.findById(id)
-	            .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
-	                    org.springframework.http.HttpStatus.NOT_FOUND,
-	                    "Incidencia no encontrada."
-	            ));
-
-	    // 4. Verificar responsable
-	    if (incidencia.getResponsableActual() == null
-	            || !incidencia.getResponsableActual().getId()
-	                    .equals(tecnico.getId())) {
-	        throw new org.springframework.web.server.ResponseStatusException(
-	                org.springframework.http.HttpStatus.FORBIDDEN,
-	                "La incidencia no está asignada a tu usuario."
-	        );
-	    }
-
-	    // 5. Validar estado
-	    if (!"EN_ATENCION".equals(incidencia.getEstado().getCodigo())) {
-	        throw new org.springframework.web.server.ResponseStatusException(
-	                org.springframework.http.HttpStatus.CONFLICT,
-	                "La incidencia debe estar en estado EN_ATENCION."
-	        );
-	    }
-
-	    // 6. Validar acciones realizadas
-	    if (accionesRealizadas == null || accionesRealizadas.isBlank()) {
-	        throw new org.springframework.web.server.ResponseStatusException(
-	                org.springframework.http.HttpStatus.BAD_REQUEST,
-	                "Las acciones realizadas son obligatorias."
-	        );
-	    }
-
-	    // 7. Obtener estados y tipos de acción
-	    EstadoIncidenciaEntity estadoAnterior = incidencia.getEstado();
-
-	    EstadoIncidenciaEntity estadoSolucionada =
-	            estadoRepositorio.findByCodigo("SOLUCIONADA")
-	                    .orElseThrow(() -> new ResponseStatusException(
-	                            HttpStatus.INTERNAL_SERVER_ERROR,
-	                            "No existe el estado SOLUCIONADA en el catálogo."
-	                    ));
-
-	    TipoAccionIncidenciaEntity tipoDiagnostico =
-	            tipoAccionRepositorio.findByCodigo("DIAGNOSTICO")
-	                    .orElseThrow(() -> new ResponseStatusException(
-	                            HttpStatus.INTERNAL_SERVER_ERROR,
-	                            "No existe el tipo de acción DIAGNOSTICO."
-	                    ));
-
-	    TipoAccionIncidenciaEntity tipoAccionRealizada =
-	            tipoAccionRepositorio.findByCodigo("ACCION_REALIZADA")
-	                    .orElseThrow(() -> new ResponseStatusException(
-	                            HttpStatus.INTERNAL_SERVER_ERROR,
-	                            "No existe el tipo de acción ACCION_REALIZADA."
-	                    ));
-
-	    TipoAccionIncidenciaEntity tipoSolucion =
-	            tipoAccionRepositorio.findByCodigo("SOLUCION")
-	                    .orElseThrow(() -> new ResponseStatusException(
-	                            HttpStatus.INTERNAL_SERVER_ERROR,
-	                            "No existe el tipo de acción SOLUCION."
-	                    ));
-
-	    if (tipoDiagnostico == null || tipoAccionRealizada == null
-	            || tipoSolucion == null) {
-	        throw new org.springframework.web.server.ResponseStatusException(
-	                org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
-	                "Falta un tipo de acción requerido en el catálogo."
-	        );
-	    }
-
-	    LocalDateTime ahora = LocalDateTime.now();
-
-	    // 8. Registrar diagnóstico, si fue ingresado
-	    if (diagnosticoTecnico != null && !diagnosticoTecnico.isBlank()) {
-	        actuacionRepositorio.save(ActuacionIncidenciaEntity.builder()
-	                .incidencia(incidencia)
-	                .actor(tecnico)
-	                .tipoAccion(tipoDiagnostico)
-	                .descripcion(diagnosticoTecnico.trim())
-	                .estadoAnterior(estadoAnterior)
-	                .estadoNuevo(estadoAnterior)
-	                .creadoEn(ahora)
-	                .build());
-	    }
-
-	    // 9. Registrar acciones realizadas
-	    actuacionRepositorio.save(ActuacionIncidenciaEntity.builder()
-	            .incidencia(incidencia)
-	            .actor(tecnico)
-	            .tipoAccion(tipoAccionRealizada)
-	            .descripcion(accionesRealizadas.trim())
-	            .estadoAnterior(estadoAnterior)
-	            .estadoNuevo(estadoAnterior)
-	            .creadoEn(ahora)
-	            .build());
-
-	    // 10. Registrar solución y cambio de estado
-	    actuacionRepositorio.save(ActuacionIncidenciaEntity.builder()
-	            .incidencia(incidencia)
-	            .actor(tecnico)
-	            .tipoAccion(tipoSolucion)
-	            .descripcion("La incidencia fue solucionada por el técnico.")
-	            .estadoAnterior(estadoAnterior)
-	            .estadoNuevo(estadoSolucionada)
-	            .creadoEn(ahora)
-	            .build());
-
-	    // 11. Actualizar incidencia
-	    incidencia.setEstado(estadoSolucionada);
-	    incidencia.setFechaSolucion(ahora);
-	    incidencia.setActualizadoEn(ahora);
-
-	    return repositorio.save(incidencia);
 	}
 
     

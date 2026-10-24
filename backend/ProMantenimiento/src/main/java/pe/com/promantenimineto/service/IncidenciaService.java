@@ -24,19 +24,12 @@ public interface IncidenciaService {
 	
 	IncidenciaEntity enable(Long id);
 	
-	IncidenciaEntity addWithEvidencias(
-	    IncidenciaEntity obj,
-	    List<MultipartFile> archivos
-	);
+	IncidenciaEntity addWithEvidencias( IncidenciaEntity obj, List<MultipartFile> archivos );
 	
 	IncidenciaEntity clasificar(IncidenciaEntity obj, Long id);
 	
 	IncidenciaEntity aceptar(Long id);
 	
-	IncidenciaEntity finalizarAtencion(
-		    Long id,
-		    String diagnosticoTecnico,
-		    String accionesRealizadas
-		);	
+	IncidenciaEntity finalizarAtencion( Long id,  String diagnosticoTecnico, String accionesRealizadas, List<MultipartFile> archivos );
 	
 }
