@@ -262,7 +262,7 @@ export class IncidenciasService {
    * Finaliza la atención de una incidencia registrando diagnóstico,
    * acciones realizadas y subiendo evidencias fotográficas.
    */
-    async solucionarIncidencia(
+  async solucionarIncidencia(
     id: string,
     diagnostico: string,
     acciones: string,
@@ -274,31 +274,18 @@ export class IncidenciasService {
     }
 
     const token = await usuario.getIdToken();
-    const perfilId = Number(this.auth.usuario()?.id);
 
-    // Unimos el diagnóstico y las acciones para la descripción de la actuación
-    const descripcion = [
-      diagnostico.trim() ? `Diagnóstico: ${diagnostico.trim()}` : null,
-      `Acciones: ${acciones.trim()}`,
-    ]
-      .filter(Boolean)
-      .join(' | ');
-
-    // Payload exacto según ActuacionIncidenciaEntity de Java
-    const payload = {
-      incidencia: { id: Number(id) },
-      actor: perfilId ? { id: perfilId } : null,
-      tipoAccion: { id: 7 }, // 7 = SOLUCION
-      descripcion,
-      estadoAnterior: { id: 4 }, // 4 = EN_ATENCION
-      estadoNuevo: { id: 5 }, // 5 = SOLUCIONADA
-      creadoEn: new Date().toISOString().slice(0, 19),
+    // Body exacto que espera el nuevo endpoint de Gean:
+    const body = {
+      diagnosticoTecnico: diagnostico.trim(),
+      accionesRealizadas: acciones.trim(),
     };
 
+    // Llamada oficial a finalizar-atencion vía PATCH
     await firstValueFrom(
-      this.http.post<unknown>(
-        `http://localhost:8085/promantenimiento/api/actuacion-incidencia/${id}`,
-        payload,
+      this.http.patch<unknown>(
+        `${this.apiUrl}/${encodeURIComponent(id)}/finalizar-atencion`,
+        body,
         {
           headers: new HttpHeaders({
             Authorization: `Bearer ${token}`,
@@ -308,7 +295,7 @@ export class IncidenciasService {
       )
     );
 
-    // Solo si el backend respondió 200 OK con éxito, actualizamos la vista:
+    // Actualizamos el estado reactivo en Frontend a Solucionada
     const ahora = new Date();
     this._todas.update((lista) =>
       lista.map((inc) => {
