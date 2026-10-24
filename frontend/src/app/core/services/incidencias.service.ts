@@ -8,14 +8,11 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { firstValueFrom } from 'rxjs';
 import { auth } from './firebase.config';
 import { onAuthStateChanged, type User } from 'firebase/auth';
-import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class IncidenciasService {
 
   private readonly http = inject(HttpClient);
-
-    private readonly auth = inject(AuthService);
 
   private readonly apiUrl =
     'http://localhost:8085/promantenimiento/api/incidencia';
@@ -211,6 +208,10 @@ export class IncidenciasService {
     );
   }
 
+  private esSolucionada(incidencia: Incidencia): boolean {
+    return incidencia.estado.trim().toLowerCase() === 'solucionada';
+  }
+
   /** Acepta una incidencia asignada y confirma el estado actualizado desde el backend. */
   async aceptarIncidencia(id: string): Promise<Incidencia> {
     const usuario = await this.esperarUsuario();
@@ -257,17 +258,19 @@ export class IncidenciasService {
     }
   }
 
-    /**
-   * HU-INC-06 / PMS-159 / PMS-160:
-   * Finaliza la atención de una incidencia registrando diagnóstico,
-   * acciones realizadas y subiendo evidencias fotográficas.
+  /**
+   * HU-INC-06 / PMS-157:
+   * Finaliza la atención mediante el endpoint transaccional del backend.
+   *
+   * Las evidencias fotográficas no se envían aquí porque el endpoint actual
+   * solo admite el diagnóstico y las acciones en JSON. La integración de
+   * fotos queda pendiente de un contrato backend que la soporte.
    */
   async solucionarIncidencia(
     id: string,
     diagnostico: string,
-    acciones: string,
-    _archivos: File[] = []
-  ): Promise<void> {
+    acciones: string
+  ): Promise<Incidencia> {
     const usuario = await this.esperarUsuario();
     if (!usuario) {
       throw new Error('Debes iniciar sesión para finalizar la incidencia.');
@@ -275,17 +278,18 @@ export class IncidenciasService {
 
     const token = await usuario.getIdToken();
 
-    // Body exacto que espera el nuevo endpoint de Gean:
-    const body = {
+    const payload = {
       diagnosticoTecnico: diagnostico.trim(),
       accionesRealizadas: acciones.trim(),
     };
 
-    // Llamada oficial a finalizar-atencion vía PATCH
+    // HttpClient rechaza cualquier respuesta no exitosa; no se modifica el
+    // estado local hasta que la confirmación posterior del backend también
+    // demuestre que la incidencia quedó Solucionada.
     await firstValueFrom(
       this.http.patch<unknown>(
         `${this.apiUrl}/${encodeURIComponent(id)}/finalizar-atencion`,
-        body,
+        payload,
         {
           headers: new HttpHeaders({
             Authorization: `Bearer ${token}`,
@@ -295,26 +299,15 @@ export class IncidenciasService {
       )
     );
 
-    // Actualizamos el estado reactivo en Frontend a Solucionada
-    const ahora = new Date();
-    this._todas.update((lista) =>
-      lista.map((inc) => {
-        if (inc.id === id) {
-          return {
-            ...inc,
-            estado: 'Solucionada' as Incidencia['estado'],
-            actualizada: ahora,
-            historial: [
-              ...inc.historial,
-              {
-                estado: 'Solucionada' as Incidencia['estado'],
-                fecha: ahora,
-              },
-            ],
-          };
-        }
-        return inc;
-      })
-    );
+    await this.cargarAsignadasDesdeBackend(usuario);
+    const incidenciaActualizada = this.obtenerPropia(id);
+
+    if (!incidenciaActualizada || !this.esSolucionada(incidenciaActualizada)) {
+      throw new Error(
+        'El backend no confirmó la incidencia en estado Solucionada.'
+      );
+    }
+
+    return incidenciaActualizada;
   }
 }
