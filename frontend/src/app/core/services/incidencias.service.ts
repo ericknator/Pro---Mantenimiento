@@ -295,24 +295,20 @@ export class IncidenciasService {
       creadoEn: new Date().toISOString().slice(0, 19),
     };
 
-    try {
-      await firstValueFrom(
-        this.http.post<unknown>(
-          `http://localhost:8085/promantenimiento/api/actuacion-incidencia/${id}`,
-          payload,
-          {
-            headers: new HttpHeaders({
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            }),
-          }
-        )
-      );
-    } catch (error) {
-      console.warn('No se pudo registrar la actuación en backend, continuando reactivo:', error);
-    }
+    await firstValueFrom(
+      this.http.post<unknown>(
+        `http://localhost:8085/promantenimiento/api/actuacion-incidencia/${id}`,
+        payload,
+        {
+          headers: new HttpHeaders({
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }),
+        }
+      )
+    );
 
-    // Actualizamos el estado reactivo en el Front a 'Solucionada'
+    // Solo si el backend respondió 200 OK con éxito, actualizamos la vista:
     const ahora = new Date();
     this._todas.update((lista) =>
       lista.map((inc) => {
