@@ -13,11 +13,13 @@
     <div class="card">
       <header class="card__head">
         <h2 class="card__titulo">ATENCIÓN Y SOLUCIÓN TÉCNICA</h2>
-        <span class="estado-tag" [attr.data-estado]="estadoActual()">{{ estadoActual() }}</span>
+        <span class="estado-tag" [attr.data-estado]="estadoActual()">
+          {{ pasoActivo() === 4 ? 'En atención' : estadoActual() }}
+        </span>
       </header>
 
       <!-- Si está Solucionada (CA-01 cumplido) -->
-      @if (estadoActual() === 'Solucionada' || exito()) {
+      @if (pasoActivo() === 5 || exito()) {
         <div class="ok" role="status">
           <span class="material-symbols-rounded">verified</span>
           <div>
@@ -32,8 +34,8 @@
       }
 
       <!-- Paso 3: Asignada -> Botón para iniciar atención -->
-      @if (puedeAceptar() && estadoActual() === 'Asignada') {
-        <div class="info" role="status">
+        @if (puedeAceptar() && pasoActivo() === 3) {
+          <div class="info" role="status">
           <span class="material-symbols-rounded">engineering</span>
           <div>
             <strong>Caso Asignado a tu cargo</strong>
@@ -55,7 +57,7 @@
       }
 
       <!-- Paso 4: En atención -> Formulario de HU-INC-06 (PMS-159 y PMS-160) -->
-      @if (esPersonalTecnico() && estadoActual() === 'En atención') {
+      @if (esPersonalTecnico() && pasoActivo() === 4) {
         <div class="info" role="status">
           <span class="material-symbols-rounded">build</span>
           <div>
@@ -132,13 +134,12 @@
             <span class="material-symbols-rounded">task_alt</span>
           </button>
           
-          <button
-            type="button"
+          <a
             class="btn-link"
-            (click)="estadoIntervencion.set('Asignada')"
+            [routerLink]="esPersonalTecnico() ? '/incidencias/asignadas' : '/incidencias/mis-incidencias'"
           >
-            Pausar atención y volver
-          </button>
+            Pausar atención y volver a la lista
+          </a>
         </div>
       }
 

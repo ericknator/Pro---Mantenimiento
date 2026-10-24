@@ -39,12 +39,15 @@ export class ListadoIncidenciasComponent {
           (i) => i.estado === 'Solucionada' || i.estado === 'Cerrada'
         );
       case 'asignadas':
-        return lista.filter(
-          (i) =>
-            (i.estado as string) === 'Asignada' ||
-            (i.estado as string) === 'En proceso' ||
-            (i.estado as string) === 'En atención'
-        );
+        return lista.filter((i) => {
+          const est = (i.estado as string ?? '').toLowerCase();
+          return (
+            est === 'asignada' ||
+            est.includes('atenci') ||
+            est.includes('proceso') ||
+            est === 'solucionada'
+          );
+        });
       default:
         return lista;
     }

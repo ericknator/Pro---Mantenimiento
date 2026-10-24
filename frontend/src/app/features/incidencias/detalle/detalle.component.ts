@@ -66,23 +66,13 @@ export class DetalleIncidenciaComponent {
 
   // Calcula el número del stepper (1 al 5)
   pasoActivo = computed(() => {
-    const est = this.estadoActual();
-    switch (est) {
-      case 'Reportada':
-        return 1;
-      case 'Clasificada':
-        return 2;
-      case 'Asignada':
-        return 3;
-      case 'En atención':
-      case 'En proceso':
-        return 4;
-      case 'Solucionada':
-      case 'Cerrada':
-        return 5;
-      default:
-        return 3;
-    }
+    const est = (this.estadoActual() ?? '').toLowerCase();
+    if (est.includes('reportada')) return 1;
+    if (est.includes('clasificada')) return 2;
+    if (est.includes('asignada')) return 3;
+    if (est.includes('atenci') || est.includes('atencion') || est.includes('proceso')) return 4;
+    if (est.includes('solucionada')) return 5;
+    return 1;
   });
 
   // HU-INC-06: Campos para la solución
@@ -109,26 +99,12 @@ export class DetalleIncidenciaComponent {
     this.errorValidacion.set(null);
 
     try {
-      const incidenciaActualizada = await this.service.aceptarIncidencia(incidencia.id);
-
-      if (incidenciaActualizada.estado !== 'En atención') {
-        this.aceptacionError.set(
-          'El backend respondió, pero no se pudo confirmar el estado En atención. Recarga la vista antes de continuar.'
-        );
-      }
+      await this.service.aceptarIncidencia(incidencia.id);
+      // Forzamos el estado reactivo inmediato al paso 4
+      this.estadoIntervencion.set('En atención');
     } catch (error) {
       console.error('Error al aceptar la incidencia:', error);
       this.aceptacionError.set(this.mensajeErrorAceptacion(error));
-
-      // En conflictos o cambios de permisos, sincronizar para no dejar un estado
-      // visual que ya no coincide con el backend.
-      const status = this.statusError(error);
-      if (status === 401 || status === 403 || status === 404 || status === 409) {
-        await this.service.cargarAsignadas();
-        if (this.incidencia()?.estado === 'En atención') {
-          this.aceptacionError.set(null);
-        }
-      }
     } finally {
       this.aceptando.set(false);
     }
