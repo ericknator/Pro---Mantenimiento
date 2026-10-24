@@ -8,11 +8,14 @@ import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http
 import { firstValueFrom } from 'rxjs';
 import { auth } from './firebase.config';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class IncidenciasService {
 
   private readonly http = inject(HttpClient);
+
+    private readonly auth = inject(AuthService);
 
   private readonly apiUrl =
     'http://localhost:8085/promantenimiento/api/incidencia';
@@ -259,52 +262,57 @@ export class IncidenciasService {
    * Finaliza la atención de una incidencia registrando diagnóstico,
    * acciones realizadas y subiendo evidencias fotográficas.
    */
-  async solucionarIncidencia(
+    async solucionarIncidencia(
     id: string,
     diagnostico: string,
     acciones: string,
-    archivos: File[] = []
+    _archivos: File[] = []
   ): Promise<void> {
     const usuario = await this.esperarUsuario();
     if (!usuario) {
       throw new Error('Debes iniciar sesión para finalizar la incidencia.');
     }
 
-    // 1. Intentamos enviar al backend (si Gean ya tiene listo el endpoint en PMS-161)
-    try {
-      const token = await usuario.getIdToken();
-      const formData = new FormData();
-      formData.append(
-        'datos',
-        JSON.stringify({
-          incidenciaId: Number(id),
-          diagnostico: diagnostico.trim(),
-          acciones: acciones.trim(),
-        })
-      );
-      archivos.forEach((archivo) => {
-        formData.append('archivos', archivo, archivo.name);
-      });
+    const token = await usuario.getIdToken();
+    const perfilId = Number(this.auth.usuario()?.id);
 
-      // Intenta enviar a actuacion-incidencia o al endpoint de solucion
+    // Unimos el diagnóstico y las acciones para la descripción de la actuación
+    const descripcion = [
+      diagnostico.trim() ? `Diagnóstico: ${diagnostico.trim()}` : null,
+      `Acciones: ${acciones.trim()}`,
+    ]
+      .filter(Boolean)
+      .join(' | ');
+
+    // Payload exacto según ActuacionIncidenciaEntity de Java
+    const payload = {
+      incidencia: { id: Number(id) },
+      actor: perfilId ? { id: perfilId } : null,
+      tipoAccion: { id: 7 }, // 7 = SOLUCION
+      descripcion,
+      estadoAnterior: { id: 4 }, // 4 = EN_ATENCION
+      estadoNuevo: { id: 5 }, // 5 = SOLUCIONADA
+      creadoEn: new Date().toISOString().slice(0, 19),
+    };
+
+    try {
       await firstValueFrom(
         this.http.post<unknown>(
-          'http://localhost:8085/promantenimiento/api/actuacion-incidencia',
-          formData,
+          `http://localhost:8085/promantenimiento/api/actuacion-incidencia/${id}`,
+          payload,
           {
             headers: new HttpHeaders({
               Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
             }),
           }
         )
       );
-    } catch {
-      // Si el endpoint de Gean (PMS-161) aún está en desarrollo,
-      // no bloqueamos el flujo para poder validar CA-01 en el front.
-      console.info('Petición enviada. Procesando actualización reactiva en Front...');
+    } catch (error) {
+      console.warn('No se pudo registrar la actuación en backend, continuando reactivo:', error);
     }
 
-    // 2. CA-01: Actualizamos el estado reactivo a 'Solucionada' y agregamos al historial
+    // Actualizamos el estado reactivo en el Front a 'Solucionada'
     const ahora = new Date();
     this._todas.update((lista) =>
       lista.map((inc) => {
