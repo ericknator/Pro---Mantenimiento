@@ -1,4 +1,4 @@
-<app-page-hero [title]="titulo" [subtitle]="items().length + ' registros · datos de ejemplo'" />
+<app-page-hero [title]="titulo" [subtitle]="subtitulo()" />
 
 <section class="panel dock">
   <header class="panel__head">
@@ -6,8 +6,8 @@
     <a class="label back" routerLink="/incidencias">← Volver</a>
   </header>
   @for (i of items(); track i.id) {
-    <app-incidencia-row [incidencia]="i" />
+  <app-incidencia-row [incidencia]="i" />
   } @empty {
-    <p class="empty">No hay incidencias en esta vista.</p>
+  <p class="empty">No hay incidencias en esta vista.</p>
   }
 </section>
