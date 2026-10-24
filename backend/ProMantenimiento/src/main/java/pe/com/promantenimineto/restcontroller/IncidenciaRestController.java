@@ -1,6 +1,7 @@
 package pe.com.promantenimineto.restcontroller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -99,7 +100,21 @@ public class IncidenciaRestController {
 	public IncidenciaEntity aceptar(@PathVariable Long id) {
 	    return servicio.aceptar(id);
 	}
+	
+	@PatchMapping("/{id}/finalizar-atencion")
+	public IncidenciaEntity finalizarAtencion(
+	        @PathVariable Long id,
+	        @RequestBody Map<String, String> datos) {
 
+	    String diagnosticoTecnico = datos.get("diagnosticoTecnico");
+	    String accionesRealizadas = datos.get("accionesRealizadas");
+
+	    return servicio.finalizarAtencion(
+	        id,
+	        diagnosticoTecnico,
+	        accionesRealizadas
+	    );
+	}
 
 	
 }

@@ -33,5 +33,10 @@ public interface IncidenciaService {
 	
 	IncidenciaEntity aceptar(Long id);
 	
+	IncidenciaEntity finalizarAtencion(
+		    Long id,
+		    String diagnosticoTecnico,
+		    String accionesRealizadas
+		);	
 	
 }
