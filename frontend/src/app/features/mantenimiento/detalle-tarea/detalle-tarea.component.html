@@ -1,0 +1,126 @@
+<app-page-hero
+  tone="dark"
+  eyebrow="CONDOMINIO NUEVO ALCÁZAR · MANTENIMIENTO PREVENTIVO"
+  backLink="/mantenimiento/tareas-asignadas"
+  backLabel="Volver a tareas asignadas"
+  [title]="tarea()?.titulo ?? 'Detalle de Tarea Preventiva'"
+  [subtitle]="'Programada para ' + ((tarea()?.fechaProgramada | date: 'EEEE d \'de\' MMMM, yyyy') ?? 'fecha pendiente')"
+/>
+
+<div class="contenedor-detalle">
+  @if (cargando()) {
+    <!-- Estado de carga -->
+    <section class="panel dock">
+      <div class="estado-caja">
+        <span class="material-symbols-rounded spinner">sync</span>
+        <p>Consultando ficha de la tarea y validando permisos de acceso…</p>
+      </div>
+    </section>
+  } @else if (!tarea() || errorCarga()) {
+    <!-- Tarea no encontrada -->
+    <section class="panel dock">
+      <div class="estado-caja">
+        <span class="material-symbols-rounded">error</span>
+        <h3>Tarea no encontrada</h3>
+        <p>{{ errorCarga() ?? 'El registro solicitado no existe en la base de datos.' }}</p>
+        <a class="btn" routerLink="/mantenimiento/tareas-asignadas">Volver a mis tareas</a>
+      </div>
+    </section>
+  } @else if (!tieneAcceso()) {
+    <!-- CUMPLIMIENTO HU-MAN-04-CA-02: Técnico sin asignación intenta abrir tarea ajena -->
+    <section class="panel dock restringido">
+      <div class="alerta-restringido" role="alert">
+        <div class="alerta-restringido__icono">
+          <span class="material-symbols-rounded">lock</span>
+        </div>
+        <div class="alerta-restringido__texto">
+          <h2>Acceso Restringido</h2>
+          <p>
+            No tienes autorización para consultar esta tarea preventiva. Actualmente está asignada a otro responsable técnico según las políticas de privacidad y seguridad operativa.
+          </p>
+          <a class="btn btn-outline" routerLink="/mantenimiento/tareas-asignadas">
+            <span class="material-symbols-rounded">arrow_back</span>
+            <span>Volver a mis tareas asignadas</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  } @else {
+    <!-- CUMPLIMIENTO HU-MAN-04-CA-01: Visualización completa de Activo, Fecha, Ubicación y Trabajo -->
+    <div class="grid-detalle">
+      <!-- Columna Izquierda: Información de la intervención técnica -->
+      <section class="panel principal">
+        <header class="panel__head">
+          <div class="head-top">
+            <h2 class="titulo-seccion">Instrucciones de la tarea</h2>
+            <span class="badge" [attr.data-estado]="tarea()?.estadoCodigo">
+              {{ tarea()?.estado }}
+            </span>
+          </div>
+        </header>
+
+        <div class="panel__body">
+          <div class="campo-bloque">
+            <label class="etiqueta">Tipo de trabajo / Actividad</label>
+            <p class="valor-texto grande">{{ tarea()?.titulo }}</p>
+          </div>
+
+          <div class="campo-bloque">
+            <label class="etiqueta">Procedimiento y descripción técnica</label>
+            <p class="valor-texto descripcion">
+              {{ tarea()?.descripcion || 'Sin descripción adicional registrada para esta tarea.' }}
+            </p>
+          </div>
+
+          <div class="info-aviso">
+            <span class="material-symbols-rounded">info</span>
+            <div>
+              <strong>Responsable técnico asignado:</strong>
+              <p>{{ tarea()?.responsableNombre }} (Tú)</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Columna Derecha: Ficha del Activo y Ubicación -->
+      <section class="panel lateral">
+        <header class="panel__head">
+          <h2 class="titulo-seccion">Ficha del Activo</h2>
+          <span class="badge-codigo">{{ tarea()?.activoCodigo }}</span>
+        </header>
+
+        <div class="panel__body">
+          <dl class="datos-lista">
+            <div class="dato-fila">
+              <dt>Equipo / Activo:</dt>
+              <dd><strong>{{ tarea()?.activoNombre }}</strong></dd>
+            </div>
+
+            <div class="dato-fila">
+              <dt>Ubicación:</dt>
+              <dd>
+                <span class="material-symbols-rounded icono-inline">location_on</span>
+                {{ tarea()?.ubicacion }}
+              </dd>
+            </div>
+
+            <div class="dato-fila">
+              <dt>Fecha programada:</dt>
+              <dd>
+                <span class="material-symbols-rounded icono-inline">calendar_today</span>
+                {{ tarea()?.fechaProgramada | date: 'dd/MM/yyyy HH:mm' }}
+              </dd>
+            </div>
+          </dl>
+
+          <div class="acciones-panel">
+            <a class="btn btn-block" routerLink="/mantenimiento/tareas-asignadas">
+              <span class="material-symbols-rounded">arrow_back</span>
+              <span>Volver a tareas asignadas</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
+  }
+</div>

@@ -1,0 +1,112 @@
+<app-page-hero
+  tone="dark"
+  eyebrow="CONDOMINIO NUEVO ALCÁZAR · GESTIÓN TÉCNICA"
+  backLink="/incidencias"
+  backLabel="Volver a Incidencias"
+  title="Tareas preventivas asignadas"
+  [subtitle]="subtituloHero()"
+/>
+
+<div class="contenedor-bandeja">
+  <section class="panel">
+    <!-- Barra superior de filtros -->
+    <header class="panel__head">
+      <div class="search-box">
+        <span class="material-symbols-rounded">search</span>
+        <input
+          type="text"
+          placeholder="Buscar por activo, código, ubicación o trabajo…"
+          [value]="busqueda()"
+          (input)="actualizarBusqueda($event)"
+        />
+      </div>
+
+      <div class="filtros-tags">
+        <button
+          type="button"
+          class="tag-btn"
+          [class.active]="filtroEstado() === 'TODOS'"
+          (click)="cambiarFiltro('TODOS')"
+        >
+          Todas
+        </button>
+        <button
+          type="button"
+          class="tag-btn"
+          [class.active]="filtroEstado() === 'PROGRAMADA'"
+          (click)="cambiarFiltro('PROGRAMADA')"
+        >
+          Programadas
+        </button>
+        <button
+          type="button"
+          class="tag-btn"
+          [class.active]="filtroEstado() === 'EN_EJECUCION'"
+          (click)="cambiarFiltro('EN_EJECUCION')"
+        >
+          En ejecución
+        </button>
+      </div>
+    </header>
+
+    <!-- Estado de carga -->
+    @if (cargando()) {
+      <div class="estado-caja">
+        <span class="material-symbols-rounded spinner">sync</span>
+        <p>Consultando tareas preventivas asignadas…</p>
+      </div>
+    } @else if (tareasFiltradas().length === 0) {
+      <!-- Estado vacío -->
+      <div class="estado-caja vacio">
+        <span class="material-symbols-rounded">event_available</span>
+        <h3>No se encontraron tareas preventivas</h3>
+        <p>No tienes tareas asignadas con los criterios seleccionados actualmente.</p>
+      </div>
+    } @else {
+      <!-- Listado de tareas (HU-MAN-04-CA-01: Activo, Fecha, Ubicación y Tipo de trabajo) -->
+      <div class="lista-tareas">
+        @for (tarea of tareasFiltradas(); track tarea.id) {
+          <a [routerLink]="['/mantenimiento/tarea', tarea.id]" class="tarea-item">
+            <div class="tarea-item__icono">
+              <span class="material-symbols-rounded">build_circle</span>
+            </div>
+
+            <div class="tarea-item__cuerpo">
+              <div class="tarea-item__top">
+                <!-- Tipo de trabajo / Título -->
+                <h3 class="tarea-item__titulo">{{ tarea.titulo }}</h3>
+                <!-- Estado -->
+                <span class="badge" [attr.data-estado]="tarea.estadoCodigo">
+                  {{ tarea.estado }}
+                </span>
+              </div>
+
+              <div class="tarea-item__meta">
+                <!-- Activo y código -->
+                <span class="meta-dato">
+                  <span class="material-symbols-rounded">precision_manufacturing</span>
+                  <strong>{{ tarea.activoNombre }}</strong>
+                  <small>({{ tarea.activoCodigo }})</small>
+                </span>
+
+                <!-- Ubicación -->
+                <span class="meta-dato">
+                  <span class="material-symbols-rounded">location_on</span>
+                  <span>{{ tarea.ubicacion }}</span>
+                </span>
+
+                <!-- Fecha programada -->
+                <span class="meta-dato">
+                  <span class="material-symbols-rounded">calendar_today</span>
+                  <span>{{ tarea.fechaProgramada | date: 'dd MMM yyyy, HH:mm' }}</span>
+                </span>
+              </div>
+            </div>
+
+            <span class="material-symbols-rounded arrow-icon">chevron_right</span>
+          </a>
+        }
+      </div>
+    }
+  </section>
+</div>

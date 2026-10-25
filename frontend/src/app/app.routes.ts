@@ -219,6 +219,24 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/incidencias/listado/listado.component').then((m) => m.ListadoIncidenciasComponent),
       },
+      {
+        path: 'mantenimiento/tareas-asignadas',
+        title: 'Tareas preventivas asignadas',
+        loadComponent: () =>
+          import(
+            './features/mantenimiento/tareas-asignadas/tareas-asignadas.component'
+          ).then((m) => m.TareasAsignadasComponent),
+        data: { menu: 'rail', fondo: 'terraza', titulo: 'Tareas preventivas asignadas' },
+      },
+      {
+        path: 'mantenimiento/tarea/:id',
+        title: 'Detalle de tarea preventiva',
+        loadComponent: () =>
+          import(
+            './features/mantenimiento/detalle-tarea/detalle-tarea.component'
+          ).then((m) => m.DetalleTareaComponent),
+        data: { menu: 'rail', fondo: 'edificio' },
+      },
       ...modulosPendientes,
     ],
   },
