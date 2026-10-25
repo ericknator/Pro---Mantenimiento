@@ -26,6 +26,12 @@ export const INCIDENT_ACTIONS: NavItem[] = [
   { label: 'Seguimiento de incidencias', icon: 'track_changes', route: '/incidencias/seguimiento' },
   { label: 'Historial de incidencias', icon: 'history', route: '/incidencias/historial' },
   { label: 'Incidencias asignadas', icon: 'assignment_ind', route: '/incidencias/asignadas' },
+    { label: 'Tareas preventivas asignadas', icon: 'assignment_turned_in', route: '/mantenimiento/tareas-asignadas' },
+];
+
+export const MANTENIMIENTO_ACTIONS: NavItem[] = [
+  { label: 'Tareas preventivas asignadas', icon: 'assignment_turned_in', route: '/mantenimiento/tareas-asignadas' },
+  { label: 'Programar preventivo', icon: 'calendar_month', route: '/mantenimiento/programar' },
 ];
 
 export const CATEGORIAS_INCIDENCIA = [
