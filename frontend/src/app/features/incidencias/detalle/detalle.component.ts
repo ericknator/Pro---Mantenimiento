@@ -1,12 +1,13 @@
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { IncidenciasService } from '../../../core/services/incidencias.service';
+import { EvidenciaIncidencia } from '../../../models/incidencia.model';
 import { EstadoBadgeComponent } from '../../../shared/estado-badge/estado-badge.component';
 import { PageHeroComponent } from '../../../shared/page-hero/page-hero.component';
 
@@ -27,19 +28,18 @@ export class DetalleIncidenciaComponent {
   eyebrow = 'CONDOMINIO NUEVO ALCÁZAR · MANTENIMIENTO';
 
   constructor() {
-    void this.cargarIncidenciasDelUsuario();
+    effect(() => {
+      const id = this.id();
+      if (id) {
+        this.evidenciasNoVisualizables.set(new Set());
+        void this.cargarIncidenciaDelUsuario(id);
+      }
+    });
   }
 
-  private async cargarIncidenciasDelUsuario(): Promise<void> {
+  private async cargarIncidenciaDelUsuario(id: string): Promise<void> {
     await this.auth.inicializacion;
-
-    const rol = this.auth.usuario()?.rol;
-    if (rol === 'mantenimiento' || rol === 'seguridad') {
-      await this.service.cargarAsignadas();
-      return;
-    }
-
-    await this.service.cargar();
+    await this.service.cargarDetalle(id);
   }
 
   incidencia = computed(() => this.service.obtenerPropia(this.id()));
@@ -55,6 +55,11 @@ export class DetalleIncidenciaComponent {
   });
 
   readonly cargando = this.service.cargando;
+
+  readonly evidenciasSolucion = computed(
+    () => this.incidencia()?.evidenciasSolucion ?? []
+  );
+  readonly evidenciasNoVisualizables = signal<Set<string>>(new Set());
 
   // Estado operativo local para transición: Asignada -> En atención -> Solucionada
   estadoIntervencion = signal<'Asignada' | 'En atención' | 'Solucionada' | null>(null);
@@ -197,6 +202,30 @@ export class DetalleIncidenciaComponent {
     this.previews.update((prevs) => prevs.filter((_, i) => i !== index));
   }
 
+  esImagenEvidencia(evidencia: EvidenciaIncidencia): boolean {
+    return (
+      evidencia.tipoCodigo?.toUpperCase() === 'FOTO' ||
+      /\.(png|jpe?g|webp)$/i.test(evidencia.nombreArchivo)
+    );
+  }
+
+  urlVisualizable(evidencia: EvidenciaIncidencia): string | null {
+    const url = evidencia.urlRecurso?.trim();
+    return url && /^https?:\/\//i.test(url) ? url : null;
+  }
+
+  esEvidenciaNoVisualizable(evidencia: EvidenciaIncidencia): boolean {
+    return this.evidenciasNoVisualizables().has(evidencia.id);
+  }
+
+  marcarEvidenciaNoVisualizable(id: string): void {
+    this.evidenciasNoVisualizables.update((ids) => {
+      const siguientes = new Set(ids);
+      siguientes.add(id);
+      return siguientes;
+    });
+  }
+
   async finalizarSolucion(): Promise<void> {
     // CA-02: Validación obligatoria de acciones realizadas
     if (!this.acciones().trim()) {
@@ -217,7 +246,8 @@ export class DetalleIncidenciaComponent {
       const incidenciaConfirmada = await this.service.solucionarIncidencia(
         idActual,
         this.diagnostico(),
-        this.acciones()
+        this.acciones(),
+        this.archivos()
       );
 
       // El servicio solo resuelve después de volver a leer el estado desde el

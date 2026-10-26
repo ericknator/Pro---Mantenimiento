@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   Incidencia,
   IncidenciaApi,
+  EvidenciaIncidencia,
   NuevaIncidencia
 } from '../../models/incidencia.model';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
@@ -17,13 +18,51 @@ export class IncidenciasService {
   private readonly apiUrl =
     'http://localhost:8085/promantenimiento/api/incidencia';
 
-    private readonly apiAsignadasUrl =
+  private readonly apiAsignadasUrl =
     'http://localhost:8085/promantenimiento/api/incidencia/asignadas';
+
+  private mapearEvidencias(
+    incidencia: IncidenciaApi
+  ): EvidenciaIncidencia[] {
+    if (!Array.isArray(incidencia.evidencias)) {
+      return [];
+    }
+
+    return incidencia.evidencias
+      .filter((evidencia) => {
+        const referencia = evidencia.incidencia;
+        if (referencia === undefined || referencia === null) {
+          return true;
+        }
+
+        const incidenciaId =
+          typeof referencia === 'object' ? referencia.id : referencia;
+
+        return incidenciaId === undefined || String(incidenciaId) === String(incidencia.id);
+      })
+      .map((evidencia) => {
+        const creadoEn = evidencia.creadoEn
+          ? new Date(evidencia.creadoEn)
+          : null;
+
+        return {
+          id: String(evidencia.id),
+          nombreArchivo: evidencia.nombreArchivo?.trim() || 'Evidencia',
+          urlRecurso: evidencia.urlRecurso?.trim() || null,
+          descripcion: evidencia.descripcion?.trim() || null,
+          tipoCodigo: evidencia.tipoEvidencia?.codigo?.trim() || null,
+          tipoNombre: evidencia.tipoEvidencia?.nombre?.trim() || null,
+          creadoEn:
+            creadoEn && !Number.isNaN(creadoEn.getTime()) ? creadoEn : null,
+        };
+      });
+  }
 
   private mapearIncidencias(respuesta: IncidenciaApi[]): Incidencia[] {
     return respuesta.map((item) => {
       const fecha = new Date(item.fechaReporte);
       const actualizada = new Date(item.actualizadoEn);
+      const evidenciasConsultaDisponible = Array.isArray(item.evidencias);
 
       return {
         id: String(item.id),
@@ -33,6 +72,8 @@ export class IncidenciasService {
         ubicacion: item.ubicacion,
         descripcion: item.descripcion,
         evidencias: [],
+        evidenciasSolucion: this.mapearEvidencias(item),
+        evidenciasConsultaDisponible,
         estado: item.estado.nombre as Incidencia['estado'],
         creada: fecha,
         actualizada,
@@ -44,6 +85,44 @@ export class IncidenciasService {
         ]
       };
     });
+  }
+
+  /**
+   * Consulta solo el caso solicitado. Además de respetar las reglas de
+   * autorización del backend, permite que un futuro contrato de detalle
+   * incluya evidencias sin consultar un listado global no acotado.
+   */
+  async cargarDetalle(id: string): Promise<void> {
+    this._todas.set([]);
+    this.cargando.set(true);
+    this.error.set(null);
+
+    try {
+      const usuario = await this.esperarUsuario();
+      if (!usuario) {
+        this.error.set('Debes iniciar sesión para consultar esta incidencia.');
+        return;
+      }
+
+      const token = await usuario.getIdToken();
+      const respuesta = await firstValueFrom(
+        this.http.get<IncidenciaApi>(
+          `${this.apiUrl}/${encodeURIComponent(id)}`,
+          {
+            headers: new HttpHeaders({
+              Authorization: `Bearer ${token}`,
+            }),
+          }
+        )
+      );
+
+      this._todas.set(this.mapearIncidencias([respuesta]));
+    } catch (error) {
+      console.error('Error al cargar el detalle de la incidencia:', error);
+      this.error.set(this.mensajeErrorConsulta(error));
+    } finally {
+      this.cargando.set(false);
+    }
   }
 
   private async cargarAsignadasDesdeBackend(usuario: User): Promise<void> {
@@ -63,13 +142,17 @@ export class IncidenciasService {
   async cargarAsignadas(): Promise<void> {
     // No conservar datos de otro usuario o de otra carga mientras se valida el acceso.
     this._todas.set([]);
-    const usuario = await this.esperarUsuario();
-    if (!usuario) {
-      return;
-    }
-
     this.cargando.set(true);
     this.error.set(null);
+
+    const usuario = await this.esperarUsuario();
+    if (!usuario) {
+      this.error.set(
+        'Debes iniciar sesión para consultar las incidencias asignadas.'
+      );
+      this.cargando.set(false);
+      return;
+    }
 
     try {
       await this.cargarAsignadasDesdeBackend(usuario);
@@ -115,17 +198,18 @@ export class IncidenciasService {
   async cargar(): Promise<void> {
     // Evita mostrar incidencias de una sesión anterior mientras llega la respuesta actual.
     this._todas.set([]);
+    this.cargando.set(true);
+    this.error.set(null);
+
     const usuario = await this.esperarUsuario();
 
     if (!usuario) {
       this.error.set(
         'Debes iniciar sesión para consultar tus incidencias.'
       );
+      this.cargando.set(false);
       return;
     }
-
-    this.cargando.set(true);
-    this.error.set(null);
 
     try {
       const token = await usuario.getIdToken();
@@ -147,6 +231,23 @@ export class IncidenciasService {
     } finally {
       this.cargando.set(false);
     }
+  }
+
+  private mensajeErrorConsulta(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      switch (error.status) {
+        case 0:
+          return 'No se pudo conectar con el servidor. Verifica la conexión e inténtalo nuevamente.';
+        case 401:
+          return 'Tu sesión no es válida o ha expirado. Inicia sesión nuevamente.';
+        case 403:
+          return 'No tienes permiso para consultar esta incidencia.';
+        case 404:
+          return 'La incidencia no existe o no está disponible para tu usuario.';
+      }
+    }
+
+    return 'No se pudo consultar la incidencia. Inténtalo nuevamente.';
   }
 
   /**
@@ -259,50 +360,63 @@ export class IncidenciasService {
   }
 
   /**
-   * HU-INC-06 / PMS-157:
-   * Finaliza la atención mediante el endpoint transaccional del backend.
-   *
-   * Las evidencias fotográficas no se envían aquí porque el endpoint actual
-   * solo admite el diagnóstico y las acciones en JSON. La integración de
-   * fotos queda pendiente de un contrato backend que la soporte.
-   */
+ * HU-INC-06 / PMS-157:
+ * Finaliza la atención enviando diagnóstico, acciones y evidencias.
+ * Confirma posteriormente el estado persistido por el backend.
+ */
   async solucionarIncidencia(
     id: string,
     diagnostico: string,
-    acciones: string
+    acciones: string,
+    archivos: File[] = []
   ): Promise<Incidencia> {
+    if (!acciones.trim()) {
+      throw new Error('Debes ingresar las acciones realizadas.');
+    }
+
+    if (archivos.length > 3) {
+      throw new Error('Solo puedes adjuntar un máximo de 3 evidencias.');
+    }
+
     const usuario = await this.esperarUsuario();
+
     if (!usuario) {
       throw new Error('Debes iniciar sesión para finalizar la incidencia.');
     }
 
     const token = await usuario.getIdToken();
 
-    const payload = {
-      diagnosticoTecnico: diagnostico.trim(),
-      accionesRealizadas: acciones.trim(),
-    };
+    const formData = new FormData();
 
-    // HttpClient rechaza cualquier respuesta no exitosa; no se modifica el
-    // estado local hasta que la confirmación posterior del backend también
-    // demuestre que la incidencia quedó Solucionada.
+    formData.append('diagnosticoTecnico', diagnostico.trim());
+    formData.append('accionesRealizadas', acciones.trim());
+
+    for (const archivo of archivos) {
+      formData.append('archivos', archivo, archivo.name);
+    }
+
+    // El navegador establece Content-Type y el boundary de multipart.
     await firstValueFrom(
       this.http.patch<unknown>(
         `${this.apiUrl}/${encodeURIComponent(id)}/finalizar-atencion`,
-        payload,
+        formData,
         {
           headers: new HttpHeaders({
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
           }),
         }
       )
     );
 
+    // No declaramos éxito hasta consultar nuevamente el backend.
     await this.cargarAsignadasDesdeBackend(usuario);
+
     const incidenciaActualizada = this.obtenerPropia(id);
 
-    if (!incidenciaActualizada || !this.esSolucionada(incidenciaActualizada)) {
+    if (
+      !incidenciaActualizada ||
+      !this.esSolucionada(incidenciaActualizada)
+    ) {
       throw new Error(
         'El backend no confirmó la incidencia en estado Solucionada.'
       );
@@ -310,4 +424,5 @@ export class IncidenciasService {
 
     return incidenciaActualizada;
   }
+
 }

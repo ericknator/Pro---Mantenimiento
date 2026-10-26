@@ -5,9 +5,19 @@
     <h2 class="label">{{ titulo }}</h2>
     <a class="label back" routerLink="/incidencias">← Volver</a>
   </header>
-  @for (i of items(); track i.id) {
-  <app-incidencia-row [incidencia]="i" />
-  } @empty {
-  <p class="empty">No hay incidencias en esta vista.</p>
+
+  @if (service.cargando()) {
+    <p class="empty" role="status">Consultando incidencias…</p>
+  } @else if (service.error()) {
+    <div class="error" role="alert">
+      <span>{{ service.error() }}</span>
+      <button type="button" class="retry" (click)="recargar()">Reintentar</button>
+    </div>
+  } @else {
+    @for (i of items(); track i.id) {
+      <app-incidencia-row [incidencia]="i" />
+    } @empty {
+      <p class="empty">No hay incidencias solucionadas disponibles para tu usuario.</p>
+    }
   }
 </section>

@@ -62,7 +62,7 @@
           <span class="material-symbols-rounded">build</span>
           <div>
             <strong>Caso en proceso de atención</strong>
-            <small>Documenta el diagnóstico y las acciones ejecutadas. El endpoint actual confirma la solución mediante estos dos campos.</small>
+            <small>Documenta el diagnóstico, las acciones ejecutadas y las evidencias que enviarás junto con la solución.</small>
           </div>
         </div>
 
@@ -122,7 +122,10 @@
             </div>
           }
           <small class="evidencias-pendientes" role="note">
-            Pendiente de integración: el endpoint de finalización todavía no admite archivos; estas fotos no se envían ni se guardan.
+            Puedes adjuntar hasta 3 fotografías como evidencia de la solución.
+            Se enviarán junto con el diagnóstico y las acciones realizadas. La
+            consulta posterior depende de que el detalle devuelva las
+            evidencias persistidas.
           </small>
         </fieldset>
 
@@ -170,6 +173,73 @@
         <dt>Categoría</dt><dd>{{ inc.categoria }}</dd>
         <dt>Asignado a</dt><dd>{{ esPersonalTecnico() ? 'Mantenimiento' : inc.autor }}</dd>
       </dl>
+
+      <section class="evidencias-consulta" aria-labelledby="evidencias-titulo">
+        <div class="evidencias-consulta__head">
+          <h3 id="evidencias-titulo" class="stepper-subtitulo">EVIDENCIAS DE SOLUCIÓN</h3>
+          @if (inc.evidenciasConsultaDisponible) {
+            <span class="evidencias-contador">
+              {{ evidenciasSolucion().length }}
+            </span>
+          }
+        </div>
+
+        @if (!inc.evidenciasConsultaDisponible) {
+          <p class="evidencias-no-disponibles" role="status">
+            El detalle actual no devuelve las evidencias persistidas. La
+            visualización quedará disponible cuando exista una consulta
+            autorizada por incidencia; no se mostrará una ruta local del
+            servidor como si fuera una imagen pública.
+          </p>
+        } @else if (evidenciasSolucion().length === 0) {
+          <p class="evidencias-vacias">No hay evidencias registradas para esta solución.</p>
+        } @else {
+          <div class="evidencias-grid">
+            @for (evidencia of evidenciasSolucion(); track evidencia.id) {
+              <article class="evidencia">
+                @if (urlVisualizable(evidencia); as url) {
+                  @if (esEvidenciaNoVisualizable(evidencia)) {
+                    <div class="evidencia__no-visualizable">
+                      <span class="material-symbols-rounded">hide_image</span>
+                      <span>No se pudo cargar este archivo</span>
+                    </div>
+                  } @else if (esImagenEvidencia(evidencia)) {
+                    <a [href]="url" target="_blank" rel="noopener noreferrer">
+                      <img
+                        class="evidencia__imagen"
+                        [src]="url"
+                        [alt]="evidencia.descripcion || evidencia.nombreArchivo"
+                        (error)="marcarEvidenciaNoVisualizable(evidencia.id)"
+                      />
+                    </a>
+                  } @else {
+                    <a
+                      class="evidencia__archivo"
+                      [href]="url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span class="material-symbols-rounded">open_in_new</span>
+                      <span>{{ evidencia.nombreArchivo }}</span>
+                    </a>
+                  }
+                } @else {
+                  <div class="evidencia__no-visualizable">
+                    <span class="material-symbols-rounded">hide_image</span>
+                    <span>Archivo registrado sin URL visualizable</span>
+                  </div>
+                }
+                <small>
+                  {{ evidencia.tipoNombre || evidencia.tipoCodigo || 'Evidencia' }}
+                  @if (evidencia.creadoEn) {
+                    · {{ evidencia.creadoEn | date: 'd MMM yyyy, HH:mm' }}
+                  }
+                </small>
+              </article>
+            }
+          </div>
+        }
+      </section>
 
       <!-- Stepper Horizontal de 5 pasos -->
       <div class="stepper-seccion">
