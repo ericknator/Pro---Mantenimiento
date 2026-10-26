@@ -66,4 +66,7 @@ public class PlanMantenimientoEntity {
 
     @Column(name = "actualizado_en", nullable = false)
     private LocalDateTime actualizadoEn;
+    
+    @Transient
+    private LocalDateTime primeraTareaProgramadaPara;
 }
