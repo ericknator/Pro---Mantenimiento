@@ -19,6 +19,8 @@ import { EstadoIncidencia } from '../../models/incidencia.model';
       color: #4b566b;
     }
     .badge[data-estado='Reportada'] { background: #fdf0d3; color: #9a6200; }
+    .badge[data-estado='Clasificada'] { background: #f3e8ff; color: #7e22ce; }
+    .badge[data-estado='Asignada'] { background: #fef3c7; color: #b45309; }
     .badge[data-estado='En atención'] { background: #e1eaff; color: #2850d0; }
     .badge[data-estado='Solucionada'] { background: #d9f3e3; color: #1c7f47; }
     .badge[data-estado='Cerrada'] { background: #e8ebf1; color: #4b566b; }
