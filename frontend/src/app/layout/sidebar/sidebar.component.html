@@ -1,11 +1,10 @@
 <nav class="sidebar glass" [class.sidebar--collapsed]="collapsed()" aria-label="Menú principal">
-  @for (item of items(); track item.route){
+  @for (item of itemsVisibles(); track item.route){
     <a
       class="item"
       [class.item--danger]="item.danger"
+      [class.item--active]="esItemActivo(item)"
       [routerLink]="item.route"
-      routerLinkActive="item--active"
-      [routerLinkActiveOptions]="{ exact: item.route === '/inicio' }"
       [attr.title]="collapsed() ? item.label : null"
       [attr.aria-label]="item.label"
     >

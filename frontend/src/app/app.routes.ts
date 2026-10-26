@@ -1,5 +1,5 @@
 import { Route, Routes } from '@angular/router';
-import { NAV_ITEMS, NOTIFICACIONES_ITEM } from './core/data/navigation.data';
+import { NAV_ITEMS, NOTIFICACIONES_ITEM, MANTENIMIENTO_ACTIONS } from './core/data/navigation.data';
 import { authGuard, guestGuard, roleGuard } from './core/guards/auth.guard';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
 import { AdminLayoutComponent } from './features/administrador/admin-layout/admin-layout.component';
@@ -7,7 +7,7 @@ import { ADMIN_MANTENIMIENTO_ACTIONS, ADMIN_NAV_ITEMS } from './core/data/admin-
 import { ADMIN_INCIDENCIAS_ACTIONS } from './core/data/admin-incidencias.data';
 
 // Módulos del menú que aún no tienen pantalla propia: comparten la pantalla "en construcción"
-const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM]
+const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM, ...MANTENIMIENTO_ACTIONS]
   .filter((i) => i.route.startsWith('/modulo/'))
   .map((i) => ({
     path: i.route.substring(1),
@@ -220,6 +220,16 @@ export const routes: Routes = [
           import('./features/incidencias/listado/listado.component').then((m) => m.ListadoIncidenciasComponent),
       },
       {
+        path: 'mantenimiento',
+        pathMatch: 'full',
+        title: 'Mantenimientos',
+        loadComponent: () =>
+          import('./features/mantenimiento/mantenimiento.component').then(
+            (m) => m.MantenimientoComponent
+          ),
+        data: { fondo: 'edificio' },
+      },
+      {
         path: 'mantenimiento/tareas-asignadas',
         title: 'Tareas preventivas asignadas',
         loadComponent: () =>
@@ -237,6 +247,44 @@ export const routes: Routes = [
           ).then((m) => m.DetalleTareaComponent),
         data: { menu: 'rail', fondo: 'edificio' },
       },
+            {
+        path: 'mantenimiento/correctivos',
+        title: 'Mantenimientos correctivos',
+        loadComponent: () =>
+          import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
+        data: {
+          titulo: 'Mantenimientos correctivos',
+          fondo: 'edificio',
+          volver: '/mantenimiento',
+          volverTexto: 'Volver a Mantenimiento',
+        },
+      },
+      {
+        path: 'mantenimiento/calendario',
+        title: 'Calendario de mantenimiento',
+        loadComponent: () =>
+          import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
+        data: {
+          titulo: 'Calendario de mantenimiento',
+          fondo: 'edificio',
+          volver: '/mantenimiento',
+          volverTexto: 'Volver a Mantenimiento',
+        },
+      },
+      {
+        path: 'mantenimiento/historial',
+        title: 'Historial de mantenimientos',
+        loadComponent: () =>
+          import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
+        data: {
+          titulo: 'Historial de mantenimientos',
+          fondo: 'edificio',
+          volver: '/mantenimiento',
+          volverTexto: 'Volver a Mantenimiento',
+        },
+      },
+      
+      
       ...modulosPendientes,
     ],
   },

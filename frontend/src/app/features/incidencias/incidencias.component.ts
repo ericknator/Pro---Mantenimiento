@@ -17,7 +17,7 @@ export class IncidenciasComponent {
   // Filtramos para que a 'residente' no le aparezca 'Incidencias asignadas'
   get acciones() {
     const rol = this.auth.usuario()?.rol;
-    if (rol === 'residente') {
+    if (rol === 'residente' ) {
       return INCIDENT_ACTIONS.filter(
         (accion) => accion.route !== '/incidencias/asignadas'
       );
