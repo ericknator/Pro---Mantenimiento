@@ -13,7 +13,7 @@ import { PageHeroComponent } from '../../shared/page-hero/page-hero.component';
         Este módulo forma parte del diseño, pero todavía no está comprometido en el MVP vigente.
         Se implementará en un sprint posterior según el Product Backlog.
       </p>
-      <a class="btn" routerLink="/inicio">Volver al inicio</a>
+      <a class="btn" [routerLink]="volver">{{ volverTexto }}</a>
     </section>
   `,
   styles: `
@@ -22,5 +22,9 @@ import { PageHeroComponent } from '../../shared/page-hero/page-hero.component';
   `,
 })
 export class PlaceholderComponent {
-  titulo: string = inject(ActivatedRoute).snapshot.data['titulo'] ?? 'Módulo';
+  private readonly route = inject(ActivatedRoute);
+
+  titulo: string = this.route.snapshot.data['titulo'] ?? 'Módulo';
+  volver: string = this.route.snapshot.data['volver'] ?? '/inicio';
+  volverTexto: string = this.route.snapshot.data['volverTexto'] ?? 'Volver al inicio';
 }

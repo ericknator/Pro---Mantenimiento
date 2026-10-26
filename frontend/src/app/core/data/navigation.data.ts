@@ -4,6 +4,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', icon: 'home', route: '/inicio', bottom: true },
   { label: 'Finanzas', icon: 'account_balance_wallet', route: '/modulo/finanzas', bottom: true, grid: true },
   { label: 'Incidencias', icon: 'build', route: '/incidencias', bottom: true, grid: true },
+  { label: 'Mantenimientos', icon: 'engineering', route: '/mantenimiento', bottom: true, grid: true },
   { label: 'Alertas', icon: 'warning', route: '/modulo/alertas', grid: true },
   { label: 'Emergencia', icon: 'gpp_maybe', route: '/modulo/emergencia', danger: true },
   { label: 'Reservas', icon: 'calendar_month', route: '/modulo/reservas', bottom: true, grid: true },
@@ -26,13 +27,14 @@ export const INCIDENT_ACTIONS: NavItem[] = [
   { label: 'Seguimiento de incidencias', icon: 'track_changes', route: '/incidencias/seguimiento' },
   { label: 'Historial de incidencias', icon: 'history', route: '/incidencias/historial' },
   { label: 'Incidencias asignadas', icon: 'assignment_ind', route: '/incidencias/asignadas' },
-    { label: 'Tareas preventivas asignadas', icon: 'assignment_turned_in', route: '/mantenimiento/tareas-asignadas' },
 ];
 
+/* 
 export const MANTENIMIENTO_ACTIONS: NavItem[] = [
   { label: 'Tareas preventivas asignadas', icon: 'assignment_turned_in', route: '/mantenimiento/tareas-asignadas' },
   { label: 'Programar preventivo', icon: 'calendar_month', route: '/mantenimiento/programar' },
 ];
+*/
 
 export const CATEGORIAS_INCIDENCIA = [
   'Gasfitería',
@@ -47,4 +49,10 @@ export const CATEGORIAS_INCIDENCIA = [
 
 export const EDIFICIO_NOMBRE = 'Condominio Nuevo Alcázar';
 
+export const MANTENIMIENTO_ACTIONS: NavItem[] = [
+  { label: 'Tareas preventivas asignadas', icon: 'build_circle', route: '/mantenimiento/tareas-asignadas' },
+  { label: 'Correctivos', icon: 'construction', route: '/mantenimiento/correctivos' },
+  { label: 'Calendario', icon: 'calendar_month', route: '/mantenimiento/calendario' },
+  { label: 'Historial', icon: 'history', route: '/mantenimiento/historial' },
+];
 
