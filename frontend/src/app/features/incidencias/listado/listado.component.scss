@@ -1,3 +1,25 @@
 h2 { margin: 0; }
 .back { font-size: 0.64rem; }
 .empty { margin: 16px 0 4px; color: var(--c-muted); font-size: 0.9rem; }
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fde8e8;
+  color: #9f1239;
+  font-size: 0.85rem;
+}
+.retry {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #9f1239;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

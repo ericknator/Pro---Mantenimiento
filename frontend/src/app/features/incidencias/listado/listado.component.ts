@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
 import { IncidenciasService } from '../../../core/services/incidencias.service';
 import { IncidenciaRowComponent } from '../../../shared/incidencia-row/incidencia-row.component';
 import { PageHeroComponent } from '../../../shared/page-hero/page-hero.component';
@@ -14,6 +15,7 @@ type Filtro = 'todas' | 'activas' | 'cerradas' | 'asignadas';
 })
 export class ListadoIncidenciasComponent {
   readonly service = inject(IncidenciasService);
+  private readonly auth = inject(AuthService);
   private readonly data = inject(ActivatedRoute).snapshot.data;
 
   titulo: string = this.data['titulo'];
@@ -28,10 +30,26 @@ export class ListadoIncidenciasComponent {
   });
 
   constructor() {
-    if (this.filtro === 'asignadas') {
-      void this.service.cargarAsignadas();
+    void this.cargarFuente();
+  }
+
+  async recargar(): Promise<void> {
+    await this.cargarFuente();
+  }
+
+  private async cargarFuente(): Promise<void> {
+    await this.auth.inicializacion;
+
+    const rol = this.auth.usuario()?.rol;
+    const consultaAsignada =
+      this.filtro === 'asignadas' ||
+      (this.filtro === 'cerradas' &&
+        (rol === 'mantenimiento' || rol === 'seguridad'));
+
+    if (consultaAsignada) {
+      await this.service.cargarAsignadas();
     } else {
-      void this.service.cargar();
+      await this.service.cargar();
     }
   }
 
@@ -44,11 +62,14 @@ export class ListadoIncidenciasComponent {
         return lista.filter((i) => i.estado !== 'Cerrada');
       case 'cerradas':
         return lista.filter(
-          (i) => i.estado === 'Solucionada' || i.estado === 'Cerrada'
+          (i) => {
+            const estado = i.estado.trim().toLowerCase();
+            return estado === 'solucionada' || estado === 'cerrada';
+          }
         );
       case 'asignadas':
         return lista.filter((i) => {
-          const est = (i.estado as string ?? '').toLowerCase();
+          const est = i.estado.trim().toLowerCase();
           return (
             est === 'asignada' ||
             est.includes('atenci') ||
