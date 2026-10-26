@@ -3,7 +3,8 @@ import {
   Incidencia,
   IncidenciaApi,
   EvidenciaIncidencia,
-  NuevaIncidencia
+  NuevaIncidencia,
+  EstadoIncidencia
 } from '../../models/incidencia.model';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -58,6 +59,55 @@ export class IncidenciasService {
       });
   }
 
+  private normalizarEstado(
+    codigo?: string | null,
+    nombre?: string | null
+  ): EstadoIncidencia {
+    const claveCodigo = this.normalizarClaveEstado(codigo);
+
+    switch (claveCodigo) {
+      case 'CLASIFICADA':
+        return 'Clasificada';
+      case 'ASIGNADA':
+        return 'Asignada';
+      case 'SOLUCIONADA':
+        return 'Solucionada';
+      case 'CERRADA':
+        return 'Cerrada';
+      case 'REABIERTA':
+        return 'Reabierta';
+      case 'EN_ATENCION':
+        return 'En atención';
+      case 'REPORTADA':
+        return 'Reportada';
+    }
+
+    // Compatibilidad con respuestas antiguas o incompletas que no incluyan
+    // un código estable. El código siempre tiene prioridad cuando existe.
+    const claveNombre = this.normalizarClaveEstado(nombre);
+    if (claveNombre.startsWith('CLASIFICADA')) return 'Clasificada';
+    if (claveNombre.startsWith('ASIGNADA')) return 'Asignada';
+    if (claveNombre.startsWith('SOLUCIONADA')) return 'Solucionada';
+    if (claveNombre.startsWith('CERRADA')) return 'Cerrada';
+    if (claveNombre.startsWith('REABIERTA')) return 'Reabierta';
+    if (claveNombre.startsWith('EN_ATENCION')) return 'En atención';
+    if (claveNombre.startsWith('REPORTADA')) return 'Reportada';
+
+    throw new Error(
+      `Estado de incidencia no reconocido (código: ${codigo ?? 'sin código'}, nombre: ${nombre ?? 'sin nombre'})`
+    );
+  }
+
+  private normalizarClaveEstado(valor?: string | null): string {
+    return (valor ?? '')
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Z0-9]+/g, '_')
+      .replace(/^_|_$/g, '');
+  }
+
   private mapearIncidencias(respuesta: IncidenciaApi[]): Incidencia[] {
     return respuesta.map((item) => {
       const fecha = new Date(item.fechaReporte);
@@ -74,12 +124,12 @@ export class IncidenciasService {
         evidencias: [],
         evidenciasSolucion: this.mapearEvidencias(item),
         evidenciasConsultaDisponible,
-        estado: item.estado.nombre as Incidencia['estado'],
+        estado: this.normalizarEstado(item.estado?.codigo, item.estado?.nombre),
         creada: fecha,
         actualizada,
         historial: [
           {
-            estado: item.estado.nombre as Incidencia['estado'],
+            estado: this.normalizarEstado(item.estado?.codigo, item.estado?.nombre),
             fecha: actualizada
           }
         ]

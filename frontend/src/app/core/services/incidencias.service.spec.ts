@@ -22,7 +22,7 @@ describe('IncidenciasService PMS-157', () => {
       correo: 'residente@example.com',
     },
     categoria: { nombre: 'Plomería' },
-    estado: { nombre: 'Solucionada', codigo: 'SOLUCIONADA' },
+    estado: { nombre: 'Solucionada - pendiente de confirmación', codigo: 'SOLUCIONADA' },
     ubicacion: 'Torre A',
     descripcion: 'Fuga en baño',
     fechaReporte: '2026-10-24T10:00:00',
@@ -48,6 +48,42 @@ describe('IncidenciasService PMS-157', () => {
 
   afterEach(() => {
     http.verify();
+  });
+
+  it('normaliza SOLUCIONADA por código aunque el nombre sea descriptivo', async () => {
+    const promise = service.cargarAsignadas();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const request = http.expectOne(
+      'http://localhost:8085/promantenimiento/api/incidencia/asignadas'
+    );
+    request.flush([incidenciaSolucionada]);
+
+    await expectAsync(promise).toBeResolved();
+    const incidencia = service.obtenerPropia('17');
+    expect(incidencia?.estado).toBe('Solucionada');
+    expect(incidencia?.historial[0].estado).toBe('Solucionada');
+  });
+
+  it('conserva ASIGNADA como estado válido para iniciar la atención', async () => {
+    const promise = service.cargarAsignadas();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const request = http.expectOne(
+      'http://localhost:8085/promantenimiento/api/incidencia/asignadas'
+    );
+    request.flush([
+      {
+        ...incidenciaSolucionada,
+        estado: { nombre: 'Asignada', codigo: 'ASIGNADA' },
+        fechaSolucion: null,
+      },
+    ]);
+
+    await expectAsync(promise).toBeResolved();
+    expect(service.obtenerPropia('17')?.estado).toBe('Asignada');
   });
 
   it('envía el body exacto a finalizar-atencion y confirma el estado con una consulta posterior', async () => {

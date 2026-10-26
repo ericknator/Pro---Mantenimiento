@@ -1,5 +1,12 @@
-// Estados definidos en el PA1 / Avance 02
-export type EstadoIncidencia = 'Reportada' | 'En atención' | 'Solucionada' | 'Cerrada' | 'Reabierta';
+// Estados efectivos del catálogo de incidencias del backend.
+export type EstadoIncidencia =
+  | 'Reportada'
+  | 'Clasificada'
+  | 'Asignada'
+  | 'En atención'
+  | 'Solucionada'
+  | 'Cerrada'
+  | 'Reabierta';
 
 export interface CambioEstado {
   estado: EstadoIncidencia;
