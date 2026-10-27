@@ -31,13 +31,12 @@ export class DetalleIncidenciaComponent {
     effect(() => {
       const id = this.id();
       if (id) {
-        this.evidenciasNoVisualizables.set(new Set());
-        void this.cargarIncidenciaDelUsuario(id);
+        void this.cargarIncidencia(id);
       }
     });
   }
 
-  private async cargarIncidenciaDelUsuario(id: string): Promise<void> {
+  private async cargarIncidencia(id: string): Promise<void> {
     await this.auth.inicializacion;
     await this.service.cargarDetalle(id);
   }
@@ -59,7 +58,6 @@ export class DetalleIncidenciaComponent {
   readonly evidenciasSolucion = computed(
     () => this.incidencia()?.evidenciasSolucion ?? []
   );
-  readonly evidenciasNoVisualizables = signal<Set<string>>(new Set());
 
   // Estado operativo local para transición: Asignada -> En atención -> Solucionada
   estadoIntervencion = signal<'Asignada' | 'En atención' | 'Solucionada' | null>(null);
@@ -89,7 +87,7 @@ export class DetalleIncidenciaComponent {
   guardando = signal(false);
   exito = signal(false);
 
-  // PMS-160: Manejo de evidencias
+  // PMS-160: Manejo de evidencias con miniaturas y soporte drag-and-drop
   archivos = signal<File[]>([]);
   previews = signal<string[]>([]);
 
@@ -105,7 +103,6 @@ export class DetalleIncidenciaComponent {
 
     try {
       await this.service.aceptarIncidencia(incidencia.id);
-      // Forzamos el estado reactivo inmediato al paso 4
       this.estadoIntervencion.set('En atención');
     } catch (error) {
       console.error('Error al aceptar la incidencia:', error);
@@ -171,20 +168,39 @@ export class DetalleIncidenciaComponent {
     }
   }
 
+  onDropArchivos(event: DragEvent): void {
+    event.preventDefault();
+    if (!event.dataTransfer?.files || event.dataTransfer.files.length === 0) return;
+    this.procesarArchivos(Array.from(event.dataTransfer.files));
+  }
+
   onArchivosSeleccionados(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
+    this.procesarArchivos(Array.from(input.files));
+    input.value = '';
+  }
 
-    const nuevosArchivos = Array.from(input.files);
-    if (this.archivos().length + nuevosArchivos.length > 3) {
-      this.errorValidacion.set('Solo puedes adjuntar un máximo de 3 fotos de evidencia.');
+  
+  private procesarArchivos(nuevos: File[]): void {
+    const permitidos = ['image/png', 'image/jpeg', 'image/webp'];
+    const invalidos = nuevos.filter(
+      (f) => !permitidos.includes(f.type) && !/\.(png|jpe?g|webp)$/i.test(f.name)
+    );
+    if (invalidos.length > 0) {
+      this.errorValidacion.set('Solo se permiten fotografías e imágenes (PNG, JPG, WEBP).');
+      return;
+    }
+
+    if (this.archivos().length + nuevos.length > 3) {
+      this.errorValidacion.set('Solo puedes adjuntar un máximo de 3 archivos de evidencia.');
       return;
     }
 
     this.errorValidacion.set(null);
-    this.archivos.set([...this.archivos(), ...nuevosArchivos]);
+    this.archivos.set([...this.archivos(), ...nuevos]);
 
-    nuevosArchivos.forEach((file) => {
+    nuevos.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
@@ -193,8 +209,6 @@ export class DetalleIncidenciaComponent {
       };
       reader.readAsDataURL(file);
     });
-
-    input.value = '';
   }
 
   eliminarArchivo(index: number): void {
@@ -209,25 +223,7 @@ export class DetalleIncidenciaComponent {
     );
   }
 
-  urlVisualizable(evidencia: EvidenciaIncidencia): string | null {
-    const url = evidencia.urlRecurso?.trim();
-    return url && /^https?:\/\//i.test(url) ? url : null;
-  }
-
-  esEvidenciaNoVisualizable(evidencia: EvidenciaIncidencia): boolean {
-    return this.evidenciasNoVisualizables().has(evidencia.id);
-  }
-
-  marcarEvidenciaNoVisualizable(id: string): void {
-    this.evidenciasNoVisualizables.update((ids) => {
-      const siguientes = new Set(ids);
-      siguientes.add(id);
-      return siguientes;
-    });
-  }
-
   async finalizarSolucion(): Promise<void> {
-    // CA-02: Validación obligatoria de acciones realizadas
     if (!this.acciones().trim()) {
       this.errorValidacion.set(
         'Debes ingresar las acciones realizadas para declarar la incidencia como Solucionada.'
@@ -243,6 +239,7 @@ export class DetalleIncidenciaComponent {
     this.guardando.set(true);
 
     try {
+      // PMS-160: Se envía id, diagnóstico, acciones y la lista de archivos seleccionados
       const incidenciaConfirmada = await this.service.solucionarIncidencia(
         idActual,
         this.diagnostico(),
@@ -250,8 +247,6 @@ export class DetalleIncidenciaComponent {
         this.archivos()
       );
 
-      // El servicio solo resuelve después de volver a leer el estado desde el
-      // backend y verificar que sea Solucionada.
       if (incidenciaConfirmada.estado.trim().toLowerCase() !== 'solucionada') {
         throw new Error(
           'El backend no confirmó la incidencia en estado Solucionada.'

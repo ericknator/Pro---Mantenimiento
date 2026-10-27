@@ -34,8 +34,8 @@
       }
 
       <!-- Paso 3: Asignada -> Botón para iniciar atención -->
-        @if (puedeAceptar() && pasoActivo() === 3) {
-          <div class="info" role="status">
+      @if (puedeAceptar() && pasoActivo() === 3) {
+        <div class="info" role="status">
           <span class="material-symbols-rounded">engineering</span>
           <div>
             <strong>Caso Asignado a tu cargo</strong>
@@ -95,11 +95,15 @@
 
         <!-- PMS-160: Carga y visualización de evidencias -->
         <fieldset class="field">
-          <span>Evidencias fotográficas (selección local, máx. 3)</span>
-          <div class="evidencias-upload-box">
+          <span>Evidencias fotográficas / documentales (PNG, JPG, PDF - Máx. 3)</span>
+          <div
+            class="evidencias-upload-box"
+            (dragover)="$event.preventDefault()"
+            (drop)="onDropArchivos($event)"
+          >
             <label class="btn-adjuntar">
-              <span class="material-symbols-rounded">add_a_photo</span>
-              <span>Seleccionar foto</span>
+              <span class="material-symbols-rounded">upload_file</span>
+              <span>Seleccionar archivo o arrastrar</span>
               <input
                 type="file"
                 accept="image/png, image/jpeg, image/webp"
@@ -122,10 +126,7 @@
             </div>
           }
           <small class="evidencias-pendientes" role="note">
-            Puedes adjuntar hasta 3 fotografías como evidencia de la solución.
-            Se enviarán junto con el diagnóstico y las acciones realizadas. La
-            consulta posterior depende de que el detalle devuelva las
-            evidencias persistidas.
+            Puedes adjuntar hasta 3 evidencias (imágenes o PDF). Se enviarán junto con la solución técnica.
           </small>
         </fieldset>
 
@@ -174,68 +175,37 @@
         <dt>Asignado a</dt><dd>{{ esPersonalTecnico() ? 'Mantenimiento' : inc.autor }}</dd>
       </dl>
 
+      <!-- PMS-160: Visualización en ficha técnica de las evidencias almacenadas -->
       <section class="evidencias-consulta" aria-labelledby="evidencias-titulo">
         <div class="evidencias-consulta__head">
-          <h3 id="evidencias-titulo" class="stepper-subtitulo">EVIDENCIAS DE SOLUCIÓN</h3>
-          @if (inc.evidenciasConsultaDisponible) {
-            <span class="evidencias-contador">
-              {{ evidenciasSolucion().length }}
-            </span>
-          }
+          <h3 id="evidencias-titulo" class="stepper-subtitulo">EVIDENCIAS DEL CASO</h3>
+          <span class="evidencias-contador">{{ evidenciasSolucion().length }}</span>
         </div>
 
-        @if (!inc.evidenciasConsultaDisponible) {
-          <p class="evidencias-no-disponibles" role="status">
-            El detalle actual no devuelve las evidencias persistidas. La
-            visualización quedará disponible cuando exista una consulta
-            autorizada por incidencia; no se mostrará una ruta local del
-            servidor como si fuera una imagen pública.
-          </p>
-        } @else if (evidenciasSolucion().length === 0) {
+        @if (evidenciasSolucion().length === 0) {
           <p class="evidencias-vacias">No hay evidencias registradas para esta solución.</p>
         } @else {
-          <div class="evidencias-grid">
+          <div class="evidencias-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
             @for (evidencia of evidenciasSolucion(); track evidencia.id) {
-              <article class="evidencia">
-                @if (urlVisualizable(evidencia); as url) {
-                  @if (esEvidenciaNoVisualizable(evidencia)) {
-                    <div class="evidencia__no-visualizable">
-                      <span class="material-symbols-rounded">hide_image</span>
-                      <span>No se pudo cargar este archivo</span>
-                    </div>
-                  } @else if (esImagenEvidencia(evidencia)) {
-                    <a [href]="url" target="_blank" rel="noopener noreferrer">
-                      <img
-                        class="evidencia__imagen"
-                        [src]="url"
-                        [alt]="evidencia.descripcion || evidencia.nombreArchivo"
-                        (error)="marcarEvidenciaNoVisualizable(evidencia.id)"
-                      />
-                    </a>
-                  } @else {
-                    <a
-                      class="evidencia__archivo"
-                      [href]="url"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <span class="material-symbols-rounded">open_in_new</span>
-                      <span>{{ evidencia.nombreArchivo }}</span>
-                    </a>
-                  }
-                } @else {
-                  <div class="evidencia__no-visualizable">
-                    <span class="material-symbols-rounded">hide_image</span>
-                    <span>Archivo registrado sin URL visualizable</span>
+              <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);">
+                <span class="material-symbols-rounded" style="color: var(--c-primary, #10b981);">
+                  {{ esImagenEvidencia(evidencia) ? 'image' : 'description' }}
+                </span>
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">
+                    {{ evidencia.nombreArchivo }}
                   </div>
-                }
-                <small>
-                  {{ evidencia.tipoNombre || evidencia.tipoCodigo || 'Evidencia' }}
-                  @if (evidencia.creadoEn) {
-                    · {{ evidencia.creadoEn | date: 'd MMM yyyy, HH:mm' }}
-                  }
-                </small>
-              </article>
+                  <small style="color: rgba(255,255,255,0.5); font-size: 0.72rem;">
+                    {{ evidencia.descripcion || 'Evidencia adjunta' }}
+                    @if (evidencia.creadoEn) {
+                      · {{ evidencia.creadoEn | date: 'd MMM yyyy, HH:mm' }}
+                    }
+                  </small>
+                </div>
+                <span style="font-size: 0.7rem; background: rgba(16,185,129,0.15); color: #10b981; padding: 2px 8px; border-radius: 6px; font-weight: 600;">
+                  Almacenado
+                </span>
+              </div>
             }
           </div>
         }

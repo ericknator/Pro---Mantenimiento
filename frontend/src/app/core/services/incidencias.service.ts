@@ -22,6 +22,9 @@ export class IncidenciasService {
   private readonly apiAsignadasUrl =
     'http://localhost:8085/promantenimiento/api/incidencia/asignadas';
 
+  private readonly apiEvidenciasUrl =
+    'http://localhost:8085/promantenimiento/api/evidencia-incidencia';
+
   private mapearEvidencias(
     incidencia: IncidenciaApi
   ): EvidenciaIncidencia[] {
@@ -82,8 +85,6 @@ export class IncidenciasService {
         return 'Reportada';
     }
 
-    // Compatibilidad con respuestas antiguas o incompletas que no incluyan
-    // un código estable. El código siempre tiene prioridad cuando existe.
     const claveNombre = this.normalizarClaveEstado(nombre);
     if (claveNombre.startsWith('CLASIFICADA')) return 'Clasificada';
     if (claveNombre.startsWith('ASIGNADA')) return 'Asignada';
@@ -138,9 +139,7 @@ export class IncidenciasService {
   }
 
   /**
-   * Consulta solo el caso solicitado. Además de respetar las reglas de
-   * autorización del backend, permite que un futuro contrato de detalle
-   * incluya evidencias sin consultar un listado global no acotado.
+   * Consulta el caso solicitado e integra sus evidencias persistidas en MySQL.
    */
   async cargarDetalle(id: string): Promise<void> {
     this._todas.set([]);
@@ -155,16 +154,29 @@ export class IncidenciasService {
       }
 
       const token = await usuario.getIdToken();
-      const respuesta = await firstValueFrom(
-        this.http.get<IncidenciaApi>(
-          `${this.apiUrl}/${encodeURIComponent(id)}`,
-          {
-            headers: new HttpHeaders({
-              Authorization: `Bearer ${token}`,
-            }),
-          }
-        )
+      const headers = new HttpHeaders({
+        Authorization: `Bearer ${token}`,
+      });
+
+      // Consultamos en paralelo el detalle de la incidencia y la lista de evidencias
+      const [respuesta, listaEvidencias] = await Promise.all([
+        firstValueFrom(
+          this.http.get<IncidenciaApi>(
+            `${this.apiUrl}/${encodeURIComponent(id)}`,
+            { headers }
+          )
+        ),
+        firstValueFrom(
+          this.http.get<any[]>(this.apiEvidenciasUrl, { headers })
+        ).catch(() => [] as any[])
+      ]);
+
+      // Asociamos las evidencias que pertenecen a esta incidencia
+      const evidenciasDeIncidencia = (listaEvidencias || []).filter(
+        (ev: any) => String(ev.incidencia?.id ?? ev.incidencia) === String(id)
       );
+
+      respuesta.evidencias = evidenciasDeIncidencia;
 
       this._todas.set(this.mapearIncidencias([respuesta]));
     } catch (error) {
@@ -190,7 +202,6 @@ export class IncidenciasService {
 
   /** Consulta las incidencias asignadas al técnico autenticado (PMS-136 / PMS-137). */
   async cargarAsignadas(): Promise<void> {
-    // No conservar datos de otro usuario o de otra carga mientras se valida el acceso.
     this._todas.set([]);
     this.cargando.set(true);
     this.error.set(null);
@@ -246,7 +257,6 @@ export class IncidenciasService {
 
   /** Consulta las incidencias del backend. */
   async cargar(): Promise<void> {
-    // Evita mostrar incidencias de una sesión anterior mientras llega la respuesta actual.
     this._todas.set([]);
     this.cargando.set(true);
     this.error.set(null);
@@ -300,11 +310,7 @@ export class IncidenciasService {
     return 'No se pudo consultar la incidencia. Inténtalo nuevamente.';
   }
 
-  /**
-   * Registra una incidencia y adjunta hasta 3 evidencias.
-   * El backend determina el usuario, la unidad, la prioridad
-   * y el estado inicial.
-   */
+  /** Registra una incidencia y adjunta hasta 3 evidencias. */
   async crearConEvidencias(
     incidencia: {
       categoria: { id: number };
@@ -342,7 +348,6 @@ export class IncidenciasService {
       })
     );
 
-    // Actualiza la lista lateral sin perder la lógica existente.
     await this.cargar();
 
     return respuesta;
@@ -392,8 +397,6 @@ export class IncidenciasService {
         )
       );
 
-      // No actualizamos el estado local con una suposición: volvemos a consultar
-      // las incidencias del técnico y devolvemos el registro confirmado.
       await this.cargarAsignadasDesdeBackend(usuario);
       const incidenciaActualizada = this.obtenerPropia(id);
 
@@ -410,10 +413,9 @@ export class IncidenciasService {
   }
 
   /**
- * HU-INC-06 / PMS-157:
- * Finaliza la atención enviando diagnóstico, acciones y evidencias.
- * Confirma posteriormente el estado persistido por el backend.
- */
+   * HU-INC-06 / PMS-160:
+   * Finaliza la atención enviando diagnóstico, acciones y los archivos de evidencia vía Multipart.
+   */
   async solucionarIncidencia(
     id: string,
     diagnostico: string,
@@ -437,7 +439,6 @@ export class IncidenciasService {
     const token = await usuario.getIdToken();
 
     const formData = new FormData();
-
     formData.append('diagnosticoTecnico', diagnostico.trim());
     formData.append('accionesRealizadas', acciones.trim());
 
@@ -445,7 +446,6 @@ export class IncidenciasService {
       formData.append('archivos', archivo, archivo.name);
     }
 
-    // El navegador establece Content-Type y el boundary de multipart.
     await firstValueFrom(
       this.http.patch<unknown>(
         `${this.apiUrl}/${encodeURIComponent(id)}/finalizar-atencion`,
@@ -458,8 +458,8 @@ export class IncidenciasService {
       )
     );
 
-    // No declaramos éxito hasta consultar nuevamente el backend.
-    await this.cargarAsignadasDesdeBackend(usuario);
+    // Recargamos el detalle para traer el caso y sus evidencias persistidas
+    await this.cargarDetalle(id);
 
     const incidenciaActualizada = this.obtenerPropia(id);
 
@@ -474,5 +474,4 @@ export class IncidenciasService {
 
     return incidenciaActualizada;
   }
-
 }
