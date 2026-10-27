@@ -19,5 +19,7 @@ public interface TareaPreventivaService {
 	TareaPreventivaEntity delete(Long id);
 	
 	TareaPreventivaEntity enable(Long id);
+	
+	List<TareaPreventivaEntity> findByResponsableId(Long responsableId);
 
 }

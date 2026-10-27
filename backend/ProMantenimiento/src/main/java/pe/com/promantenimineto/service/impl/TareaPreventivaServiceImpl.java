@@ -52,4 +52,9 @@ public class TareaPreventivaServiceImpl implements TareaPreventivaService{
     public TareaPreventivaEntity enable(Long id) {
         return null;
     }
+    
+    @Override
+    public List<TareaPreventivaEntity> findByResponsableId(Long responsableId){
+    	return repositorio.findByResponsableId(responsableId);
+    }
 }
