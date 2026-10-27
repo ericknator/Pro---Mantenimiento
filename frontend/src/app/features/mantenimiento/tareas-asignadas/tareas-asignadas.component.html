@@ -55,6 +55,12 @@
         <span class="material-symbols-rounded spinner">sync</span>
         <p>Consultando tareas preventivas asignadas…</p>
       </div>
+    } @else if (preventivosError()) {
+      <div class="estado-caja error" role="alert">
+        <span class="material-symbols-rounded">error</span>
+        <h3>No se pudo consultar la bandeja</h3>
+        <p>{{ preventivosError() }}</p>
+      </div>
     } @else if (tareasFiltradas().length === 0) {
       <!-- Estado vacío -->
       <div class="estado-caja vacio">

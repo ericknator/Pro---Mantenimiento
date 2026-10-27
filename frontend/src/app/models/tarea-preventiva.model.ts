@@ -30,6 +30,13 @@ export interface TareaPreventivaApi {
     apellidos: string;
     correo?: string;
   } | null;
+  planMantenimiento?: {
+    frecuencia?: {
+      id: number;
+      codigo: string;
+      nombre: string;
+    } | null;
+  } | null;
   estado: EstadoTareaApi;
 }
 

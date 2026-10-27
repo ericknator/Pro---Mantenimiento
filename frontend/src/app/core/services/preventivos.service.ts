@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from './auth.service';
 import { TareaPreventiva, TareaPreventivaApi } from '../../models/tarea-preventiva.model';
@@ -16,6 +16,7 @@ export class PreventivosService {
   private readonly _tareas = signal<TareaPreventiva[]>([]);
   readonly tareas = this._tareas.asReadonly();
   readonly cargando = signal(false);
+  readonly error = signal<string | null>(null);
 
   // Tareas asignadas al técnico autenticado (HU-MAN-04-CA-01)
   readonly asignadas = computed(() => {
@@ -45,29 +46,25 @@ export class PreventivosService {
   }
 
   async cargarTareas(): Promise<void> {
+    this.error.set(null);
     const usuario = await this.esperarUsuario();
-    if (!usuario) return;
+    if (!usuario) {
+      this._tareas.set([]);
+      this.error.set('Debes iniciar sesión para consultar tus tareas preventivas.');
+      return;
+    }
 
     this.cargando.set(true);
     try {
       const token = await usuario.getIdToken();
       
-      // Intentamos primero el endpoint específico de Gean (/asignadas),
-      // y si aún no lo sube, consumimos el listado general (/api/tarea-preventiva).
-      let respuesta: TareaPreventivaApi[];
-      try {
-        respuesta = await firstValueFrom(
-          this.http.get<TareaPreventivaApi[]>(`${this.apiUrl}/asignadas`, {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          })
-        );
-      } catch {
-        respuesta = await firstValueFrom(
-          this.http.get<TareaPreventivaApi[]>(this.apiUrl, {
-            headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-          })
-        );
-      }
+      // El contrato Java actual expone solo GET /api/tarea-preventiva.
+      // El filtrado de la bandeja se realiza con el responsable devuelto.
+      const respuesta = await firstValueFrom(
+        this.http.get<TareaPreventivaApi[]>(this.apiUrl, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+        })
+      );
 
       const mapeadas: TareaPreventiva[] = (respuesta ?? []).map((t) => ({
         id: String(t.id),
@@ -87,6 +84,8 @@ export class PreventivosService {
       this._tareas.set(mapeadas);
     } catch (error) {
       console.error('Error al cargar tareas preventivas:', error);
+      this._tareas.set([]);
+      this.error.set(this.mensajeError(error));
     } finally {
       this.cargando.set(false);
     }
@@ -123,8 +122,27 @@ export class PreventivosService {
         estado: (t.estado?.nombre as any) ?? 'Programada',
         estadoCodigo: t.estado?.codigo ?? 'PROGRAMADA',
       };
-    } catch {
+    } catch (error) {
+      this.error.set(this.mensajeError(error));
       return null;
     }
+  }
+
+  private mensajeError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 0) {
+        return 'No se pudo conectar con el servidor para consultar las tareas.';
+      }
+
+      if (error.status === 401) {
+        return 'Tu sesión no es válida o ha expirado. Inicia sesión nuevamente.';
+      }
+
+      if (error.status === 403) {
+        return 'No tienes permiso para consultar las tareas preventivas.';
+      }
+    }
+
+    return 'No se pudieron cargar las tareas preventivas.';
   }
 }

@@ -60,7 +60,10 @@ export class DetalleTareaComponent implements OnInit {
     if (encontrada) {
       this.tarea.set(encontrada);
     } else {
-      this.errorCarga.set('No se encontró la tarea solicitada en el sistema.');
+      this.errorCarga.set(
+        this.preventivos.error() ??
+          'No se encontró la tarea solicitada en el sistema.'
+      );
     }
 
     this.cargando.set(false);
