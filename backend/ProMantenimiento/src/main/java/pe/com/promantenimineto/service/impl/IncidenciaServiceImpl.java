@@ -539,23 +539,39 @@ public class IncidenciaServiceImpl implements IncidenciaService{
             }
 
             for (MultipartFile archivo : archivos) {
+				String mime = archivo.getContentType();
+				String nombre = archivo.getOriginalFilename();
+				
+				if (mime == null || nombre == null || nombre.isBlank()) {
+				    throw new ResponseStatusException(
+				            HttpStatus.BAD_REQUEST,
+				            "No se pudo identificar el tipo de archivo."
+				    );
+				}
+				
+				String extension = nombre.substring( nombre.lastIndexOf('.') + 1 ).toLowerCase(java.util.Locale.ROOT);				
+				String codigoTipo;
+				
+				boolean esImagenPermitida =
+				        ("image/jpeg".equalsIgnoreCase(mime) && ("jpg".equals(extension) || "jpeg".equals(extension)))
+				        || ("image/png".equalsIgnoreCase(mime) && "png".equals(extension))
+				        || ("image/webp".equalsIgnoreCase(mime) && "webp".equals(extension));
+				
+				boolean esPdfPermitido = "application/pdf".equalsIgnoreCase(mime) && "pdf".equals(extension);
+				
+				if (esImagenPermitida) {
+				    codigoTipo = "FOTO";
+				} else if (esPdfPermitido) {
+				    codigoTipo = "DOCUMENTO";
+				} else {
+				    throw new ResponseStatusException(
+				            HttpStatus.BAD_REQUEST,
+				            "Solo se permiten imágenes JPG, JPEG, PNG, WebP y documentos PDF."
+				    );
+				}
 
-                String mime = archivo.getContentType();
-                String codigoTipo;
 
-                if (mime != null && mime.startsWith("image/")) {
-                    codigoTipo = "FOTO";
-                } else if (mime != null && mime.startsWith("video/")) {
-                    codigoTipo = "VIDEO";
-                } else {
-                    throw new ResponseStatusException(
-                        HttpStatus.BAD_REQUEST,
-                        "Solo se permiten imágenes y videos."
-                    );
-                }
-
-                TipoEvidenciaEntity tipo =
-                    tipoEvidenciaRepositorio
+                TipoEvidenciaEntity tipo = tipoEvidenciaRepositorio
                         .findByCodigoAndActivoTrue(codigoTipo)
                         .orElseThrow(() -> new ResponseStatusException(
                             HttpStatus.INTERNAL_SERVER_ERROR,
