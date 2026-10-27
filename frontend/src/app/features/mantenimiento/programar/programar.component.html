@@ -3,18 +3,16 @@
   backLink="/administrador/mantenimiento"
   backLabel="Mantenimiento"
   title="Programar mantenimiento preventivo"
-  subtitle="Define y calendariza las fechas de atención e inspección para los equipos del condominio."
+  subtitle="Crea el plan y la primera tarea para un activo del condominio."
 />
 
 <div class="grid">
-  <!-- Formulario de programación -->
   <form class="card" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
-
     @if (mensajeExito()) {
       <div class="ok" role="status">
         <span class="material-symbols-rounded">check_circle</span>
         <div>
-          <strong>¡Programación exitosa!</strong>
+          <strong>Programación registrada</strong>
           <small>{{ mensajeExito() }}</small>
         </div>
       </div>
@@ -24,19 +22,34 @@
       <div class="aviso-error" role="alert" aria-live="polite">
         <span class="material-symbols-rounded">error</span>
         <div>
-          <strong>Error de validación</strong>
+          <strong>No se pudo guardar</strong>
           <p>{{ mensajeError() }}</p>
         </div>
       </div>
     }
 
-    <!-- Selector de Activo -->
+    @if (service.cargandoCatalogos()) {
+      <p class="catalogos-estado" role="status">Cargando activos, frecuencias y responsables…</p>
+    }
+
+    @if (service.catalogosError()) {
+      <div class="aviso-error" role="alert">
+        <span class="material-symbols-rounded">warning</span>
+        <div>
+          <strong>Catálogos no disponibles</strong>
+          <p>{{ service.catalogosError() }}</p>
+        </div>
+      </div>
+    }
+
     <label class="field">
-      <span>Activo o Equipo</span>
+      <span>Activo o equipo</span>
       <select class="control" formControlName="activoId">
-        <option value="" disabled selected>Selecciona el activo a intervenir</option>
-        @for (act of service.activos(); track act.id) {
-          <option [value]="act.id">{{ act.codigo }} - {{ act.nombre }}</option>
+        <option [ngValue]="0" disabled>Selecciona el activo a intervenir</option>
+        @for (activo of service.activos(); track activo.id) {
+          <option [ngValue]="activo.id">
+            {{ activo.codigo }} - {{ activo.nombre }}
+          </option>
         }
       </select>
       @if (invalido('activoId')) {
@@ -44,66 +57,117 @@
       }
     </label>
 
-    <!-- Tipo de Mantenimiento -->
     <label class="field">
-      <span>Tipo de Mantenimiento</span>
-      <select class="control" formControlName="tipoMantenimiento">
-        <option value="" disabled selected>Selecciona el tipo de trabajo</option>
-        @for (tipo of tiposMantenimiento; track tipo) {
-          <option [value]="tipo">{{ tipo }}</option>
-        }
-      </select>
-      @if (invalido('tipoMantenimiento')) {
-        <small class="field-error">Selecciona un tipo de mantenimiento.</small>
-      }
-    </label>
-
-    <!-- Selector de Fecha -->
-    <label class="field">
-      <span>Fecha Programada</span>
+      <span>Título del mantenimiento</span>
       <input
         class="control"
-        type="date"
-        formControlName="fechaProgramada"
+        type="text"
+        formControlName="titulo"
+        maxlength="150"
+        placeholder="Ej. Revisión preventiva del ascensor"
       />
-      @if (invalido('fechaProgramada')) {
-        <small class="field-error">Ingresa una fecha de programación válida.</small>
+      @if (invalido('titulo')) {
+        <small class="field-error">Ingresa un título de hasta 150 caracteres.</small>
       }
     </label>
 
-    <!-- Botón de Envío estilo Figma -->
-    <button type="submit" class="btn-enviar" [disabled]="enviando()">
+    <label class="field">
+      <span>Frecuencia</span>
+      <select class="control" formControlName="frecuenciaId">
+        <option [ngValue]="0" disabled>Selecciona la frecuencia del plan</option>
+        @for (frecuencia of service.frecuencias(); track frecuencia.id) {
+          <option [ngValue]="frecuencia.id">{{ frecuencia.nombre }}</option>
+        }
+      </select>
+      @if (invalido('frecuenciaId')) {
+        <small class="field-error">Debes seleccionar una frecuencia.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Responsable técnico</span>
+      <select class="control" formControlName="responsableId">
+        <option [ngValue]="0" disabled>Selecciona el responsable</option>
+        @for (responsable of service.responsables(); track responsable.id) {
+          <option [ngValue]="responsable.id">
+            {{ responsable.nombres }} {{ responsable.apellidos }}
+          </option>
+        }
+      </select>
+      @if (invalido('responsableId')) {
+        <small class="field-error">Debes seleccionar un responsable de mantenimiento.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Fecha y hora de la primera tarea</span>
+      <input
+        class="control"
+        type="datetime-local"
+        formControlName="primeraTareaProgramadaPara"
+        [min]="fechaMinima"
+      />
+      @if (invalido('primeraTareaProgramadaPara') || fechaInvalida()) {
+        <small class="field-error">Indica una fecha y hora futura.</small>
+      }
+    </label>
+
+    <label class="field">
+      <span>Descripción <small>(opcional)</small></span>
+      <textarea
+        class="control control-textarea"
+        formControlName="descripcion"
+        maxlength="500"
+        rows="4"
+        placeholder="Alcance o indicaciones de la intervención"
+      ></textarea>
+      @if (invalido('descripcion')) {
+        <small class="field-error">La descripción no puede superar 500 caracteres.</small>
+      }
+    </label>
+
+    <button type="submit" class="btn-enviar" [disabled]="enviando() || service.cargandoCatalogos()">
       @if (enviando()) {
-        Programando...
+        Guardando…
       } @else {
-        PROGRAMAR MANTENIMIENTO
+        PROGRAMAR PLAN Y TAREA
         <span class="material-symbols-rounded">arrow_forward</span>
       }
     </button>
   </form>
 
-  <!-- Panel lateral con programaciones próximas -->
   <section class="panel side">
     <header class="panel__head">
-      <h2 class="label">Mantenimientos programados</h2>
+      <h2 class="label">Tareas preventivas registradas</h2>
     </header>
 
     @if (service.cargando()) {
-      <p class="empty">Cargando cronograma...</p>
+      <p class="empty">Cargando tareas preventivas…</p>
+    } @else if (service.error()) {
+      <p class="empty error-text" role="alert">{{ service.error() }}</p>
     } @else {
-      @for (m of service.mantenimientos(); track m.id) {
-        <div class="mantenimiento-item">
+      @for (mantenimiento of service.mantenimientos(); track mantenimiento.id) {
+        <article class="mantenimiento-item">
           <div class="item-icon">
             <span class="material-symbols-rounded">calendar_month</span>
           </div>
           <div class="item-info">
-            <strong>{{ m.tipoMantenimiento }}</strong>
-            <p>Activo: {{ m.nombreActivo || ('ID ' + m.activoId) }}</p>
-            <small class="fecha">📅 {{ m.fechaProgramada }}</small>
+            <strong>{{ mantenimiento.titulo }}</strong>
+            <p>{{ mantenimiento.nombreActivo }}</p>
+            @if (mantenimiento.frecuenciaNombre) {
+              <small>Frecuencia: {{ mantenimiento.frecuenciaNombre }}</small>
+            }
+            @if (mantenimiento.responsableNombre) {
+              <small>Responsable: {{ mantenimiento.responsableNombre }}</small>
+            }
+            <small class="fecha">
+              {{ mantenimiento.fechaProgramada | date: 'dd/MM/yyyy HH:mm' }}
+              · {{ mantenimiento.estado }}
+            </small>
           </div>
-        </div>
+        </article>
       } @empty {
-        <p class="empty">No hay mantenimientos preventivos programados.</p>
+        <p class="empty">No hay tareas preventivas registradas.</p>
       }
     }
   </section>

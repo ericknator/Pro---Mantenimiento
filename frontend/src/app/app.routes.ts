@@ -43,7 +43,8 @@ export const routes: Routes = [
   {
     path: 'administrador',
     component: AdminLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['administrador'] },
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       {
@@ -232,20 +233,31 @@ export const routes: Routes = [
       {
         path: 'mantenimiento/tareas-asignadas',
         title: 'Tareas preventivas asignadas',
+        canActivate: [roleGuard],
+        data: {
+          menu: 'rail',
+          fondo: 'terraza',
+          titulo: 'Tareas preventivas asignadas',
+          roles: ['mantenimiento', 'administrador'],
+        },
         loadComponent: () =>
           import(
             './features/mantenimiento/tareas-asignadas/tareas-asignadas.component'
           ).then((m) => m.TareasAsignadasComponent),
-        data: { menu: 'rail', fondo: 'terraza', titulo: 'Tareas preventivas asignadas' },
       },
       {
         path: 'mantenimiento/tarea/:id',
         title: 'Detalle de tarea preventiva',
+        canActivate: [roleGuard],
+        data: {
+          menu: 'rail',
+          fondo: 'edificio',
+          roles: ['mantenimiento', 'administrador'],
+        },
         loadComponent: () =>
           import(
             './features/mantenimiento/detalle-tarea/detalle-tarea.component'
           ).then((m) => m.DetalleTareaComponent),
-        data: { menu: 'rail', fondo: 'edificio' },
       },
             {
         path: 'mantenimiento/correctivos',

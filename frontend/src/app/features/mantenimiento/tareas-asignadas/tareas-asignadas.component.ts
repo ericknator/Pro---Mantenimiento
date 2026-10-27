@@ -20,6 +20,7 @@ export class TareasAsignadasComponent {
   readonly filtroEstado = signal<'TODOS' | 'PROGRAMADA' | 'EN_EJECUCION' | 'EJECUTADA'>('TODOS');
 
   readonly cargando = this.preventivos.cargando;
+  readonly preventivosError = this.preventivos.error;
   readonly usuario = this.auth.usuario;
 
   // Lista de tareas asignadas al técnico autenticado
