@@ -105,12 +105,9 @@ public class IncidenciaRestController {
 	@PatchMapping( value = "/{id}/finalizar-atencion", consumes = MediaType.MULTIPART_FORM_DATA_VALUE )
 	public IncidenciaEntity finalizarAtencion(
 	        @PathVariable Long id,
-	        @RequestParam(value = "diagnosticoTecnico", required = false)
-	        String diagnosticoTecnico,
-	        @RequestParam(value = "accionesRealizadas", required = false)
-	        String accionesRealizadas,
-	        @RequestParam(value = "archivos", required = false)
-	        List<MultipartFile> archivos) {
+	        @RequestParam(value = "diagnosticoTecnico", required = false) String diagnosticoTecnico,
+	        @RequestParam(value = "accionesRealizadas", required = false) String accionesRealizadas,
+	        @RequestParam(value = "archivos", required = false) List<MultipartFile> archivos) {
 
 	    return servicio.finalizarAtencion(
 	        id,
