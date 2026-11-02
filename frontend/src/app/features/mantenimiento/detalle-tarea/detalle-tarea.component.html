@@ -25,7 +25,6 @@
       </div>
     </section>
   } @else if (!tieneAcceso()) {
-    <!-- HU-MAN-04-CA-02: Acceso Restringido -->
     <section class="panel dock restringido">
       <div class="alerta-restringido" role="alert">
         <div class="alerta-restringido__icono">
@@ -44,17 +43,12 @@
       </div>
     </section>
   } @else {
-    <!-- FLUJO INTEGRAL HU-MAN-05 SEGÚN FIGMA -->
     <div class="grid-detalle">
-      
-      <!-- ==============================================
-           COLUMNA IZQUIERDA: Formulario o Ejecución
-           ============================================== -->
       <section class="panel principal">
         <header class="panel__head">
           <div class="head-top">
             <h2 class="titulo-seccion">
-              {{ pasoActivo() === 1 ? 'Instrucciones de la tarea' : 'EJECUCIÓN DEL MANTENIMIENTO' }}
+              {{ intervencionRegistrada() ? 'INTERVENCIÓN REGISTRADA' : (pasoActivo() === 1 ? 'INSTRUCCIONES DE LA TAREA' : 'EJECUCIÓN DEL MANTENIMIENTO') }}
             </h2>
             <span class="badge" [attr.data-estado]="estadoOperativo()">
               {{ estadoOperativo() === 'En ejecución' ? 'EN EJECUCIÓN' : (estadoOperativo() === 'Ejecutada' ? 'EJECUTADA' : 'PROGRAMADA') }}
@@ -63,9 +57,48 @@
         </header>
 
         <div class="panel__body">
-          
-          <!-- ESTADO 1: PROGRAMADA (Figma Imagen 2) -->
-          @if (pasoActivo() === 1) {
+          @if (intervencionRegistrada()) {
+            <div class="alerta-exito" role="status">
+              <span class="material-symbols-rounded">check_circle</span>
+              <div>
+                <strong>Intervención registrada en el servidor</strong>
+                <p>
+                  Se registraron la fecha, las observaciones y el trabajo efectuado. El último estado recibido para la tarea es <strong>{{ datosIntervencion()?.estadoTarea }}</strong>; la interfaz no lo cambia a Ejecutada por inferencia.
+                </p>
+              </div>
+            </div>
+
+            <div class="resumen-ejecutado">
+              <h3 class="resumen-subtitulo">DATOS REGISTRADOS</h3>
+
+              <div class="resumen-bloque">
+                <span class="resumen-label">Observaciones</span>
+                <p class="resumen-valor">{{ datosIntervencion()?.observaciones }}</p>
+              </div>
+
+              <div class="resumen-bloque">
+                <span class="resumen-label">Trabajo efectuado</span>
+                <p class="resumen-valor">{{ datosIntervencion()?.trabajo }}</p>
+              </div>
+
+              <div class="firma-tecnico">
+                <small>Registrado por {{ datosIntervencion()?.tecnico }} · {{ datosIntervencion()?.fecha }}</small>
+              </div>
+
+              @if ((datosIntervencion()?.archivosNoPersistidos ?? 0) > 0) {
+                <p class="evidencias-pendientes" role="note">
+                  {{ datosIntervencion()?.archivosNoPersistidos }} archivo(s) fueron seleccionados localmente, pero no se enviaron ni se guardaron porque el endpoint actual recibe JSON sin archivos.
+                </p>
+              }
+
+              <div class="acciones-form">
+                <a class="btn btn-outline btn-block" routerLink="/mantenimiento/tareas-asignadas">
+                  <span class="material-symbols-rounded">arrow_back</span>
+                  <span>VOLVER A TAREAS ASIGNADAS</span>
+                </a>
+              </div>
+            </div>
+          } @else if (pasoActivo() === 1) {
             <div class="campo-bloque">
               <label class="etiqueta">Tipo de trabajo / Actividad</label>
               <p class="valor-texto grande">{{ tarea()?.titulo }}</p>
@@ -85,20 +118,15 @@
                 <p>{{ tarea()?.responsableNombre }} (Tú)</p>
               </div>
             </div>
-          }
-
-          <!-- ESTADO 2: EN EJECUCIÓN (Figma Imágenes 1, 3 y 5) -->
-          @if (pasoActivo() === 2) {
-            <!-- Banner azul info -->
+          } @else if (pasoActivo() === 2) {
             <div class="info-aviso azul">
               <span class="material-symbols-rounded">radio_button_unchecked</span>
               <div>
                 <strong>Mantenimiento asignado a tu cargo</strong>
-                <p>Registra el trabajo efectuado, la fecha de ejecución y las evidencias para cerrar la tarea.</p>
+                <p>Registra el trabajo efectuado y la fecha de ejecución. Las evidencias fotográficas aún no tienen persistencia en el contrato actual.</p>
               </div>
             </div>
 
-            <!-- HU-MAN-05-CA-02: Banner rojo si falta trabajo efectuado -->
             @if (errorValidacion()) {
               <div class="alerta-error" role="alert">
                 <span class="material-symbols-rounded">error_outline</span>
@@ -106,43 +134,45 @@
               </div>
             }
 
-            <!-- Campo Fecha de ejecución * -->
             <div class="campo-bloque">
-              <label class="etiqueta">FECHA DE EJECUCIÓN *</label>
+              <label class="etiqueta" for="fecha-ejecucion">FECHA DE EJECUCIÓN *</label>
               <input
-                type="text"
+                id="fecha-ejecucion"
+                type="datetime-local"
                 class="control-input"
-                [(ngModel)]="fechaEjecucion"
-                placeholder="DD/MM/YYYY HH:mm"
+                [ngModel]="fechaEjecucion()"
+                (ngModelChange)="fechaEjecucion.set($event)"
+                required
               />
             </div>
 
-            <!-- Campo Diagnóstico / Observaciones (Opcional) -->
             <div class="campo-bloque">
-              <label class="etiqueta">DIAGNÓSTICO / OBSERVACIONES (OPCIONAL)</label>
+              <label class="etiqueta" for="diagnostico">DIAGNÓSTICO / OBSERVACIONES (OPCIONAL)</label>
               <textarea
+                id="diagnostico"
                 class="control-textarea"
                 rows="2"
-                [(ngModel)]="diagnostico"
+                [ngModel]="diagnostico()"
+                (ngModelChange)="diagnostico.set($event)"
                 placeholder="Ej: Se detectó desgaste leve en zapatas de freno..."
               ></textarea>
             </div>
 
-            <!-- Campo Trabajo Efectuado * (Obligatorio) -->
             <div class="campo-bloque">
-              <label class="etiqueta">TRABAJO EFECTUADO * (OBLIGATORIO)</label>
+              <label class="etiqueta" for="trabajo-efectuado">TRABAJO EFECTUADO * (OBLIGATORIO)</label>
               <textarea
+                id="trabajo-efectuado"
                 class="control-textarea"
                 [class.control--error]="errorValidacion() && !trabajoEfectuado().trim()"
                 rows="3"
-                [(ngModel)]="trabajoEfectuado"
+                [ngModel]="trabajoEfectuado()"
+                (ngModelChange)="trabajoEfectuado.set($event)"
                 placeholder="Ej: Se lubricaron guías y poleas, se ajustaron frenos y se probó el funcionamiento..."
               ></textarea>
             </div>
 
-            <!-- Evidencias (PNG, JPG, WEBP, PDF · Máx. 3) -->
             <div class="campo-bloque">
-              <label class="etiqueta">EVIDENCIAS (PNG, JPG, WEBP, PDF · MÁX. 3)</label>
+              <label class="etiqueta">EVIDENCIAS (SELECCIÓN LOCAL · MÁX. 3)</label>
               <div
                 class="evidencias-upload-box"
                 (dragover)="$event.preventDefault()"
@@ -180,11 +210,10 @@
                 </div>
               }
               <small class="texto-ayuda">
-                Puedes adjuntar hasta 3 evidencias (imágenes o PDF). Se guardarán en el historial del activo.
+                Selección local únicamente: el POST actual no envía estos archivos y no se presentan como evidencias persistidas.
               </small>
             </div>
 
-            <!-- Botones de Acción -->
             <div class="acciones-form">
               <button
                 type="button"
@@ -192,7 +221,7 @@
                 [disabled]="guardando()"
                 (click)="finalizarMantenimiento()"
               >
-                <span>{{ guardando() ? 'Finalizando…' : 'FINALIZAR MANTENIMIENTO' }}</span>
+                <span>{{ guardando() ? 'Registrando…' : 'REGISTRAR INTERVENCIÓN' }}</span>
                 <span class="material-symbols-rounded">check</span>
               </button>
 
@@ -201,76 +230,12 @@
               </a>
             </div>
           }
-
-          <!-- ESTADO 3: EJECUTADA (Figma Imagen 4 - Éxito) -->
-          @if (pasoActivo() === 3) {
-            <!-- Banner verde éxito -->
-            <div class="alerta-exito" role="status">
-              <span class="material-symbols-rounded">check_circle</span>
-              <div>
-                <strong>¡Mantenimiento ejecutado!</strong>
-                <p>El trabajo y las evidencias quedaron registrados en el historial del activo {{ tarea()?.activoCodigo }}. La tarea pasó a Ejecutada.</p>
-              </div>
-            </div>
-
-            <!-- Resumen de datos registrados -->
-            <div class="resumen-ejecutado">
-              <h3 class="resumen-subtitulo">DATOS REGISTRADOS</h3>
-
-              <div class="resumen-bloque">
-                <span class="resumen-label">Observaciones</span>
-                <p class="resumen-valor">{{ datosEjecutados()?.observaciones }}</p>
-              </div>
-
-              <div class="resumen-bloque">
-                <span class="resumen-label">Trabajo efectuado</span>
-                <p class="resumen-valor">{{ datosEjecutados()?.trabajo }}</p>
-              </div>
-
-              @if (datosEjecutados()?.evidencias?.length) {
-                <div class="resumen-bloque">
-                  <span class="resumen-label">Evidencias ({{ datosEjecutados()?.evidencias?.length }})</span>
-                  <div class="previews-grid estatico">
-                    @for (ev of datosEjecutados()?.evidencias; track $index) {
-                      <div class="preview-item estatico">
-                        @if (ev.esPdf) {
-                          <div class="preview-pdf">
-                            <span class="material-symbols-rounded">picture_as_pdf</span>
-                            <span class="preview-pdf__nombre">{{ ev.nombre }}</span>
-                          </div>
-                        } @else {
-                          <img [src]="ev.url" [alt]="ev.nombre" />
-                        }
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-
-              <div class="firma-tecnico">
-                <small>Ejecutado por {{ datosEjecutados()?.tecnico }} · {{ datosEjecutados()?.fecha }}</small>
-              </div>
-
-              <div class="acciones-form">
-                <a class="btn btn-outline btn-block" routerLink="/mantenimiento/tareas-asignadas">
-                  <span class="material-symbols-rounded">arrow_back</span>
-                  <span>VOLVER A TAREAS ASIGNADAS</span>
-                </a>
-              </div>
-            </div>
-          }
-
         </div>
       </section>
 
-      <!-- ==============================================
-           COLUMNA DERECHA: Datos de la Tarea / Activo
-           ============================================== -->
       <section class="panel lateral">
         <header class="panel__head">
-          <h2 class="titulo-seccion">
-            {{ pasoActivo() === 1 ? 'Ficha del Activo' : 'DATOS DE LA TAREA' }}
-          </h2>
+          <h2 class="titulo-seccion">DATOS DE LA TAREA</h2>
           <span class="badge" [attr.data-estado]="estadoOperativo()">
             {{ estadoOperativo() === 'En ejecución' ? 'EN EJECUCIÓN' : (estadoOperativo() === 'Ejecutada' ? 'EJECUTADA' : 'PROGRAMADA') }}
           </span>
@@ -300,7 +265,7 @@
 
             <div class="dato-fila">
               <dt>Frecuencia</dt>
-              <dd>Semestral</dd>
+              <dd>{{ tarea()?.frecuenciaNombre ?? 'No informada por el backend' }}</dd>
             </div>
 
             <div class="dato-fila">
@@ -309,23 +274,28 @@
             </div>
           </dl>
 
-          <!-- Sección Historial del Activo (Figma) -->
           <div class="seccion-historial">
-            <h3 class="stepper-subtitulo">HISTORIAL DEL ACTIVO</h3>
-            <ul class="historial-lista">
-              @for (item of historialActivo(); track item.fecha) {
-                <li [class.item-actual]="item.esActual">
-                  • {{ item.fecha }} – {{ item.titulo }} · {{ item.estado }}
-                </li>
-              }
-            </ul>
+            <h3 class="stepper-subtitulo">HISTORIAL DE INTERVENCIONES</h3>
+            @if (historialCargando()) {
+              <p class="historial-estado">Consultando intervenciones reales…</p>
+            } @else if (historialError()) {
+              <p class="historial-estado">No se pudo consultar el historial desde el backend.</p>
+            } @else if (historialActivo().length === 0) {
+              <p class="historial-estado">No hay intervenciones registradas para esta tarea.</p>
+            } @else {
+              <ul class="historial-lista">
+                @for (item of historialActivo(); track item.fecha + item.titulo) {
+                  <li [class.item-actual]="item.esActual">
+                    • {{ item.fecha }} – {{ item.titulo }} · {{ item.estado }}
+                  </li>
+                }
+              </ul>
+            }
           </div>
 
-          <!-- Stepper Horizontal de 3 Pasos (Figma) -->
           <div class="stepper-seccion">
-            <h3 class="stepper-subtitulo">LÍNEA DE ESTADO</h3>
+            <h3 class="stepper-subtitulo">LÍNEA DE ESTADO DE LA TAREA</h3>
             <div class="stepper-tres">
-              <!-- Paso 1 -->
               <div class="step-tres" [class.done]="pasoActivo() > 1" [class.active]="pasoActivo() === 1">
                 <div class="circle">
                   @if (pasoActivo() > 1) { <span class="material-symbols-rounded">check</span> } @else { 1 }
@@ -335,7 +305,6 @@
 
               <div class="line" [class.done]="pasoActivo() > 1"></div>
 
-              <!-- Paso 2 -->
               <div class="step-tres" [class.done]="pasoActivo() > 2" [class.active]="pasoActivo() === 2">
                 <div class="circle">
                   @if (pasoActivo() > 2) { <span class="material-symbols-rounded">check</span> } @else { 2 }
@@ -345,7 +314,6 @@
 
               <div class="line" [class.done]="pasoActivo() >= 3"></div>
 
-              <!-- Paso 3 -->
               <div class="step-tres" [class.done]="pasoActivo() === 3" [class.active]="pasoActivo() === 3">
                 <div class="circle">
                   @if (pasoActivo() === 3) { <span class="material-symbols-rounded">check</span> } @else { 3 }
@@ -355,8 +323,7 @@
             </div>
           </div>
 
-          <!-- Botón Iniciar Atención solo en Paso 1 (Figma Imagen 2) -->
-          @if (pasoActivo() === 1) {
+          @if (pasoActivo() === 1 && !intervencionRegistrada()) {
             <div class="acciones-panel" style="margin-top: 20px;">
               <button type="button" class="btn btn-primary btn-block" (click)="iniciarAtencion()">
                 <span>INICIAR ATENCIÓN</span>
@@ -366,7 +333,6 @@
           }
         </div>
       </section>
-
     </div>
   }
 </div>
