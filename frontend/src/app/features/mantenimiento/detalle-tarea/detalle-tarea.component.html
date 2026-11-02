@@ -4,12 +4,11 @@
   backLink="/mantenimiento/tareas-asignadas"
   backLabel="Volver a tareas asignadas"
   [title]="tarea()?.titulo ?? 'Detalle de Tarea Preventiva'"
-  [subtitle]="'Programada para ' + ((tarea()?.fechaProgramada | date: 'EEEE d \'de\' MMMM, yyyy') ?? 'fecha pendiente')"
+  [subtitle]="'Programada para ' + ((tarea()?.fechaProgramada | date: 'EEEE d \'de\' MMMM, yyyy') ?? 'fecha pendiente') + ' · [' + (tarea()?.activoCodigo ?? 'ACTIVO') + '] ' + (tarea()?.activoNombre ?? '')"
 />
 
 <div class="contenedor-detalle">
   @if (cargando()) {
-    <!-- Estado de carga -->
     <section class="panel dock">
       <div class="estado-caja">
         <span class="material-symbols-rounded spinner">sync</span>
@@ -17,7 +16,6 @@
       </div>
     </section>
   } @else if (!tarea() || errorCarga()) {
-    <!-- Tarea no encontrada -->
     <section class="panel dock">
       <div class="estado-caja">
         <span class="material-symbols-rounded">error</span>
@@ -27,7 +25,7 @@
       </div>
     </section>
   } @else if (!tieneAcceso()) {
-    <!-- CUMPLIMIENTO HU-MAN-04-CA-02: Técnico sin asignación intenta abrir tarea ajena -->
+    <!-- HU-MAN-04-CA-02: Acceso Restringido -->
     <section class="panel dock restringido">
       <div class="alerta-restringido" role="alert">
         <div class="alerta-restringido__icono">
@@ -46,81 +44,329 @@
       </div>
     </section>
   } @else {
-    <!-- CUMPLIMIENTO HU-MAN-04-CA-01: Visualización completa de Activo, Fecha, Ubicación y Trabajo -->
+    <!-- FLUJO INTEGRAL HU-MAN-05 SEGÚN FIGMA -->
     <div class="grid-detalle">
-      <!-- Columna Izquierda: Información de la intervención técnica -->
+      
+      <!-- ==============================================
+           COLUMNA IZQUIERDA: Formulario o Ejecución
+           ============================================== -->
       <section class="panel principal">
         <header class="panel__head">
           <div class="head-top">
-            <h2 class="titulo-seccion">Instrucciones de la tarea</h2>
-            <span class="badge" [attr.data-estado]="tarea()?.estadoCodigo">
-              {{ tarea()?.estado }}
+            <h2 class="titulo-seccion">
+              {{ pasoActivo() === 1 ? 'Instrucciones de la tarea' : 'EJECUCIÓN DEL MANTENIMIENTO' }}
+            </h2>
+            <span class="badge" [attr.data-estado]="estadoOperativo()">
+              {{ estadoOperativo() === 'En ejecución' ? 'EN EJECUCIÓN' : (estadoOperativo() === 'Ejecutada' ? 'EJECUTADA' : 'PROGRAMADA') }}
             </span>
           </div>
         </header>
 
         <div class="panel__body">
-          <div class="campo-bloque">
-            <label class="etiqueta">Tipo de trabajo / Actividad</label>
-            <p class="valor-texto grande">{{ tarea()?.titulo }}</p>
-          </div>
-
-          <div class="campo-bloque">
-            <label class="etiqueta">Procedimiento y descripción técnica</label>
-            <p class="valor-texto descripcion">
-              {{ tarea()?.descripcion || 'Sin descripción adicional registrada para esta tarea.' }}
-            </p>
-          </div>
-
-          <div class="info-aviso">
-            <span class="material-symbols-rounded">info</span>
-            <div>
-              <strong>Responsable técnico asignado:</strong>
-              <p>{{ tarea()?.responsableNombre }} (Tú)</p>
+          
+          <!-- ESTADO 1: PROGRAMADA (Figma Imagen 2) -->
+          @if (pasoActivo() === 1) {
+            <div class="campo-bloque">
+              <label class="etiqueta">Tipo de trabajo / Actividad</label>
+              <p class="valor-texto grande">{{ tarea()?.titulo }}</p>
             </div>
-          </div>
+
+            <div class="campo-bloque">
+              <label class="etiqueta">Procedimiento y descripción técnica</label>
+              <p class="valor-texto descripcion">
+                {{ tarea()?.descripcion || 'Sin descripción adicional registrada para esta tarea.' }}
+              </p>
+            </div>
+
+            <div class="info-aviso">
+              <span class="material-symbols-rounded">info</span>
+              <div>
+                <strong>Responsable técnico asignado:</strong>
+                <p>{{ tarea()?.responsableNombre }} (Tú)</p>
+              </div>
+            </div>
+          }
+
+          <!-- ESTADO 2: EN EJECUCIÓN (Figma Imágenes 1, 3 y 5) -->
+          @if (pasoActivo() === 2) {
+            <!-- Banner azul info -->
+            <div class="info-aviso azul">
+              <span class="material-symbols-rounded">radio_button_unchecked</span>
+              <div>
+                <strong>Mantenimiento asignado a tu cargo</strong>
+                <p>Registra el trabajo efectuado, la fecha de ejecución y las evidencias para cerrar la tarea.</p>
+              </div>
+            </div>
+
+            <!-- HU-MAN-05-CA-02: Banner rojo si falta trabajo efectuado -->
+            @if (errorValidacion()) {
+              <div class="alerta-error" role="alert">
+                <span class="material-symbols-rounded">error_outline</span>
+                <span>{{ errorValidacion() }}</span>
+              </div>
+            }
+
+            <!-- Campo Fecha de ejecución * -->
+            <div class="campo-bloque">
+              <label class="etiqueta">FECHA DE EJECUCIÓN *</label>
+              <input
+                type="text"
+                class="control-input"
+                [(ngModel)]="fechaEjecucion"
+                placeholder="DD/MM/YYYY HH:mm"
+              />
+            </div>
+
+            <!-- Campo Diagnóstico / Observaciones (Opcional) -->
+            <div class="campo-bloque">
+              <label class="etiqueta">DIAGNÓSTICO / OBSERVACIONES (OPCIONAL)</label>
+              <textarea
+                class="control-textarea"
+                rows="2"
+                [(ngModel)]="diagnostico"
+                placeholder="Ej: Se detectó desgaste leve en zapatas de freno..."
+              ></textarea>
+            </div>
+
+            <!-- Campo Trabajo Efectuado * (Obligatorio) -->
+            <div class="campo-bloque">
+              <label class="etiqueta">TRABAJO EFECTUADO * (OBLIGATORIO)</label>
+              <textarea
+                class="control-textarea"
+                [class.control--error]="errorValidacion() && !trabajoEfectuado().trim()"
+                rows="3"
+                [(ngModel)]="trabajoEfectuado"
+                placeholder="Ej: Se lubricaron guías y poleas, se ajustaron frenos y se probó el funcionamiento..."
+              ></textarea>
+            </div>
+
+            <!-- Evidencias (PNG, JPG, WEBP, PDF · Máx. 3) -->
+            <div class="campo-bloque">
+              <label class="etiqueta">EVIDENCIAS (PNG, JPG, WEBP, PDF · MÁX. 3)</label>
+              <div
+                class="evidencias-upload-box"
+                (dragover)="$event.preventDefault()"
+                (drop)="onDropArchivos($event)"
+              >
+                <label class="btn-adjuntar">
+                  <span class="material-symbols-rounded">attach_file</span>
+                  <span>Seleccionar archivo o arrastrar</span>
+                  <input
+                    type="file"
+                    accept="image/png, image/jpeg, image/webp, application/pdf"
+                    multiple
+                    (change)="onArchivosSeleccionados($event)"
+                    hidden
+                  />
+                </label>
+                <span class="contador-archivos">{{ archivos().length }}/3 archivos</span>
+              </div>
+
+              @if (previews().length > 0) {
+                <div class="previews-grid">
+                  @for (prev of previews(); track $index) {
+                    <div class="preview-item">
+                      @if (prev.esPdf) {
+                        <div class="preview-pdf">
+                          <span class="material-symbols-rounded">picture_as_pdf</span>
+                          <span class="preview-pdf__nombre">{{ prev.nombre }}</span>
+                        </div>
+                      } @else {
+                        <img [src]="prev.url" [alt]="prev.nombre" />
+                      }
+                      <button type="button" class="btn-eliminar-preview" (click)="eliminarArchivo($index)">✕</button>
+                    </div>
+                  }
+                </div>
+              }
+              <small class="texto-ayuda">
+                Puedes adjuntar hasta 3 evidencias (imágenes o PDF). Se guardarán en el historial del activo.
+              </small>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="acciones-form">
+              <button
+                type="button"
+                class="btn btn-primary btn-block"
+                [disabled]="guardando()"
+                (click)="finalizarMantenimiento()"
+              >
+                <span>{{ guardando() ? 'Finalizando…' : 'FINALIZAR MANTENIMIENTO' }}</span>
+                <span class="material-symbols-rounded">check</span>
+              </button>
+
+              <a class="btn-link" routerLink="/mantenimiento/tareas-asignadas">
+                Volver a tareas asignadas
+              </a>
+            </div>
+          }
+
+          <!-- ESTADO 3: EJECUTADA (Figma Imagen 4 - Éxito) -->
+          @if (pasoActivo() === 3) {
+            <!-- Banner verde éxito -->
+            <div class="alerta-exito" role="status">
+              <span class="material-symbols-rounded">check_circle</span>
+              <div>
+                <strong>¡Mantenimiento ejecutado!</strong>
+                <p>El trabajo y las evidencias quedaron registrados en el historial del activo {{ tarea()?.activoCodigo }}. La tarea pasó a Ejecutada.</p>
+              </div>
+            </div>
+
+            <!-- Resumen de datos registrados -->
+            <div class="resumen-ejecutado">
+              <h3 class="resumen-subtitulo">DATOS REGISTRADOS</h3>
+
+              <div class="resumen-bloque">
+                <span class="resumen-label">Observaciones</span>
+                <p class="resumen-valor">{{ datosEjecutados()?.observaciones }}</p>
+              </div>
+
+              <div class="resumen-bloque">
+                <span class="resumen-label">Trabajo efectuado</span>
+                <p class="resumen-valor">{{ datosEjecutados()?.trabajo }}</p>
+              </div>
+
+              @if (datosEjecutados()?.evidencias?.length) {
+                <div class="resumen-bloque">
+                  <span class="resumen-label">Evidencias ({{ datosEjecutados()?.evidencias?.length }})</span>
+                  <div class="previews-grid estatico">
+                    @for (ev of datosEjecutados()?.evidencias; track $index) {
+                      <div class="preview-item estatico">
+                        @if (ev.esPdf) {
+                          <div class="preview-pdf">
+                            <span class="material-symbols-rounded">picture_as_pdf</span>
+                            <span class="preview-pdf__nombre">{{ ev.nombre }}</span>
+                          </div>
+                        } @else {
+                          <img [src]="ev.url" [alt]="ev.nombre" />
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="firma-tecnico">
+                <small>Ejecutado por {{ datosEjecutados()?.tecnico }} · {{ datosEjecutados()?.fecha }}</small>
+              </div>
+
+              <div class="acciones-form">
+                <a class="btn btn-outline btn-block" routerLink="/mantenimiento/tareas-asignadas">
+                  <span class="material-symbols-rounded">arrow_back</span>
+                  <span>VOLVER A TAREAS ASIGNADAS</span>
+                </a>
+              </div>
+            </div>
+          }
+
         </div>
       </section>
 
-      <!-- Columna Derecha: Ficha del Activo y Ubicación -->
+      <!-- ==============================================
+           COLUMNA DERECHA: Datos de la Tarea / Activo
+           ============================================== -->
       <section class="panel lateral">
         <header class="panel__head">
-          <h2 class="titulo-seccion">Ficha del Activo</h2>
-          <span class="badge-codigo">{{ tarea()?.activoCodigo }}</span>
+          <h2 class="titulo-seccion">
+            {{ pasoActivo() === 1 ? 'Ficha del Activo' : 'DATOS DE LA TAREA' }}
+          </h2>
+          <span class="badge" [attr.data-estado]="estadoOperativo()">
+            {{ estadoOperativo() === 'En ejecución' ? 'EN EJECUCIÓN' : (estadoOperativo() === 'Ejecutada' ? 'EJECUTADA' : 'PROGRAMADA') }}
+          </span>
         </header>
 
         <div class="panel__body">
           <dl class="datos-lista">
             <div class="dato-fila">
-              <dt>Equipo / Activo:</dt>
-              <dd><strong>{{ tarea()?.activoNombre }}</strong></dd>
+              <dt>Tipo de trabajo</dt>
+              <dd><strong>{{ tarea()?.titulo }}</strong></dd>
             </div>
 
             <div class="dato-fila">
-              <dt>Ubicación:</dt>
-              <dd>
-                <span class="material-symbols-rounded icono-inline">location_on</span>
-                {{ tarea()?.ubicacion }}
-              </dd>
+              <dt>Ubicación</dt>
+              <dd>{{ tarea()?.ubicacion }}</dd>
             </div>
 
             <div class="dato-fila">
-              <dt>Fecha programada:</dt>
-              <dd>
-                <span class="material-symbols-rounded icono-inline">calendar_today</span>
-                {{ tarea()?.fechaProgramada | date: 'dd/MM/yyyy HH:mm' }}
-              </dd>
+              <dt>Activo</dt>
+              <dd><strong>[{{ tarea()?.activoCodigo }}] {{ tarea()?.activoNombre }}</strong></dd>
+            </div>
+
+            <div class="dato-fila">
+              <dt>Fecha programada</dt>
+              <dd>{{ tarea()?.fechaProgramada | date: 'd MMM yyyy, HH:mm' }}</dd>
+            </div>
+
+            <div class="dato-fila">
+              <dt>Frecuencia</dt>
+              <dd>Semestral</dd>
+            </div>
+
+            <div class="dato-fila">
+              <dt>Responsable</dt>
+              <dd>{{ tarea()?.responsableNombre }} (Tú)</dd>
             </div>
           </dl>
 
-          <div class="acciones-panel">
-            <a class="btn btn-block" routerLink="/mantenimiento/tareas-asignadas">
-              <span class="material-symbols-rounded">arrow_back</span>
-              <span>Volver a tareas asignadas</span>
-            </a>
+          <!-- Sección Historial del Activo (Figma) -->
+          <div class="seccion-historial">
+            <h3 class="stepper-subtitulo">HISTORIAL DEL ACTIVO</h3>
+            <ul class="historial-lista">
+              @for (item of historialActivo(); track item.fecha) {
+                <li [class.item-actual]="item.esActual">
+                  • {{ item.fecha }} – {{ item.titulo }} · {{ item.estado }}
+                </li>
+              }
+            </ul>
           </div>
+
+          <!-- Stepper Horizontal de 3 Pasos (Figma) -->
+          <div class="stepper-seccion">
+            <h3 class="stepper-subtitulo">LÍNEA DE ESTADO</h3>
+            <div class="stepper-tres">
+              <!-- Paso 1 -->
+              <div class="step-tres" [class.done]="pasoActivo() > 1" [class.active]="pasoActivo() === 1">
+                <div class="circle">
+                  @if (pasoActivo() > 1) { <span class="material-symbols-rounded">check</span> } @else { 1 }
+                </div>
+                <span class="label-step">Programada</span>
+              </div>
+
+              <div class="line" [class.done]="pasoActivo() > 1"></div>
+
+              <!-- Paso 2 -->
+              <div class="step-tres" [class.done]="pasoActivo() > 2" [class.active]="pasoActivo() === 2">
+                <div class="circle">
+                  @if (pasoActivo() > 2) { <span class="material-symbols-rounded">check</span> } @else { 2 }
+                </div>
+                <span class="label-step">En ejecución</span>
+              </div>
+
+              <div class="line" [class.done]="pasoActivo() >= 3"></div>
+
+              <!-- Paso 3 -->
+              <div class="step-tres" [class.done]="pasoActivo() === 3" [class.active]="pasoActivo() === 3">
+                <div class="circle">
+                  @if (pasoActivo() === 3) { <span class="material-symbols-rounded">check</span> } @else { 3 }
+                </div>
+                <span class="label-step">Ejecutada</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón Iniciar Atención solo en Paso 1 (Figma Imagen 2) -->
+          @if (pasoActivo() === 1) {
+            <div class="acciones-panel" style="margin-top: 20px;">
+              <button type="button" class="btn btn-primary btn-block" (click)="iniciarAtencion()">
+                <span>INICIAR ATENCIÓN</span>
+                <span class="material-symbols-rounded">arrow_forward</span>
+              </button>
+            </div>
+          }
         </div>
       </section>
+
     </div>
   }
 </div>
