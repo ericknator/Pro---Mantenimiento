@@ -87,20 +87,40 @@ export class DetalleTareaComponent implements OnInit {
 
     let encontrada = this.preventivos.obtenerPorId(idParam);
 
-    if (!encontrada) {
-      const desdeApi = await this.preventivos.consultarDetalleBackend(idParam);
-      if (desdeApi) {
-        encontrada = desdeApi;
-      }
-    }
-
     if (encontrada) {
       this.tarea.set(encontrada);
-      
-      // Sincronizamos el estado si ya venía como ejecutada
+
+      // Verificamos si ya existe una intervención guardada en la BD para esta tarea
+      const intervenciones = await this.preventivos.obtenerHistorialIntervenciones();
+      const intervencionExistente = intervenciones.find(
+        (i: any) => String(i.tareaPreventiva?.id ?? i.tareaPreventiva) === String(idParam)
+      );
+
       const codigo = encontrada.estadoCodigo?.toUpperCase() ?? '';
-      if (codigo.includes('EJECUT') || codigo.includes('COMPLET')) {
+
+      if (intervencionExistente || codigo.includes('EJECUT') || codigo.includes('COMPLET')) {
         this.estadoOperativo.set('Ejecutada');
+        this.mantenimientoExitoso.set(true);
+
+        if (intervencionExistente) {
+          const fechaEjec = intervencionExistente.ejecutadoEn
+            ? new Date(intervencionExistente.ejecutadoEn).toLocaleString('es-PE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            : this.fechaEjecucion();
+
+          this.datosEjecutados.set({
+            observaciones: intervencionExistente.observaciones || 'Sin observaciones registradas.',
+            trabajo: intervencionExistente.accionesRealizadas || 'Trabajo completado según protocolo.',
+            fecha: fechaEjec,
+            tecnico: this.usuario()?.nombre ?? 'Mantenimiento Prueba (Tú)',
+            evidencias: [],
+          });
+        }
       }
 
       this.cargarHistorialMock(encontrada);
