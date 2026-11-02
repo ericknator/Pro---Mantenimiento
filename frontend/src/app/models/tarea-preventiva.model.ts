@@ -1,6 +1,3 @@
-import { Activo } from './activo.model';
-import { Usuario } from './usuario.model';
-
 export type EstadoTarea = 'Programada' | 'En ejecución' | 'Ejecutada' | 'Vencida' | 'Cancelada';
 
 export interface EstadoTareaApi {
@@ -51,6 +48,22 @@ export interface TareaPreventiva {
   ubicacion: string;
   responsableId?: string;
   responsableNombre?: string;
+  frecuenciaCodigo?: string;
+  frecuenciaNombre?: string;
   estado: EstadoTarea;
   estadoCodigo: string;
+}
+
+export interface IntervencionPreventivaApi {
+  id?: number;
+  tareaPreventiva?: { id: number } | number | null;
+  ejecutorUsuario?: {
+    id: number;
+    nombres?: string;
+    apellidos?: string;
+  } | null;
+  accionesRealizadas: string;
+  observaciones?: string | null;
+  ejecutadoEn: string;
+  creadoEn: string;
 }
