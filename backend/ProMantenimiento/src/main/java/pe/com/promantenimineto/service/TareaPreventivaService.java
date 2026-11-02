@@ -21,5 +21,7 @@ public interface TareaPreventivaService {
 	TareaPreventivaEntity enable(Long id);
 	
 	List<TareaPreventivaEntity> findByResponsableId(Long responsableId);
+	
+	TareaPreventivaEntity iniciarAtencion(Long id, Long responsableId);
 
 }

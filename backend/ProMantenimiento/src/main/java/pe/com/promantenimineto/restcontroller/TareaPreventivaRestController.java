@@ -154,4 +154,18 @@ public class TareaPreventivaRestController {
     public TareaPreventivaEntity enable(@PathVariable Long id) {
         return servicio.enable(id);
     }
+    
+    @PatchMapping("/{id}/iniciar-atencion")
+    public TareaPreventivaEntity iniciarAtencion(@PathVariable Long id) {
+
+        UsuarioPerfilEntity usuario = obtenerUsuarioAutenticado();
+
+        if (!"MANTENIMIENTO".equals(obtenerCodigoRol(usuario))) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Solo el personal de mantenimiento puede iniciar una tarea."
+            );
+        }
+
+        return servicio.iniciarAtencion(id, usuario.getId());
+    }
 }
