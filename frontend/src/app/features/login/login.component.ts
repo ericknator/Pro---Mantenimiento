@@ -81,6 +81,18 @@ export class LoginComponent {
         return;
       }
 
+      const rolSeleccionado = this.rolActivo();
+
+      if (usuario.rol !== rolSeleccionado) {
+        await this.auth.salir();
+
+        this.error.set(
+          'El rol seleccionado no corresponde a tu cuenta. Selecciona el rol correcto e inténtalo nuevamente.'
+        );
+
+        return;
+      }
+
       const rutasPorRol: Record<string, string> = {
         residente: '/inicio',
         administrador: '/administrador/dashboard',

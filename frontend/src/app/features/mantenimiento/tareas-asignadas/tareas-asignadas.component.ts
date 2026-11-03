@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal } from '@angular/core';
+
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PageHeroComponent } from '../../../shared/page-hero/page-hero.component';
@@ -12,21 +13,24 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './tareas-asignadas.component.html',
   styleUrl: './tareas-asignadas.component.scss',
 })
-export class TareasAsignadasComponent {
+export class TareasAsignadasComponent implements OnInit {
   private readonly preventivos = inject(PreventivosService);
   private readonly auth = inject(AuthService);
 
   readonly busqueda = signal('');
-  readonly filtroEstado = signal<'TODOS' | 'PROGRAMADA' | 'EN_EJECUCION' | 'EJECUTADA'>('TODOS');
+
+  readonly filtroEstado = signal<
+    'TODOS' | 'PROGRAMADA' | 'EN_EJECUCION' | 'EJECUTADA'
+  >('TODOS');
 
   readonly cargando = this.preventivos.cargando;
   readonly preventivosError = this.preventivos.error;
   readonly usuario = this.auth.usuario;
 
-  // Lista de tareas asignadas al técnico autenticado
+  // Lista de tareas asignadas al técnico autenticado.
   readonly tareasAsignadas = this.preventivos.asignadas;
 
-  // Filtrado reactivo por texto y estado
+  // Filtrado reactivo por texto y estado.
   readonly tareasFiltradas = computed(() => {
     const query = this.busqueda().toLowerCase().trim();
     const estado = this.filtroEstado();
@@ -48,15 +52,26 @@ export class TareasAsignadasComponent {
 
   readonly subtituloHero = computed(() => {
     const total = this.tareasAsignadas().length;
-    return `${total} ${total === 1 ? 'tarea preventiva asignada' : 'tareas preventivas asignadas'} a tu cargo`;
+
+    return `${total} ${total === 1
+        ? 'tarea preventiva asignada'
+        : 'tareas preventivas asignadas'
+      } a tu cargo`;
   });
+
+  // Actualiza las tareas desde el backend al ingresar a esta pantalla.
+  ngOnInit(): void {
+    void this.preventivos.cargarTareas();
+  }
 
   actualizarBusqueda(event: Event): void {
     const valor = (event.target as HTMLInputElement).value;
     this.busqueda.set(valor);
   }
 
-  cambiarFiltro(estado: 'TODOS' | 'PROGRAMADA' | 'EN_EJECUCION' | 'EJECUTADA'): void {
+  cambiarFiltro(
+    estado: 'TODOS' | 'PROGRAMADA' | 'EN_EJECUCION' | 'EJECUTADA'
+  ): void {
     this.filtroEstado.set(estado);
   }
 }
