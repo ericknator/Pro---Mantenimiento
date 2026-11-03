@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -19,13 +19,20 @@ interface HistorialIntervencion {
   esActual?: boolean;
 }
 
+interface ArchivoPreview {
+  nombre: string;
+  url: string;
+  esVideo: boolean;
+}
+
 interface DatosIntervencion {
   observaciones: string;
   trabajo: string;
   fecha: string;
   tecnico: string;
   estadoTarea: string;
-  archivosNoPersistidos: number;
+  archivosEnviados: number;
+  estadoConfirmado: boolean;
 }
 
 @Component({
@@ -35,7 +42,7 @@ interface DatosIntervencion {
   templateUrl: './detalle-tarea.component.html',
   styleUrl: './detalle-tarea.component.scss',
 })
-export class DetalleTareaComponent implements OnInit {
+export class DetalleTareaComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly preventivos = inject(PreventivosService);
   private readonly auth = inject(AuthService);
@@ -49,8 +56,7 @@ export class DetalleTareaComponent implements OnInit {
 
   readonly usuario = this.auth.usuario;
 
-  // Refleja el estado de la tarea devuelto por el backend. El paso "En ejecución"
-  // es una señal operativa local hasta que el backend exponga una transición.
+  // Refleja únicamente el estado devuelto por el backend.
   readonly estadoOperativo = signal<EstadoOperativo>('Programada');
 
   // HU-MAN-05: Formulario de registro de la intervención
@@ -59,11 +65,12 @@ export class DetalleTareaComponent implements OnInit {
   readonly trabajoEfectuado = signal('');
   readonly errorValidacion = signal<string | null>(null);
   readonly guardando = signal(false);
+  readonly iniciandoAtencion = signal(false);
   readonly intervencionRegistrada = signal(false);
 
-  // Selección local para la futura integración multipart. No se envía al POST JSON actual.
+  // Archivos seleccionados para el multipart y sus previsualizaciones locales.
   readonly archivos = signal<File[]>([]);
-  readonly previews = signal<{ nombre: string; url: string; esPdf: boolean }[]>([]);
+  readonly previews = signal<ArchivoPreview[]>([]);
 
   readonly datosIntervencion = signal<DatosIntervencion | null>(null);
   readonly historialActivo = signal<HistorialIntervencion[]>([]);
@@ -76,6 +83,17 @@ export class DetalleTareaComponent implements OnInit {
 
     if (u.rol === 'administrador') return true;
     return t.responsableId === u.id;
+  });
+
+  readonly puedeOperar = computed(() => {
+    const t = this.tarea();
+    const u = this.usuario();
+    return Boolean(
+      t &&
+        u &&
+        u.rol === 'mantenimiento' &&
+        t.responsableId === u.id
+    );
   });
 
   readonly pasoActivo = computed(() => {
@@ -185,7 +203,8 @@ export class DetalleTareaComponent implements OnInit {
   private mapearDatosIntervencion(
     intervencion: IntervencionPreventivaApi,
     tarea: TareaPreventiva,
-    archivosNoPersistidos: number
+    archivosEnviados: number,
+    estadoConfirmado = true
   ): DatosIntervencion {
     const ejecutor = intervencion.ejecutorUsuario;
     const nombreEjecutor = ejecutor
@@ -198,7 +217,8 @@ export class DetalleTareaComponent implements OnInit {
       fecha: this.formatearFecha(intervencion.ejecutadoEn),
       tecnico: nombreEjecutor || this.usuario()?.nombre || 'Técnico no informado por el backend',
       estadoTarea: tarea.estado,
-      archivosNoPersistidos,
+      archivosEnviados,
+      estadoConfirmado,
     };
   }
 
@@ -217,18 +237,66 @@ export class DetalleTareaComponent implements OnInit {
 
   private normalizarFechaEjecucion(valor: string): string | null {
     const fecha = valor.trim();
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(fecha)) {
+    const partes = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(fecha);
+    if (!partes) return null;
+
+    const [, anio, mes, dia, hora, minuto, segundo = '00'] = partes;
+    const fechaUtc = new Date(
+      Date.UTC(
+        Number(anio),
+        Number(mes) - 1,
+        Number(dia),
+        Number(hora),
+        Number(minuto),
+        Number(segundo)
+      )
+    );
+
+    if (
+      fechaUtc.getUTCFullYear() !== Number(anio) ||
+      fechaUtc.getUTCMonth() !== Number(mes) - 1 ||
+      fechaUtc.getUTCDate() !== Number(dia) ||
+      fechaUtc.getUTCHours() !== Number(hora) ||
+      fechaUtc.getUTCMinutes() !== Number(minuto) ||
+      fechaUtc.getUTCSeconds() !== Number(segundo)
+    ) {
       return null;
     }
 
-    const fechaValida = new Date(fecha);
-    if (Number.isNaN(fechaValida.getTime())) return null;
-    return fecha.length === 16 ? `${fecha}:00` : fecha;
+    // LocalDateTime no lleva Z ni offset: se conserva la hora elegida por el técnico.
+    return `${anio}-${mes}-${dia}T${hora}:${minuto}:${segundo}`;
   }
 
-  iniciarAtencion(): void {
-    this.estadoOperativo.set('En ejecución');
+  async iniciarAtencion(): Promise<void> {
+    if (this.iniciandoAtencion()) return;
+
+    const tarea = this.tarea();
+    if (!tarea || !this.puedeOperar()) {
+      this.errorValidacion.set(
+        'Solo el técnico de mantenimiento asignado puede iniciar esta tarea.'
+      );
+      return;
+    }
+
     this.errorValidacion.set(null);
+    this.iniciandoAtencion.set(true);
+
+    try {
+      const tareaConfirmada = await this.preventivos.iniciarAtencion(tarea.id);
+      this.tarea.set(tareaConfirmada);
+      this.estadoOperativo.set(this.estadoDesdeBackend(tareaConfirmada));
+      await this.cargarHistorialReal(tareaConfirmada);
+    } catch (error) {
+      console.error('No se pudo iniciar la atención preventiva:', error);
+      this.errorValidacion.set(
+        this.preventivos.mensajeError(
+          error,
+          'No se pudo iniciar la atención en el servidor.'
+        )
+      );
+    } finally {
+      this.iniciandoAtencion.set(false);
+    }
   }
 
   onDropArchivos(event: DragEvent): void {
@@ -245,15 +313,21 @@ export class DetalleTareaComponent implements OnInit {
   }
 
   private procesarArchivos(nuevos: File[]): void {
-    const permitidos = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'];
+    const permitidos = new Set([
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'video/mp4',
+      'video/webm',
+    ]);
     const invalidos = nuevos.filter(
-      (archivo) =>
-        !permitidos.includes(archivo.type) &&
-        !/\.(png|jpe?g|webp|pdf)$/i.test(archivo.name)
+      (archivo) => !permitidos.has(archivo.type) || archivo.size > 20 * 1024 * 1024
     );
 
     if (invalidos.length > 0) {
-      this.errorValidacion.set('Solo se permiten imágenes (PNG, JPG, WEBP) o documentos PDF.');
+      this.errorValidacion.set(
+        'Solo se permiten JPG, PNG, WEBP, MP4 o WEBM, con un máximo de 20 MB por archivo. No se aceptan PDF.'
+      );
       return;
     }
 
@@ -265,35 +339,51 @@ export class DetalleTareaComponent implements OnInit {
     this.errorValidacion.set(null);
     this.archivos.set([...this.archivos(), ...nuevos]);
     nuevos.forEach((archivo) => {
-      const esPdf = archivo.type === 'application/pdf' || /\.pdf$/i.test(archivo.name);
-      if (esPdf) {
-        this.previews.update((prev) => [
-          ...prev,
-          { nombre: archivo.name, url: '', esPdf: true },
-        ]);
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (evento) => {
-        const resultado = evento.target?.result;
-        if (resultado) {
-          this.previews.update((prev) => [
-            ...prev,
-            { nombre: archivo.name, url: resultado as string, esPdf: false },
-          ]);
-        }
-      };
-      reader.readAsDataURL(archivo);
+      this.previews.update((prev) => [
+        ...prev,
+        {
+          nombre: archivo.name,
+          url: URL.createObjectURL(archivo),
+          esVideo: archivo.type.startsWith('video/'),
+        },
+      ]);
     });
   }
 
   eliminarArchivo(index: number): void {
+    const preview = this.previews()[index];
+    if (preview) URL.revokeObjectURL(preview.url);
     this.archivos.update((archivos) => archivos.filter((_, i) => i !== index));
     this.previews.update((previews) => previews.filter((_, i) => i !== index));
   }
 
+  private limpiarArchivos(): void {
+    this.previews().forEach((preview) => URL.revokeObjectURL(preview.url));
+    this.archivos.set([]);
+    this.previews.set([]);
+  }
+
+  ngOnDestroy(): void {
+    this.previews().forEach((preview) => URL.revokeObjectURL(preview.url));
+  }
+
   async finalizarMantenimiento(): Promise<void> {
+    if (this.guardando()) return;
+
+    if (!this.puedeOperar()) {
+      this.errorValidacion.set(
+        'Solo el técnico de mantenimiento asignado puede registrar esta intervención.'
+      );
+      return;
+    }
+
+    if (this.estadoOperativo() !== 'En ejecución') {
+      this.errorValidacion.set(
+        'La tarea debe estar en ejecución antes de registrar la intervención.'
+      );
+      return;
+    }
+
     if (!this.trabajoEfectuado().trim()) {
       this.errorValidacion.set(
         'Debes registrar el trabajo efectuado para registrar la intervención.'
@@ -308,25 +398,23 @@ export class DetalleTareaComponent implements OnInit {
     }
 
     const tarea = this.tarea();
-    const usuario = this.usuario();
-    if (!tarea || !usuario) return;
+    if (!tarea) return;
 
-    const archivosNoPersistidos = this.archivos().length;
+    const archivosEnviados = this.archivos().length;
     this.errorValidacion.set(null);
     this.guardando.set(true);
 
     try {
       const intervencion = await this.preventivos.registrarIntervencion({
         tareaPreventivaId: Number(tarea.id),
-        ejecutorUsuarioId: Number(usuario.id),
         accionesRealizadas: this.trabajoEfectuado(),
         observaciones: this.diagnostico(),
-        ejecutadoEn: fechaEjecucion,
-      });
+        fechaEjecucion,
+      }, this.archivos());
 
-      // Relee el estado de la tarea. No se fuerza EJECUTADA a partir del POST.
-      const tareaConfirmada =
-        (await this.preventivos.consultarDetalleBackend(tarea.id)) ?? tarea;
+      // Relee el estado persistido. No se fuerza EJECUTADA a partir del POST.
+      const tareaPersistida = await this.preventivos.consultarDetalleBackend(tarea.id);
+      const tareaConfirmada = tareaPersistida ?? tarea;
       this.tarea.set(tareaConfirmada);
       this.estadoOperativo.set(this.estadoDesdeBackend(tareaConfirmada));
 
@@ -340,19 +428,21 @@ export class DetalleTareaComponent implements OnInit {
             ejecutadoEn: intervencion.ejecutadoEn || fechaEjecucion,
           },
           tareaConfirmada,
-          archivosNoPersistidos
+          archivosEnviados,
+          Boolean(tareaPersistida)
         )
       );
       this.intervencionRegistrada.set(true);
 
-      // Las selecciones locales no se presentan como evidencias persistidas.
-      this.archivos.set([]);
-      this.previews.set([]);
+      this.limpiarArchivos();
       await this.cargarHistorialReal(tareaConfirmada);
     } catch (error) {
       console.error(error);
       this.errorValidacion.set(
-        'No se pudo registrar la intervención en el servidor. La tarea no fue marcada como Ejecutada por la interfaz.'
+        this.preventivos.mensajeError(
+          error,
+          'No se pudo registrar la intervención en el servidor.'
+        )
       );
     } finally {
       this.guardando.set(false);
