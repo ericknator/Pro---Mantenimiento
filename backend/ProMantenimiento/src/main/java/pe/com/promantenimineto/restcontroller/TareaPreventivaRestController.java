@@ -67,7 +67,7 @@ public class TareaPreventivaRestController {
         UsuarioPerfilEntity usuario = obtenerUsuarioAutenticado();
         String rol = obtenerCodigoRol(usuario);
 
-        if ("ADMIN".equals(rol)) {
+        if ("ADMINISTRADOR".equals(rol)) {
             return servicio.findAll();
         }
 
