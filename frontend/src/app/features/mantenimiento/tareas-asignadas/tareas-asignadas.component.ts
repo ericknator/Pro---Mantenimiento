@@ -1,10 +1,23 @@
 
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  OnInit,
+  OnDestroy,
+  signal,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { PageHeroComponent } from '../../../shared/page-hero/page-hero.component';
 import { PreventivosService } from '../../../core/services/preventivos.service';
 import { AuthService } from '../../../core/services/auth.service';
+
+type FiltroEstado =
+  | 'TODOS'
+  | 'PROGRAMADA'
+  | 'EN_EJECUCION'
+  | 'EJECUTADA';
 
 @Component({
   selector: 'app-tareas-asignadas',
@@ -13,15 +26,18 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './tareas-asignadas.component.html',
   styleUrl: './tareas-asignadas.component.scss',
 })
-export class TareasAsignadasComponent implements OnInit {
+export class TareasAsignadasComponent implements OnInit, OnDestroy {
   private readonly preventivos = inject(PreventivosService);
   private readonly auth = inject(AuthService);
 
+  // Actualización automática cada 15 segundos.
+  private readonly intervaloActualizacion = 15000;
+
+  private temporizador: ReturnType<typeof setInterval> | null = null;
+
   readonly busqueda = signal('');
 
-  readonly filtroEstado = signal<
-    'TODOS' | 'PROGRAMADA' | 'EN_EJECUCION' | 'EJECUTADA'
-  >('TODOS');
+  readonly filtroEstado = signal<FiltroEstado>('TODOS');
 
   readonly cargando = this.preventivos.cargando;
   readonly preventivosError = this.preventivos.error;
@@ -59,9 +75,40 @@ export class TareasAsignadasComponent implements OnInit {
       } a tu cargo`;
   });
 
-  // Actualiza las tareas desde el backend al ingresar a esta pantalla.
   ngOnInit(): void {
-    void this.preventivos.cargarTareas();
+    // Carga inicial al ingresar a la pantalla.
+    void this.actualizarTareas();
+
+    // Consulta periódica mientras la pantalla permanezca abierta.
+    this.temporizador = setInterval(() => {
+      // Evita consultas cuando la pestaña está oculta.
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+
+      // Evita iniciar consultas superpuestas.
+      if (this.cargando()) {
+        return;
+      }
+
+      void this.actualizarTareas();
+    }, this.intervaloActualizacion);
+  }
+
+  ngOnDestroy(): void {
+    // Detiene las consultas al abandonar la pantalla.
+    if (this.temporizador !== null) {
+      clearInterval(this.temporizador);
+      this.temporizador = null;
+    }
+  }
+
+  private async actualizarTareas(): Promise<void> {
+    if (this.cargando()) {
+      return;
+    }
+
+    await this.preventivos.cargarTareas();
   }
 
   actualizarBusqueda(event: Event): void {
@@ -69,9 +116,7 @@ export class TareasAsignadasComponent implements OnInit {
     this.busqueda.set(valor);
   }
 
-  cambiarFiltro(
-    estado: 'TODOS' | 'PROGRAMADA' | 'EN_EJECUCION' | 'EJECUTADA'
-  ): void {
+  cambiarFiltro(estado: FiltroEstado): void {
     this.filtroEstado.set(estado);
   }
 }
