@@ -12,12 +12,20 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 
 export interface IntervencionPreventivaDto {
   tareaPreventivaId: number;
-  ejecutorUsuarioId: number;
   accionesRealizadas: string;
   observaciones?: string;
   /** LocalDateTime selected by the technician, without timezone conversion. */
-  ejecutadoEn: string;
+  fechaEjecucion: string;
 }
+
+const ARCHIVOS_EVIDENCIA_PERMITIDOS = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'video/mp4',
+  'video/webm',
+]);
+const TAMANO_MAXIMO_EVIDENCIA = 20 * 1024 * 1024;
 
 @Injectable({ providedIn: 'root' })
 export class PreventivosService {
@@ -82,6 +90,15 @@ export class PreventivosService {
     };
   }
 
+  private actualizarTarea(tarea: TareaPreventiva): void {
+    this._tareas.update((lista) => {
+      const existe = lista.some((item) => item.id === tarea.id);
+      return existe
+        ? lista.map((item) => (item.id === tarea.id ? tarea : item))
+        : [...lista, tarea];
+    });
+  }
+
   async cargarTareas(): Promise<void> {
     this.error.set(null);
     const usuario = await this.esperarUsuario();
@@ -128,12 +145,7 @@ export class PreventivosService {
       if (!t) return null;
 
       const tarea = this.mapearTarea(t);
-      this._tareas.update((lista) => {
-        const existe = lista.some((item) => item.id === tarea.id);
-        return existe
-          ? lista.map((item) => (item.id === tarea.id ? tarea : item))
-          : [...lista, tarea];
-      });
+      this.actualizarTarea(tarea);
       return tarea;
     } catch (error) {
       this.error.set(this.mensajeError(error));
@@ -159,63 +171,103 @@ export class PreventivosService {
       return respuesta ?? [];
     } catch (error) {
       console.error('Error al cargar las intervenciones preventivas:', error);
-      return [];
+      throw error;
     }
   }
 
   /**
-   * Registra solo los campos que acepta el POST actual del backend.
-   * Los archivos seleccionados en la vista no se incluyen porque el endpoint
-   * actual recibe JSON y no define una carga multipart ni persistencia asociada.
+   * Inicia la atención en el backend. El servidor valida el rol, la asignación
+   * y la transición PROGRAMADA -> EN_EJECUCION.
+   */
+  async iniciarAtencion(id: string): Promise<TareaPreventiva> {
+    const usuario = await this.esperarUsuario();
+    if (!usuario) throw new Error('No hay sesión activa.');
+
+    const token = await usuario.getIdToken();
+    const respuesta = await firstValueFrom(
+      this.http.patch<TareaPreventivaApi>(
+        `${this.apiUrl}/${encodeURIComponent(id)}/iniciar-atencion`,
+        null,
+        { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) }
+      )
+    );
+
+    const tarea = this.mapearTarea(respuesta);
+    this.actualizarTarea(tarea);
+    return tarea;
+  }
+
+  /**
+   * Registra la intervención con el contrato multipart del backend.
+   * No se define Content-Type manualmente: el navegador agrega el boundary.
    */
   async registrarIntervencion(
-    datos: IntervencionPreventivaDto
+    datos: IntervencionPreventivaDto,
+    archivos: File[] = []
   ): Promise<IntervencionPreventivaApi> {
     const usuario = await this.esperarUsuario();
     if (!usuario) throw new Error('No hay sesión activa.');
 
-    const perfil = this.authService.usuario();
-    if (!perfil) throw new Error('No se pudo identificar el perfil del técnico.');
+    if (archivos.length > 3) {
+      throw new Error('Solo puedes adjuntar un máximo de 3 archivos de evidencia.');
+    }
+
+    const archivoNoPermitido = archivos.find(
+      (archivo) =>
+        !ARCHIVOS_EVIDENCIA_PERMITIDOS.has(archivo.type) ||
+        archivo.size > TAMANO_MAXIMO_EVIDENCIA
+    );
+    if (archivoNoPermitido) {
+      throw new Error(
+        'Solo se permiten archivos JPG, PNG, WEBP, MP4 o WEBM de hasta 20 MB para las evidencias.'
+      );
+    }
 
     const token = await usuario.getIdToken();
     const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
-    const payload = {
-      tareaPreventiva: { id: datos.tareaPreventivaId },
-      ejecutorUsuario: { id: Number(perfil.id) },
-      accionesRealizadas: datos.accionesRealizadas.trim(),
-      observaciones: datos.observaciones?.trim() || null,
-      ejecutadoEn: datos.ejecutadoEn,
-      // Campo de auditoría exigido por la entidad; no reemplaza ejecutadoEn.
-      creadoEn: this.formatearFechaHoraLocal(new Date()),
-    };
+    const formulario = new FormData();
+    formulario.append('fechaEjecucion', datos.fechaEjecucion);
+    formulario.append('accionesRealizadas', datos.accionesRealizadas.trim());
+
+    const observaciones = datos.observaciones?.trim();
+    if (observaciones) formulario.append('observaciones', observaciones);
+
+    archivos.forEach((archivo) => {
+      formulario.append('archivos', archivo, archivo.name);
+    });
 
     return firstValueFrom(
-      this.http.post<IntervencionPreventivaApi>(this.apiIntervencionUrl, payload, {
-        headers,
-      })
+      this.http.post<IntervencionPreventivaApi>(
+        `${this.apiUrl}/${encodeURIComponent(datos.tareaPreventivaId)}/registrar-intervencion`,
+        formulario,
+        {
+          headers,
+        }
+      )
     );
   }
 
-  private formatearFechaHoraLocal(fecha: Date): string {
-    const pad = (valor: number) => String(valor).padStart(2, '0');
-    return [
-      `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}`,
-      `${pad(fecha.getHours())}:${pad(fecha.getMinutes())}:${pad(fecha.getSeconds())}`,
-    ].join('T');
+  mensajeError(
+    error: unknown,
+    fallback = 'No se pudo completar la operación.'
+  ): string {
+    if (error instanceof HttpErrorResponse) {
+      const body = error.error;
+      if (typeof body === 'string' && body.trim()) return body.trim();
+      if (body && typeof body === 'object' && typeof body.message === 'string') {
+        return body.message;
+      }
+
+      if (error.status === 0) return 'No se pudo conectar con el servidor.';
+      if (error.status === 401) return 'Tu sesión no es válida o ha expirado.';
+      if (error.status === 403) return 'No tienes permiso para realizar esta operación.';
+      if (error.status === 409) return 'La tarea cambió de estado. Actualiza la ficha e inténtalo nuevamente.';
+      if (error.status === 413) return 'El archivo o la solicitud supera el tamaño permitido por el servidor.';
+      if (error.status === 415) return 'El servidor rechazó el formato de la evidencia.';
+    }
+
+    if (error instanceof Error && error.message.trim()) return error.message;
+    return fallback;
   }
 
-  private mensajeError(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      if (error.status === 0) {
-        return 'No se pudo conectar con el servidor para consultar las tareas.';
-      }
-      if (error.status === 401) {
-        return 'Tu sesión no es válida o ha expirado. Inicia sesión nuevamente.';
-      }
-      if (error.status === 403) {
-        return 'No tienes permiso para consultar las tareas preventivas.';
-      }
-    }
-    return 'No se pudieron cargar las tareas preventivas.';
-  }
 }

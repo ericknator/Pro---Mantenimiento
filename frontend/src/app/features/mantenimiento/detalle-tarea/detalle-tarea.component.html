@@ -63,8 +63,13 @@
               <div>
                 <strong>Intervención registrada en el servidor</strong>
                 <p>
-                  Se registraron la fecha, las observaciones y el trabajo efectuado. El último estado recibido para la tarea es <strong>{{ datosIntervencion()?.estadoTarea }}</strong>; la interfaz no lo cambia a Ejecutada por inferencia.
+                  Se registraron la fecha, las observaciones, el trabajo efectuado y los archivos enviados. El último estado consultado para la tarea es <strong>{{ datosIntervencion()?.estadoTarea }}</strong>; la interfaz no lo cambia por inferencia.
                 </p>
+                @if (!datosIntervencion()?.estadoConfirmado) {
+                  <p class="evidencias-pendientes">
+                    La intervención fue aceptada, pero no se pudo volver a consultar la tarea. El estado mostrado es el último estado conocido y debe verificarse al recargar.
+                  </p>
+                }
               </div>
             </div>
 
@@ -85,9 +90,9 @@
                 <small>Registrado por {{ datosIntervencion()?.tecnico }} · {{ datosIntervencion()?.fecha }}</small>
               </div>
 
-              @if ((datosIntervencion()?.archivosNoPersistidos ?? 0) > 0) {
+              @if ((datosIntervencion()?.archivosEnviados ?? 0) > 0) {
                 <p class="evidencias-pendientes" role="note">
-                  {{ datosIntervencion()?.archivosNoPersistidos }} archivo(s) fueron seleccionados localmente, pero no se enviaron ni se guardaron porque el endpoint actual recibe JSON sin archivos.
+                  Se enviaron {{ datosIntervencion()?.archivosEnviados }} archivo(s) con la intervención. El backend revisado no expone un endpoint autorizado para recuperar el contenido en esta vista, por eso no se presentan como fotos de historial.
                 </p>
               }
 
@@ -123,7 +128,7 @@
               <span class="material-symbols-rounded">radio_button_unchecked</span>
               <div>
                 <strong>Mantenimiento asignado a tu cargo</strong>
-                <p>Registra el trabajo efectuado y la fecha de ejecución. Las evidencias fotográficas aún no tienen persistencia en el contrato actual.</p>
+                <p>Registra el trabajo efectuado y la fecha de ejecución. Las evidencias se enviarán como imágenes o videos junto con la intervención.</p>
               </div>
             </div>
 
@@ -172,7 +177,7 @@
             </div>
 
             <div class="campo-bloque">
-              <label class="etiqueta">EVIDENCIAS (SELECCIÓN LOCAL · MÁX. 3)</label>
+              <label class="etiqueta">EVIDENCIAS (SE ENVÍAN AL SERVIDOR · MÁX. 3)</label>
               <div
                 class="evidencias-upload-box"
                 (dragover)="$event.preventDefault()"
@@ -183,7 +188,7 @@
                   <span>Seleccionar archivo o arrastrar</span>
                   <input
                     type="file"
-                    accept="image/png, image/jpeg, image/webp, application/pdf"
+                    accept="image/jpeg, image/png, image/webp, video/mp4, video/webm"
                     multiple
                     (change)="onArchivosSeleccionados($event)"
                     hidden
@@ -196,11 +201,8 @@
                 <div class="previews-grid">
                   @for (prev of previews(); track $index) {
                     <div class="preview-item">
-                      @if (prev.esPdf) {
-                        <div class="preview-pdf">
-                          <span class="material-symbols-rounded">picture_as_pdf</span>
-                          <span class="preview-pdf__nombre">{{ prev.nombre }}</span>
-                        </div>
+                      @if (prev.esVideo) {
+                        <video [src]="prev.url" controls preload="metadata" [attr.aria-label]="prev.nombre"></video>
                       } @else {
                         <img [src]="prev.url" [alt]="prev.nombre" />
                       }
@@ -210,7 +212,7 @@
                 </div>
               }
               <small class="texto-ayuda">
-                Selección local únicamente: el POST actual no envía estos archivos y no se presentan como evidencias persistidas.
+                Formatos aceptados por el backend: JPG, PNG, WEBP, MP4 y WEBM. Máximo 20 MB por archivo. PDF no está permitido.
               </small>
             </div>
 
@@ -218,7 +220,7 @@
               <button
                 type="button"
                 class="btn btn-primary btn-block"
-                [disabled]="guardando()"
+                [disabled]="guardando() || !puedeOperar()"
                 (click)="finalizarMantenimiento()"
               >
                 <span>{{ guardando() ? 'Registrando…' : 'REGISTRAR INTERVENCIÓN' }}</span>
@@ -323,10 +325,10 @@
             </div>
           </div>
 
-          @if (pasoActivo() === 1 && !intervencionRegistrada()) {
+          @if (pasoActivo() === 1 && !intervencionRegistrada() && puedeOperar()) {
             <div class="acciones-panel" style="margin-top: 20px;">
-              <button type="button" class="btn btn-primary btn-block" (click)="iniciarAtencion()">
-                <span>INICIAR ATENCIÓN</span>
+              <button type="button" class="btn btn-primary btn-block" [disabled]="iniciandoAtencion()" (click)="iniciarAtencion()">
+                <span>{{ iniciandoAtencion() ? 'INICIANDO…' : 'INICIAR ATENCIÓN' }}</span>
                 <span class="material-symbols-rounded">arrow_forward</span>
               </button>
             </div>
