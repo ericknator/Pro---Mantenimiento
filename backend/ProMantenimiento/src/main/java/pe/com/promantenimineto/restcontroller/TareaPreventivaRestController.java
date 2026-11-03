@@ -2,6 +2,7 @@
 package pe.com.promantenimineto.restcontroller;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,7 +18,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
+import pe.com.promantenimineto.entity.IntervencionPreventivaEntity;
 import pe.com.promantenimineto.entity.TareaPreventivaEntity;
 import pe.com.promantenimineto.entity.UsuarioPerfilEntity;
 import pe.com.promantenimineto.service.TareaPreventivaService;
@@ -168,4 +174,43 @@ public class TareaPreventivaRestController {
 
         return servicio.iniciarAtencion(id, usuario.getId());
     }
+    
+    @PostMapping( value = "/{id}/registrar-intervencion", consumes = MediaType.MULTIPART_FORM_DATA_VALUE )
+	public IntervencionPreventivaEntity registrarIntervencion(
+
+	        @PathVariable Long id,
+
+	        @RequestParam
+	        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+	        LocalDateTime fechaEjecucion,
+
+	        @RequestParam(required = false)
+	        String observaciones,
+
+	        @RequestParam
+	        String accionesRealizadas,
+
+	        @RequestParam(required = false)
+	        List<MultipartFile> archivos) {
+
+	    UsuarioPerfilEntity usuario = obtenerUsuarioAutenticado();
+
+	    if (!"MANTENIMIENTO".equals(obtenerCodigoRol(usuario))) {
+	        throw new ResponseStatusException(
+	                HttpStatus.FORBIDDEN,
+	                "Solo el personal de mantenimiento puede registrar una intervención."
+	        );
+	    }
+
+	    return servicio.registrarIntervencion(
+	            id,
+	            usuario.getId(),
+	            fechaEjecucion,
+	            observaciones,
+	            accionesRealizadas,
+	            archivos
+	    );
+	}
+    
+    
 }

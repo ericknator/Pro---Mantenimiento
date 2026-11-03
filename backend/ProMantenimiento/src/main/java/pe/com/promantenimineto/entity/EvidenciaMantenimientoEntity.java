@@ -29,8 +29,9 @@ public class EvidenciaMantenimientoEntity {
     @JoinColumn(name = "autor_id", nullable = false)
     private UsuarioPerfilEntity autor;
 
-    @Column(nullable = false, length = 30)
-    private String tipo;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tipo_evidencia_id", nullable = false)
+    private TipoEvidenciaEntity tipoEvidencia;
 
     @Column(name = "nombre_archivo", length = 255)
     private String nombreArchivo;
@@ -41,6 +42,6 @@ public class EvidenciaMantenimientoEntity {
     @Column(length = 500)
     private String descripcion;
 
-    @Column(name = "creado_en", nullable = false)
+    @Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
     private LocalDateTime creadoEn;
 }

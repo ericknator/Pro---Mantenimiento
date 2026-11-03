@@ -11,5 +11,8 @@ public interface EvidenciaMantenimientoRepository extends JpaRepository<Evidenci
 
     @Query("select d from EvidenciaMantenimientoEntity d")
     List<EvidenciaMantenimientoEntity> findAllCustom();
+    
+    List<EvidenciaMantenimientoEntity>
+    findByIntervencionPreventiva_IdOrderByCreadoEnAsc(Long intervencionId);
 
 }

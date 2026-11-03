@@ -1,7 +1,11 @@
 package pe.com.promantenimineto.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.web.multipart.MultipartFile;
+
+import pe.com.promantenimineto.entity.IntervencionPreventivaEntity;
 import pe.com.promantenimineto.entity.TareaPreventivaEntity;
 
 public interface TareaPreventivaService {
@@ -23,5 +27,14 @@ public interface TareaPreventivaService {
 	List<TareaPreventivaEntity> findByResponsableId(Long responsableId);
 	
 	TareaPreventivaEntity iniciarAtencion(Long id, Long responsableId);
+	
+	IntervencionPreventivaEntity registrarIntervencion(
+	        Long id,
+	        Long ejecutorId,
+	        LocalDateTime fechaEjecucion,
+	        String observaciones,
+	        String accionesRealizadas,
+	        List<MultipartFile> archivos
+	);
 
 }

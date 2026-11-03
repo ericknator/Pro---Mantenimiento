@@ -11,5 +11,8 @@ public interface IntervencionPreventivaRepository extends JpaRepository<Interven
 
     @Query("select d from IntervencionPreventivaEntity d")
     List<IntervencionPreventivaEntity> findAllCustom();
+    
+    List<IntervencionPreventivaEntity>
+    findByTareaPreventiva_IdOrderByEjecutadoEnDesc(Long tareaId);
 
 }

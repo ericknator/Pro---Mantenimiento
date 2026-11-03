@@ -46,6 +46,6 @@ public class IntervencionPreventivaEntity {
     @Column(name = "ejecutado_en", nullable = false)
     private LocalDateTime ejecutadoEn;
 
-    @Column(name = "creado_en", nullable = false)
+    @Column(name = "creado_en", nullable = false, insertable = false, updatable = false)
     private LocalDateTime creadoEn;
 }
