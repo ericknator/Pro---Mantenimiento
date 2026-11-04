@@ -5,6 +5,7 @@ import { MainLayoutComponent } from './layout/main-layout/main-layout.component'
 import { AdminLayoutComponent } from './features/administrador/admin-layout/admin-layout.component';
 import { ADMIN_MANTENIMIENTO_ACTIONS, ADMIN_NAV_ITEMS } from './core/data/admin-navigation.data';
 import { ADMIN_INCIDENCIAS_ACTIONS } from './core/data/admin-incidencias.data';
+import { ADMIN_ALERTAS_ACTIONS } from './core/data/admin-alertas.data';
 
 // Módulos del menú que aún no tienen pantalla propia: comparten la pantalla "en construcción"
 const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM, ...MANTENIMIENTO_ACTIONS]
@@ -17,7 +18,7 @@ const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM, ...MANTEN
   }));
 
 const adminPendientes: Route[] = [
-  ...ADMIN_NAV_ITEMS.filter((i) => !['/administrador/mantenimiento', '/administrador/incidencias'].includes(i.route)).map((i) => ({
+  ...ADMIN_NAV_ITEMS.filter((i) => !['/administrador/mantenimiento', '/administrador/incidencias', '/administrador/alertas'].includes(i.route)).map((i) => ({
     path: i.route.replace('/administrador/', ''),
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/dashboard', volverTexto: 'Volver al dashboard' },
@@ -31,6 +32,11 @@ const adminPendientes: Route[] = [
     path: i.route.replace('/administrador/', ''),
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', menu: 'rail', volver: '/administrador/mantenimiento', volverTexto: 'Volver a Mantenimiento' },
+  })),
+  ...ADMIN_ALERTAS_ACTIONS.filter((i) => i.route !== '/administrador/alertas/activas').map((i) => ({
+    path: i.route.replace('/administrador/', ''),
+    title: i.label,
+    data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/alertas', volverTexto: 'Volver a Alertas' },
   })),
 ].map((r) => ({
   ...r,
@@ -102,6 +108,24 @@ export const routes: Routes = [
           import('./features/administrador/activos/registrar/registrar-activo.component')
             .then((m) => m.RegistrarActivoComponent),
       },
+      
+      // HU-MAN-03: Módulo de Alertas del Administrador
+      {
+        path: 'alertas',
+        pathMatch: 'full',
+        title: 'Alertas',
+        data: { fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/administrador/alertas/alertas-hub.component').then((m) => m.AlertasHubComponent),
+      },
+      {
+        path: 'alertas/activas',
+        title: 'Alertas activas',
+        data: { fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/administrador/alertas/activas/alertas-activas.component').then((m) => m.AlertasActivasComponent),
+      },
+
       ...adminPendientes,
     ],
   },
@@ -259,7 +283,7 @@ export const routes: Routes = [
             './features/mantenimiento/detalle-tarea/detalle-tarea.component'
           ).then((m) => m.DetalleTareaComponent),
       },
-            {
+      {
         path: 'mantenimiento/correctivos',
         title: 'Mantenimientos correctivos',
         loadComponent: () =>
@@ -295,7 +319,6 @@ export const routes: Routes = [
           volverTexto: 'Volver a Mantenimiento',
         },
       },
-      
       
       ...modulosPendientes,
     ],
