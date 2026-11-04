@@ -1,0 +1,94 @@
+<app-page-hero
+  tone="dark"
+  eyebrow="CONDOMINIO NUEVO ALCÁZAR · ADMINISTRACIÓN"
+  backLink="/administrador/alertas"
+  backLabel="Volver a Alertas"
+  title="Alertas activas"
+  [subtitle]="total() + ' avisos de mantenimiento preventivo.'"
+/>
+
+<div class="contenedor-alertas">
+  <section class="panel-dock glass">
+    <header class="panel-head">
+      <div class="panel-head__info">
+        <h2 class="panel-titulo">ALERTAS ACTIVAS</h2>
+        <span class="badge-total">{{ total() }} alertas</span>
+      </div>
+
+      <!-- PMS-190: Filtros o indicadores para distinguir alertas -->
+      <div class="filtros-chips">
+        <button
+          type="button"
+          class="chip"
+          [class.chip--active]="filtro() === 'todas'"
+          (click)="setFiltro('todas')"
+        >
+          Todas ({{ total() }})
+        </button>
+        <button
+          type="button"
+          class="chip chip--critica"
+          [class.chip--active]="filtro() === 'vencida'"
+          (click)="setFiltro('vencida')"
+        >
+          Vencidas / Críticas ({{ totalVencidas() }})
+        </button>
+        <button
+          type="button"
+          class="chip chip--proxima"
+          [class.chip--active]="filtro() === 'proxima'"
+          (click)="setFiltro('proxima')"
+        >
+          Próximas ({{ totalProximas() }})
+        </button>
+      </div>
+
+      <a class="btn-volver-link" routerLink="/administrador/alertas">← VOLVER</a>
+    </header>
+
+    @if (cargando()) {
+      <div class="estado-caja">
+        <span class="material-symbols-rounded spinner">sync</span>
+        <p>Evaluando tareas preventivas y umbrales de alerta…</p>
+      </div>
+    } @else if (error()) {
+      <div class="estado-caja error">
+        <span class="material-symbols-rounded">error</span>
+        <p>{{ error() }}</p>
+      </div>
+    } @else if (alertas().length === 0) {
+      <div class="estado-caja vacio">
+        <span class="material-symbols-rounded">check_circle</span>
+        <h3>Sin alertas pendientes</h3>
+        <p>No se encontraron mantenimientos vencidos ni próximos en el rango evaluado.</p>
+      </div>
+    } @else {
+      <!-- Lista de Alertas Figma Exact Match -->
+      <div class="lista-alertas">
+        @for (item of alertas(); track item.id) {
+          <article class="alerta-card" [class.alerta-card--vencida]="item.tipo === 'vencida'">
+            <div class="alerta-card__main">
+              <h3 class="alerta-card__titulo">{{ item.titulo }}</h3>
+              <p class="alerta-card__subtitulo">
+                [{{ item.activoCodigo }}] {{ item.activoNombre }} · {{ item.ubicacion }} · Programada: {{ item.fechaProgramada | date: 'EEEE d \'de\' MMMM, HH:mm' }}
+              </p>
+            </div>
+
+            <div class="alerta-card__meta">
+              <span
+                class="badge-alerta"
+                [class.badge-alerta--critica]="item.tipo === 'vencida'"
+                [class.badge-alerta--proxima]="item.tipo === 'proxima'"
+              >
+                {{ item.badgeTexto }}
+              </span>
+              <small class="dias-texto">
+                {{ item.tipo === 'vencida' ? 'Vencida hace ' + item.diasDiferencia + ' d' : 'En ' + item.diasDiferencia + ' días' }}
+              </small>
+            </div>
+          </article>
+        }
+      </div>
+    }
+  </section>
+</div>
