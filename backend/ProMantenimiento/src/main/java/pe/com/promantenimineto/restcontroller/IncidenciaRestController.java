@@ -116,6 +116,14 @@ public class IncidenciaRestController {
 	        archivos
 	    );
 	}
+	
+	
+	@PatchMapping("/{id}/confirmar-solucion")
+	public IncidenciaEntity confirmarSolucion(
+	        @PathVariable Long id) {
+
+	    return servicio.confirmarSolucion(id);
+	}
 
 	
 }

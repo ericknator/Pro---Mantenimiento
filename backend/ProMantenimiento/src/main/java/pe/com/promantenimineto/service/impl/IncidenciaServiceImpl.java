@@ -1162,6 +1162,109 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	        );
 	    }
 	}
+	
+	
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public IncidenciaEntity confirmarSolucion(Long id) {
+
+	    // 1. Obtener el usuario autenticado
+	    Authentication authentication =
+	            SecurityContextHolder.getContext().getAuthentication();
+
+	    if (authentication == null
+	            || !authentication.isAuthenticated()
+	            || !(authentication.getPrincipal()
+	                    instanceof UsuarioPerfilEntity residente)) {
+
+	        throw new ResponseStatusException(
+	                HttpStatus.UNAUTHORIZED,
+	                "Debes iniciar sesión."
+	        );
+	    }
+
+	    // 2. Validar rol del usuario
+	    if (residente.getRol() == null
+	            || !"RESIDENTE".equals(residente.getRol().getCodigo())) {
+
+	        throw new ResponseStatusException(
+	                HttpStatus.FORBIDDEN,
+	                "Solo un residente puede confirmar la solución."
+	        );
+	    }
+
+	    // 3. Buscar incidencia
+	    IncidenciaEntity incidencia = repositorio.findById(id)
+	            .orElseThrow(() -> new ResponseStatusException(
+	                    HttpStatus.NOT_FOUND,
+	                    "Incidencia no encontrada."
+	            ));
+
+	    // 4. Verificar que el residente sea el solicitante
+	    if (incidencia.getSolicitante() == null
+	            || !incidencia.getSolicitante().getId()
+	                    .equals(residente.getId())) {
+
+	        throw new ResponseStatusException(
+	                HttpStatus.FORBIDDEN,
+	                "No puedes confirmar una incidencia que no has reportado."
+	        );
+	    }
+
+	    // 5. Validar estado actual
+	    if (incidencia.getEstado() == null
+	            || !"SOLUCIONADA".equals(
+	                    incidencia.getEstado().getCodigo())) {
+
+	        throw new ResponseStatusException(
+	                HttpStatus.CONFLICT,
+	                "Solo puedes confirmar incidencias en estado SOLUCIONADA."
+	        );
+	    }
+
+	    // 6. Obtener estado CERRADA
+	    EstadoIncidenciaEntity estadoCerrada =
+	            estadoRepositorio.findByCodigo("CERRADA")
+	                    .orElseThrow(() -> new ResponseStatusException(
+	                            HttpStatus.INTERNAL_SERVER_ERROR,
+	                            "No existe el estado CERRADA en el catálogo."
+	                    ));
+
+	    // 7. Obtener tipo de acción CONFIRMACION
+	    TipoAccionIncidenciaEntity tipoConfirmacion =
+	            tipoAccionRepositorio.findByCodigo("CONFIRMACION")
+	                    .orElseThrow(() -> new ResponseStatusException(
+	                            HttpStatus.INTERNAL_SERVER_ERROR,
+	                            "No existe el tipo de acción CONFIRMACION."
+	                    ));
+
+	    // 8. Registrar fecha y hora de conformidad
+	    LocalDateTime ahora = LocalDateTime.now();
+
+	    EstadoIncidenciaEntity estadoAnterior = incidencia.getEstado();
+
+	    ActuacionIncidenciaEntity actuacion =
+	            ActuacionIncidenciaEntity.builder()
+	                    .incidencia(incidencia)
+	                    .actor(residente)
+	                    .tipoAccion(tipoConfirmacion)
+	                    .descripcion(
+	                            "El residente confirmó que la solución fue satisfactoria."
+	                    )
+	                    .estadoAnterior(estadoAnterior)
+	                    .estadoNuevo(estadoCerrada)
+	                    .creadoEn(ahora)
+	                    .build();
+
+	    actuacionRepositorio.save(actuacion);
+
+	    // 9. Actualizar incidencia
+	    incidencia.setEstado(estadoCerrada);
+	    incidencia.setFechaCierre(ahora);
+	    incidencia.setActualizadoEn(ahora);
+
+	    return repositorio.save(incidencia);
+	}
 
     
 }
