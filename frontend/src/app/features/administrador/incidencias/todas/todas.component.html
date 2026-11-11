@@ -1,26 +1,68 @@
 <app-page-hero
   [eyebrow]="eyebrow"
-  title="Todas las incidencias"
+  title="Consultar incidencias"
   [subtitle]="
     cargando()
-      ? 'Cargando…'
-      : items().length + ' incidencias registradas'
+      ? 'Cargando incidencias…'
+      : 'Vista general · ' + items().length + ' incidencias registradas en el condominio.'
   "
+  backLink="/administrador/incidencias"
+  backLabel="VOLVER A INCIDENCIAS"
 />
 
-<section class="panel dock">
-  <header class="panel__head">
-    <h2 class="label">Todas las incidencias</h2>
+<section class="card-consultar">
+  <header class="card-consultar__head">
+    <div class="head-titulo">
+      <h2 class="titulo-modulo">INCIDENCIAS</h2>
+      <span class="badge-total">{{ items().length }} incidencias</span>
+    </div>
 
-    <span class="acciones">
-      <button type="button" class="label enlace" (click)="actualizar()" [disabled]="cargando()" >
-        Actualizar
-      </button>
+    <div class="filtros-toolbar">
+      <div class="select-wrapper">
+        <label for="filtro-estado">Estado:</label>
+        <select
+          id="filtro-estado"
+          [ngModel]="filtroEstado()"
+          (ngModelChange)="filtroEstado.set($event)"
+        >
+          @for (opc of estadosDisponibles; track opc) {
+            <option [value]="opc">{{ opc }}</option>
+          }
+        </select>
+      </div>
 
-      <a class="label enlace" routerLink="/administrador/incidencias">
-        ← Volver
-      </a>
-    </span>
+      <div class="select-wrapper">
+        <label for="filtro-prioridad">Prioridad:</label>
+        <select
+          id="filtro-prioridad"
+          [ngModel]="filtroPrioridad()"
+          (ngModelChange)="filtroPrioridad.set($event)"
+        >
+          @for (opc of prioridadesDisponibles; track opc) {
+            <option [value]="opc">{{ opc }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="select-wrapper">
+        <label for="filtro-ubicacion">Ubicación:</label>
+        <select
+          id="filtro-ubicacion"
+          [ngModel]="filtroUbicacion()"
+          (ngModelChange)="filtroUbicacion.set($event)"
+        >
+          @for (opc of ubicacionesDisponibles(); track opc) {
+            <option [value]="opc">{{ opc }}</option>
+          }
+        </select>
+      </div>
+
+      @if (hayFiltrosActivos()) {
+        <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
+          Limpiar filtros
+        </button>
+      }
+    </div>
   </header>
 
   @if (error()) {
@@ -30,26 +72,39 @@
     </div>
   }
 
-  <div class="lista-scroll">
+  <div class="lista-incidencias">
     @for (i of items(); track i.id) {
-      <a class="fila" [routerLink]="['/administrador/incidencias/clasificar', i.id]" >
-        <span class="fila__texto">
-          <strong>{{ i.descripcion }}</strong>
-          <small>
-            {{ i.codigo }} · {{ i.ubicacion }} ·
-            {{ i.fecha | date: 'd MMM, HH:mm' }}
+      <a
+        class="incidencia-item"
+        [class.incidencia-item--alta]="esPrioridadAlta(i.prioridad)"
+        [routerLink]="['/administrador/incidencias/clasificar', i.id]"
+      >
+        <div class="incidencia-info">
+          <strong class="incidencia-titulo">{{ i.descripcion }}</strong>
+          <small class="incidencia-subtexto">
+            {{ i.codigo }} · {{ i.ubicacion }} · {{ i.categoria }}
           </small>
-          <small>
-            Categoría: {{ i.categoria }} ·
-            Prioridad: {{ i.prioridad }} ·
-            Estado: {{ i.estado }}
-          </small>
-        </span>
-        <span class="chip">Ver detalle</span>
+        </div>
+
+        <div class="incidencia-meta">
+          <span class="badge-estado" [ngClass]="claseBadgeEstado(i.estado)">
+            {{ i.estado?.toUpperCase() }}
+          </span>
+          <span class="prioridad-texto">
+            Prioridad: {{ i.prioridad || 'Sin asignar' }}
+          </span>
+        </div>
       </a>
     } @empty {
       @if (!cargando() && !error()) {
-        <p class="vacio">No hay incidencias registradas.</p>
+        <div class="vacio-box">
+          <p>No se encontraron incidencias con los filtros seleccionados.</p>
+          @if (hayFiltrosActivos()) {
+            <button type="button" class="btn-limpiar" (click)="limpiarFiltros()">
+              Mostrar todas las incidencias
+            </button>
+          }
+        </div>
       }
     }
   </div>
