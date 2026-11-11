@@ -1375,20 +1375,4 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	}
 
 
-	
-        @Override
-    public IncidenciaEntity reabrir(Long id, String motivo) {
-        IncidenciaEntity incidencia = repositorio.findById(id)
-                .orElseThrow(() -> new RuntimeException("Incidencia no encontrada con id: " + id));
-
-        EstadoIncidenciaEntity estadoReabierta = estadoRepositorio.findByCodigo("REABIERTA")
-                .orElseGet(() -> estadoRepositorio.findById(7L).orElse(null));
-
-        if (estadoReabierta != null) {
-            incidencia.setEstado(estadoReabierta);
-        }
-
-        incidencia.setActualizadoEn(LocalDateTime.now());
-        return repositorio.save(incidencia);
-    }
 }
