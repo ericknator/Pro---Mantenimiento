@@ -37,6 +37,7 @@ export class DetalleIncidenciaComponent {
   }
 
   private async cargarIncidencia(id: string): Promise<void> {
+    this.reaperturaConfirmada.set(false);
     await this.auth.inicializacion;
     await this.service.cargarDetalle(id);
   }
@@ -88,6 +89,7 @@ export class DetalleIncidenciaComponent {
   previews = signal<string[]>([]);
 
   readonly modoReapertura = signal(false);
+  readonly reaperturaConfirmada = signal(false);
   readonly motivoReapertura = signal('');
   readonly archivosReapertura = signal<File[]>([]);
   readonly guardandoConformidad = signal(false);
@@ -206,6 +208,7 @@ export class DetalleIncidenciaComponent {
       }
 
       this.estadoIntervencion.set('Reabierta');
+      this.reaperturaConfirmada.set(true);
       this.modoReapertura.set(false);
       this.motivoReapertura.set('');
       this.archivosReapertura.set([]);

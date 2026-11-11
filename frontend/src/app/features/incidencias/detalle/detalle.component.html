@@ -283,11 +283,16 @@
     }
 
     @if (estadoActual() === 'Reabierta' && !modoReapertura()) {
-    <div class="alert-box alert-success" role="status">
-      <span class="material-symbols-rounded">check_circle</span>
+    <div class="alert-box" [class.alert-success]="reaperturaConfirmada()" [class.alert-info]="!reaperturaConfirmada()" role="status">
+      <span class="material-symbols-rounded">{{ reaperturaConfirmada() ? 'check_circle' : 'info' }}</span>
       <div>
+        @if (reaperturaConfirmada()) {
         <strong>Incidencia reabierta correctamente</strong>
         <p>Tu incidencia volvió al circuito de atención para que el personal responsable pueda darle seguimiento.</p>
+        } @else {
+        <strong>Incidencia en seguimiento</strong>
+        <p>Tu incidencia se encuentra reabierta y continúa en el circuito de atención.</p>
+        }
       </div>
     </div>
     } @else if (estadoActual() !== 'Solucionada' && estadoActual() !== 'Cerrada' && !modoReapertura()) {
