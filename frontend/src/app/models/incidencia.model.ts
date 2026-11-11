@@ -35,6 +35,8 @@ export interface Incidencia extends NuevaIncidencia {
    */
   evidenciasSolucion: EvidenciaIncidencia[];
   evidenciasConsultaDisponible: boolean;
+  responsableNombre: string | null;
+  fechaSolucion: Date | null;
 }
 
 export interface EvidenciaIncidencia {
@@ -58,6 +60,11 @@ export interface EvidenciaIncidenciaApi {
     nombre?: string | null;
   } | null;
   creadoEn?: string | null;
+  responsableActual?: {
+    id: number;
+    nombres: string;
+    apellidos: string;
+  } | null;
 }
 
 /** Estructura devuelta por Spring Boot */
@@ -84,6 +91,13 @@ export interface IncidenciaApi {
   fechaCierre: string | null;
   creadoEn: string;
   actualizadoEn: string;
+
+  responsableActual?: {
+    id: number;
+    nombres: string;
+    apellidos: string;
+  } | null;
+
   /** Disponible solo si el backend de detalle implementa la relación. */
   evidencias?: EvidenciaIncidenciaApi[] | null;
 }

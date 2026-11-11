@@ -109,6 +109,7 @@ export class IncidenciasService {
       .replace(/^_|_$/g, '');
   }
 
+
   private mapearIncidencias(respuesta: IncidenciaApi[]): Incidencia[] {
     return respuesta.map((item) => {
       const fecha = new Date(item.fechaReporte);
@@ -125,18 +126,42 @@ export class IncidenciasService {
         evidencias: [],
         evidenciasSolucion: this.mapearEvidencias(item),
         evidenciasConsultaDisponible,
-        estado: this.normalizarEstado(item.estado?.codigo, item.estado?.nombre),
+
+        estado: this.normalizarEstado(
+          item.estado?.codigo,
+          item.estado?.nombre
+        ),
+
         creada: fecha,
         actualizada,
+
         historial: [
           {
-            estado: this.normalizarEstado(item.estado?.codigo, item.estado?.nombre),
+            estado: this.normalizarEstado(
+              item.estado?.codigo,
+              item.estado?.nombre
+            ),
             fecha: actualizada
           }
-        ]
+        ],
+
+        // Nombre del responsable asignado registrado en el backend
+        responsableNombre: item.responsableActual
+          ? [
+            item.responsableActual.nombres,
+            item.responsableActual.apellidos
+          ].filter(Boolean).join(' ') || null
+          : null,
+
+        // Fecha real de solución registrada en el backend
+        fechaSolucion: item.fechaSolucion
+          ? new Date(item.fechaSolucion)
+          : null,
       };
     });
   }
+
+
 
   async cargarDetalle(id: string): Promise<void> {
     this._todas.set([]);

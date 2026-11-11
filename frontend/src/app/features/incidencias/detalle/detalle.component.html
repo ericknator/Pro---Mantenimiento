@@ -1,431 +1,414 @@
-<app-page-hero
-  tone="dark"
-  [eyebrow]="eyebrow"
-  [backLink]="esPersonalTecnico() ? '/incidencias/asignadas' : '/incidencias/mis-incidencias'"
-  backLabel="Volver"
+<app-page-hero tone="dark" [eyebrow]="eyebrow"
+  [backLink]="esPersonalTecnico() ? '/incidencias/asignadas' : '/incidencias/mis-incidencias'" backLabel="Volver"
   [title]="'Incidencia ' + (incidencia()?.id?.startsWith('INC-') ? incidencia()?.id : 'INC-2026-000' + (incidencia()?.id ?? ''))"
-  [subtitle]="incidencia()?.descripcion ?? 'Detalle del caso reportado'"
-/>
+  [subtitle]="incidencia()?.descripcion ?? 'Detalle del caso reportado'" />
 
 @if (incidencia(); as inc) {
-  <div class="grid">
-    <div class="card">
-      <header class="card__head">
-        <h2 class="card__titulo">
-          {{ (!esPersonalTecnico() && (estadoActual() === 'Solucionada' || estadoActual() === 'Cerrada')) ? 'CONFORMIDAD DE LA SOLUCIÓN' : 'ATENCIÓN Y SOLUCIÓN TÉCNICA' }}
-        </h2>
-        <span class="estado-tag" [attr.data-estado]="estadoActual()">
-          {{ estadoActual() }}
-        </span>
-      </header>
+<div class="grid">
+  <div class="card">
+    <header class="card__head">
+      <h2 class="card__titulo">
+        {{ (!esPersonalTecnico() && (estadoActual() === 'Solucionada' || estadoActual() === 'Cerrada')) ? 'CONFORMIDAD
+        DE LA SOLUCIÓN' : 'ATENCIÓN Y SOLUCIÓN TÉCNICA' }}
+      </h2>
+      <span class="estado-tag" [attr.data-estado]="estadoActual()">
+        {{ estadoActual() }}
+      </span>
+    </header>
 
-      @if (esPersonalTecnico()) {
-        @if (pasoActivo() === 5 || exito()) {
-          <div class="ok" role="status">
-            <span class="material-symbols-rounded">verified</span>
-            <div>
-              <strong>¡Incidencia Solucionada!</strong>
-              <small>La atención técnica ha sido documentada exitosamente. El caso pasa al paso 5 (pendiente de validación final).</small>
-            </div>
-          </div>
-          <a class="btn btn--outline" routerLink="/incidencias/asignadas">
-            <span class="material-symbols-rounded">arrow_back</span>
-            <span>Volver a incidencias asignadas</span>
-          </a>
-        }
+    @if (esPersonalTecnico()) {
+    @if (pasoActivo() === 5 || exito()) {
+    <div class="ok" role="status">
+      <span class="material-symbols-rounded">verified</span>
+      <div>
+        <strong>¡Incidencia Solucionada!</strong>
+        <small>La atención técnica ha sido documentada exitosamente. El caso pasa al paso 5 (pendiente de validación
+          final).</small>
+      </div>
+    </div>
+    <a class="btn btn--outline" routerLink="/incidencias/asignadas">
+      <span class="material-symbols-rounded">arrow_back</span>
+      <span>Volver a incidencias asignadas</span>
+    </a>
+    }
 
-        @if (puedeAceptar() && pasoActivo() === 3) {
-          <div class="info" role="status">
-            <span class="material-symbols-rounded">engineering</span>
-            <div>
-              <strong>Caso Asignado a tu cargo</strong>
-              <small>Pulsa el botón a continuación para dar inicio a la atención e intervención técnica en sitio.</small>
-            </div>
-          </div>
-
-          @if (aceptacionError()) {
-            <div class="fail" role="alert">
-              <span class="material-symbols-rounded">error</span>
-              <span>{{ aceptacionError() }}</span>
-            </div>
-          }
-
-          <button type="button" class="btn" [disabled]="aceptando()" (click)="aceptarIncidencia()">
-            <span>{{ aceptando() ? 'Aceptando incidencia…' : 'Aceptar e iniciar atención' }}</span>
-            <span class="material-symbols-rounded">arrow_forward</span>
-          </button>
-        }
-
-        @if (pasoActivo() === 4) {
-          <div class="info" role="status">
-            <span class="material-symbols-rounded">build</span>
-            <div>
-              <strong>Caso en proceso de atención</strong>
-              <small>Documenta el diagnóstico, las acciones ejecutadas y las evidencias que enviarás junto con la solución.</small>
-            </div>
-          </div>
-
-          @if (errorValidacion()) {
-            <div class="fail" role="alert">
-              <span class="material-symbols-rounded">error</span>
-              <span>{{ errorValidacion() }}</span>
-            </div>
-          }
-
-          <label class="field">
-            <span>Diagnóstico técnico (opcional)</span>
-            <textarea
-              class="control"
-              rows="2"
-              [(ngModel)]="diagnostico"
-              placeholder="Ej: Se identificó desgaste en el empaque de la válvula principal..."
-            ></textarea>
-          </label>
-
-          <label class="field">
-            <span>Acciones realizadas <strong class="req">* (Obligatorio)</strong></span>
-            <textarea
-              class="control"
-              rows="3"
-              [(ngModel)]="acciones"
-              placeholder="Ej: Se realizó el desmontaje de la pieza, cambio de repuesto y prueba de funcionamiento..."
-            ></textarea>
-          </label>
-
-          <fieldset class="field">
-            <span>Evidencias fotográficas / documentales (PNG, JPG, PDF - Máx. 3)</span>
-            <div
-              class="evidencias-upload-box"
-              (dragover)="$event.preventDefault()"
-              (drop)="onDropArchivos($event)"
-            >
-              <label class="btn-adjuntar">
-                <span class="material-symbols-rounded">upload_file</span>
-                <span>Seleccionar archivo o arrastrar</span>
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg, image/webp"
-                  multiple
-                  (change)="onArchivosSeleccionados($event)"
-                  hidden
-                />
-              </label>
-              <span class="contador-archivos">{{ archivos().length }}/3 archivos</span>
-            </div>
-
-            @if (previews().length > 0) {
-              <div class="previews-grid">
-                @for (preview of previews(); track $index) {
-                  <div class="preview-item">
-                    <img [src]="preview" alt="Evidencia" />
-                    <button type="button" class="btn-eliminar-preview" (click)="eliminarArchivo($index)">✕</button>
-                  </div>
-                }
-              </div>
-            }
-            <small class="evidencias-pendientes" role="note">
-              Puedes adjuntar hasta 3 evidencias (imágenes o PDF). Se enviarán junto con la solución técnica.
-            </small>
-          </fieldset>
-
-          <div class="acciones-form">
-            <button
-              type="button"
-              class="btn"
-              [disabled]="guardando()"
-              (click)="finalizarSolucion()"
-            >
-              <span>{{ guardando() ? 'Guardando solución…' : 'Finalizar atención y solucionar' }}</span>
-              <span class="material-symbols-rounded">task_alt</span>
-            </button>
-            
-            <a class="btn-link" routerLink="/incidencias/asignadas">
-              Pausar atención y volver a la lista
-            </a>
-          </div>
-        }
-      } @else {
-        @if (estadoActual() === 'Solucionada' && !modoReapertura()) {
-          <div class="alert-box alert-success">
-            <span class="icon-circle">○</span>
-            <div>
-              <strong>El técnico marcó tu caso como solucionado</strong>
-              <p>Revisa la solución registrada y confírmala, o indica si el problema continúa.</p>
-            </div>
-          </div>
-
-          <div class="solucion-registrada-card">
-            <h3 class="section-subtitle">DATOS REGISTRADOS</h3>
-            <div class="dato-bloque">
-              <label>Diagnóstico</label>
-              <p>{{ diagnosticoSolucion() }}</p>
-            </div>
-            <div class="dato-bloque">
-              <label>Acciones realizadas</label>
-              <p>{{ accionesSolucion() }}</p>
-            </div>
-            @if (evidenciasSolucion().length > 0) {
-              <div class="dato-bloque">
-                <label>Evidencias ({{ evidenciasSolucion().length }})</label>
-                <div class="mini-thumbnails">
-                  @for (ev of evidenciasSolucion(); track ev.id) {
-                    <div class="thumb">
-                      <span class="thumb-name">{{ ev.nombreArchivo }}</span>
-                    </div>
-                  }
-                </div>
-              </div>
-            }
-            <div class="firma-tecnico">
-              Solucionada por {{ esPersonalTecnico() ? 'Mantenimiento' : 'Mantenimiento Prueba' }} · {{ inc.actualizada | date: 'd MMM yyyy, HH:mm' }}
-            </div>
-          </div>
-
-          @if (errorConformidad()) {
-            <div class="fail" role="alert">
-              <span class="material-symbols-rounded">error</span>
-              <span>{{ errorConformidad() }}</span>
-            </div>
-          }
-
-          <div class="acciones-conformidad">
-            <button
-              type="button"
-              class="btn btn-confirmar"
-              [disabled]="guardandoConformidad()"
-              (click)="confirmarSolucion()"
-            >
-              <span>{{ guardandoConformidad() ? 'CONFIRMANDO...' : 'CONFIRMAR SOLUCIÓN ✓' }}</span>
-            </button>
-
-            <button
-              type="button"
-              class="btn btn-problema-continua"
-              [disabled]="guardandoConformidad()"
-              (click)="mostrarFormularioReapertura()"
-            >
-              <span>EL PROBLEMA CONTINÚA</span>
-            </button>
-          </div>
-        }
-
-        @if (modoReapertura()) {
-          <div class="alert-box alert-info">
-            <span class="icon-circle">○</span>
-            <div>
-              <strong>Indica por qué el problema continúa</strong>
-              <p>Tu caso volverá al circuito de atención. El motivo quedará registrado en el historial.</p>
-            </div>
-          </div>
-
-          <div class="form-reapertura">
-            <label class="field">
-              <span>MOTIVO DE REAPERTURA <strong class="req">* (OBLIGATORIO)</strong></span>
-              <textarea
-                class="control"
-                rows="3"
-                placeholder="Ej: La puerta vuelve a quedarse abierta después de usar el control."
-                [ngModel]="motivoReapertura()"
-                (ngModelChange)="motivoReapertura.set($event)"
-              ></textarea>
-            </label>
-
-            <fieldset class="field" style="margin-top: 12px;">
-              <span>EVIDENCIA DEL PROBLEMA (OPCIONAL · MÁX. 3)</span>
-              <div class="evidencias-upload-box">
-                <label class="btn-adjuntar">
-                  <span class="material-symbols-rounded">upload_file</span>
-                  <span>Seleccionar archivo o arrastrar</span>
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/webp"
-                    multiple
-                    (change)="onSeleccionarArchivosReapertura($event)"
-                    hidden
-                  />
-                </label>
-                <span class="contador-archivos">{{ archivosReapertura().length }}/3 archivos</span>
-              </div>
-              <small class="evidencias-pendientes" style="color: #64748b; margin-top: 4px;">
-                Puedes adjuntar fotos que muestren que el problema continúa.
-              </small>
-
-              @if (archivosReapertura().length > 0) {
-                <div class="file-chip-list">
-                  @for (file of archivosReapertura(); track $index) {
-                    <div class="file-chip">
-                      <span>{{ file.name }}</span>
-                      <button type="button" (click)="eliminarArchivoReapertura($index)">✕</button>
-                    </div>
-                  }
-                </div>
-              }
-            </fieldset>
-
-            @if (errorConformidad()) {
-              <div class="fail" role="alert" style="margin-top: 10px;">
-                <span class="material-symbols-rounded">error</span>
-                <span>{{ errorConformidad() }}</span>
-              </div>
-            }
-
-            <div class="acciones-form" style="margin-top: 16px;">
-              <button
-                type="button"
-                class="btn btn-confirmar"
-                [disabled]="!puedeReabrir()"
-                (click)="confirmarReapertura()"
-              >
-                <span>{{ guardandoConformidad() ? 'REABRIENDO...' : 'CONFIRMAR REAPERTURA ↺' }}</span>
-              </button>
-
-              <button type="button" class="btn-link" (click)="cancelarReapertura()">
-                Cancelar y volver al detalle
-              </button>
-            </div>
-          </div>
-        }
-
-        @if (estadoActual() === 'Cerrada') {
-          <div class="alert-box alert-success">
-            <span class="icon-circle">○</span>
-            <div>
-              <strong>Conformidad registrada</strong>
-              <p>Confirmaste la solución. El caso pasó a estado Cerrada.</p>
-            </div>
-          </div>
-
-          <div class="solucion-registrada-card">
-            <h3 class="section-subtitle">DATOS REGISTRADOS</h3>
-            <div class="dato-bloque">
-              <label>Diagnóstico</label>
-              <p>{{ diagnosticoSolucion() }}</p>
-            </div>
-            <div class="dato-bloque">
-              <label>Acciones realizadas</label>
-              <p>{{ accionesSolucion() }}</p>
-            </div>
-          </div>
-
-          <a class="btn btn-volver-mis" routerLink="/incidencias/mis-incidencias">
-            <span class="material-symbols-rounded">arrow_back</span>
-            <span>VOLVER A MIS INCIDENCIAS</span>
-          </a>
-        }
-
-        @if (estadoActual() !== 'Solucionada' && estadoActual() !== 'Cerrada' && !modoReapertura()) {
-          <div class="info" role="status">
-            <span class="material-symbols-rounded">info</span>
-            <span>Esta incidencia se encuentra en atención por parte del personal de mantenimiento.</span>
-          </div>
-        }
-      }
+    @if (puedeAceptar() && pasoActivo() === 3) {
+    <div class="info" role="status">
+      <span class="material-symbols-rounded">engineering</span>
+      <div>
+        <strong>Caso Asignado a tu cargo</strong>
+        <small>Pulsa el botón a continuación para dar inicio a la atención e intervención técnica en sitio.</small>
+      </div>
     </div>
 
-    <section class="panel side">
-      <header class="panel__head">
-        <h2 class="label">Datos del caso</h2>
-        <app-estado-badge [estado]="inc.estado" />
-      </header>
+    @if (aceptacionError()) {
+    <div class="fail" role="alert">
+      <span class="material-symbols-rounded">error</span>
+      <span>{{ aceptacionError() }}</span>
+    </div>
+    }
 
-      <dl>
-        <dt>Descripción</dt><dd>{{ inc.descripcion }}</dd>
-        <dt>Ubicación</dt><dd>{{ inc.ubicacion }}</dd>
-        <dt>Reportada por</dt><dd>{{ inc.autor }}</dd>
-        <dt>Fecha reporte</dt><dd>{{ inc.creada | date: 'd MMM yyyy, HH:mm' }}</dd>
-        <dt>Categoría</dt><dd>{{ inc.categoria }}</dd>
-        <dt>Asignado a</dt><dd>{{ esPersonalTecnico() ? 'Mantenimiento' : 'Mantenimiento Prueba' }}</dd>
-      </dl>
+    <button type="button" class="btn" [disabled]="aceptando()" (click)="aceptarIncidencia()">
+      <span>{{ aceptando() ? 'Aceptando incidencia…' : 'Aceptar e iniciar atención' }}</span>
+      <span class="material-symbols-rounded">arrow_forward</span>
+    </button>
+    }
 
-      <section class="evidencias-consulta" aria-labelledby="evidencias-titulo">
-        <div class="evidencias-consulta__head">
-          <h3 id="evidencias-titulo" class="stepper-subtitulo">EVIDENCIAS DEL CASO</h3>
-          <span class="evidencias-contador">{{ evidenciasSolucion().length }}</span>
+    @if (pasoActivo() === 4) {
+    <div class="info" role="status">
+      <span class="material-symbols-rounded">build</span>
+      <div>
+        <strong>Caso en proceso de atención</strong>
+        <small>Documenta el diagnóstico, las acciones ejecutadas y las evidencias que enviarás junto con la
+          solución.</small>
+      </div>
+    </div>
+
+    @if (errorValidacion()) {
+    <div class="fail" role="alert">
+      <span class="material-symbols-rounded">error</span>
+      <span>{{ errorValidacion() }}</span>
+    </div>
+    }
+
+    <label class="field">
+      <span>Diagnóstico técnico (opcional)</span>
+      <textarea class="control" rows="2" [(ngModel)]="diagnostico"
+        placeholder="Ej: Se identificó desgaste en el empaque de la válvula principal..."></textarea>
+    </label>
+
+    <label class="field">
+      <span>Acciones realizadas <strong class="req">* (Obligatorio)</strong></span>
+      <textarea class="control" rows="3" [(ngModel)]="acciones"
+        placeholder="Ej: Se realizó el desmontaje de la pieza, cambio de repuesto y prueba de funcionamiento..."></textarea>
+    </label>
+
+    <fieldset class="field">
+      <span>Evidencias fotográficas / documentales (PNG, JPG, PDF - Máx. 3)</span>
+      <div class="evidencias-upload-box" (dragover)="$event.preventDefault()" (drop)="onDropArchivos($event)">
+        <label class="btn-adjuntar">
+          <span class="material-symbols-rounded">upload_file</span>
+          <span>Seleccionar archivo o arrastrar</span>
+          <input type="file" accept="image/png, image/jpeg, image/webp" multiple
+            (change)="onArchivosSeleccionados($event)" hidden />
+        </label>
+        <span class="contador-archivos">{{ archivos().length }}/3 archivos</span>
+      </div>
+
+      @if (previews().length > 0) {
+      <div class="previews-grid">
+        @for (preview of previews(); track $index) {
+        <div class="preview-item">
+          <img [src]="preview" alt="Evidencia" />
+          <button type="button" class="btn-eliminar-preview" (click)="eliminarArchivo($index)">✕</button>
         </div>
-
-        @if (evidenciasSolucion().length === 0) {
-          <p class="evidencias-vacias">No hay evidencias registradas para esta solución.</p>
-        } @else {
-          <div class="evidencias-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
-            @for (evidencia of evidenciasSolucion(); track evidencia.id) {
-              <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);">
-                <span class="material-symbols-rounded" style="color: var(--c-primary, #10b981);">
-                  {{ esImagenEvidencia(evidencia) ? 'image' : 'description' }}
-                </span>
-                <div style="flex: 1; min-width: 0;">
-                  <div style="font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">
-                    {{ evidencia.nombreArchivo }}
-                  </div>
-                  <small style="color: rgba(255,255,255,0.5); font-size: 0.72rem;">
-                    {{ evidencia.descripcion || 'Evidencia adjunta' }}
-                    @if (evidencia.creadoEn) {
-                      · {{ evidencia.creadoEn | date: 'd MMM yyyy, HH:mm' }}
-                    }
-                  </small>
-                </div>
-                <span style="font-size: 0.7rem; background: rgba(16,185,129,0.15); color: #10b981; padding: 2px 8px; border-radius: 6px; font-weight: 600;">
-                  Almacenado
-                </span>
-              </div>
-            }
-          </div>
         }
-      </section>
+      </div>
+      }
+      <small class="evidencias-pendientes" role="note">
+        Puedes adjuntar hasta 3 evidencias (imágenes o PDF). Se enviarán junto con la solución técnica.
+      </small>
+    </fieldset>
 
-      <div class="stepper-seccion">
-        <h3 class="stepper-subtitulo">LÍNEA DE ESTADO</h3>
-        <div class="stepper">
-          <div class="step" [class.step--done]="pasoActivo() > 1" [class.step--active]="pasoActivo() === 1">
-            <div class="step__circle">
-              @if (pasoActivo() > 1) { <span class="material-symbols-rounded">check</span> } @else { 1 }
-            </div>
-            <span class="step__label">Reportada</span>
-          </div>
-          <div class="step__line" [class.step__line--done]="pasoActivo() > 1"></div>
+    <div class="acciones-form">
+      <button type="button" class="btn" [disabled]="guardando()" (click)="finalizarSolucion()">
+        <span>{{ guardando() ? 'Guardando solución…' : 'Finalizar atención y solucionar' }}</span>
+        <span class="material-symbols-rounded">task_alt</span>
+      </button>
 
-          <div class="step" [class.step--done]="pasoActivo() > 2" [class.step--active]="pasoActivo() === 2">
-            <div class="step__circle">
-              @if (pasoActivo() > 2) { <span class="material-symbols-rounded">check</span> } @else { 2 }
-            </div>
-            <span class="step__label">Clasificada</span>
-          </div>
-          <div class="step__line" [class.step__line--done]="pasoActivo() > 2"></div>
+      <a class="btn-link" routerLink="/incidencias/asignadas">
+        Pausar atención y volver a la lista
+      </a>
+    </div>
+    }
+    } @else {
+    @if (estadoActual() === 'Solucionada' && !modoReapertura()) {
+    <div class="alert-box alert-success">
+      <span class="icon-circle">○</span>
+      <div>
+        <strong>El técnico marcó tu caso como solucionado</strong>
+        <p>Revisa la solución registrada y confírmala, o indica si el problema continúa.</p>
+      </div>
+    </div>
 
-          <div class="step" [class.step--done]="pasoActivo() > 3" [class.step--active]="pasoActivo() === 3">
-            <div class="step__circle">
-              @if (pasoActivo() > 3) { <span class="material-symbols-rounded">check</span> } @else { 3 }
-            </div>
-            <span class="step__label">Asignada</span>
+    <div class="solucion-registrada-card">
+      <h3 class="section-subtitle">DATOS REGISTRADOS</h3>
+      <div class="dato-bloque">
+        <label>Diagnóstico</label>
+        <p>Diagnóstico técnico no disponible en esta consulta.</p>
+      </div>
+      <div class="dato-bloque">
+        <label>Acciones realizadas</label>
+        <p>El detalle de las acciones realizadas aún no está disponible.</p>
+      </div>
+      @if (evidenciasSolucion().length > 0) {
+      <div class="dato-bloque">
+        <label>Evidencias ({{ evidenciasSolucion().length }})</label>
+        <div class="mini-thumbnails">
+          @for (ev of evidenciasSolucion(); track ev.id) {
+          <div class="thumb">
+            <span class="thumb-name">{{ ev.nombreArchivo }}</span>
           </div>
-          <div class="step__line" [class.step__line--done]="pasoActivo() > 3"></div>
-
-          <div class="step" [class.step--done]="pasoActivo() > 4" [class.step--active]="pasoActivo() === 4">
-            <div class="step__circle">
-              @if (pasoActivo() > 4) { <span class="material-symbols-rounded">check</span> } @else { 4 }
-            </div>
-            <span class="step__label">En atención</span>
-          </div>
-          <div class="step__line" [class.step__line--done]="pasoActivo() >= 5"></div>
-
-          <div class="step" [class.step--done]="pasoActivo() >= 5" [class.step--active]="pasoActivo() === 5">
-            <div class="step__circle">
-              @if (pasoActivo() >= 5) { <span class="material-symbols-rounded">check</span> } @else { 5 }
-            </div>
-            <span class="step__label">{{ estadoActual() === 'Cerrada' ? 'Cerrada' : 'Solucionada' }}</span>
-          </div>
+          }
         </div>
       </div>
-    </section>
+      }
+      <div class="firma-tecnico">
+        Responsable asignado:
+        {{ inc.responsableNombre || 'No asignado' }}
+        ·
+        Fecha de solución:
+        {{ inc.fechaSolucion ? (inc.fechaSolucion | date: 'dd/MM/yyyy, HH:mm') : 'No registrada' }}
+      </div>
+    </div>
+
+    @if (errorConformidad()) {
+    <div class="fail" role="alert">
+      <span class="material-symbols-rounded">error</span>
+      <span>{{ errorConformidad() }}</span>
+    </div>
+    }
+
+    <div class="acciones-conformidad">
+      <button type="button" class="btn btn-confirmar" [disabled]="guardandoConformidad()" (click)="confirmarSolucion()">
+        <span>{{ guardandoConformidad() ? 'CONFIRMANDO...' : 'CONFIRMAR SOLUCIÓN ✓' }}</span>
+      </button>
+
+      <button type="button" class="btn btn-problema-continua" [disabled]="guardandoConformidad()"
+        (click)="mostrarFormularioReapertura()">
+        <span>EL PROBLEMA CONTINÚA</span>
+      </button>
+    </div>
+    }
+
+    @if (modoReapertura()) {
+    <div class="alert-box alert-info">
+      <span class="icon-circle">○</span>
+      <div>
+        <strong>Indica por qué el problema continúa</strong>
+        <p>Tu caso volverá al circuito de atención. El motivo quedará registrado en el historial.</p>
+      </div>
+    </div>
+
+    <div class="form-reapertura">
+      <label class="field">
+        <span>MOTIVO DE REAPERTURA <strong class="req">* (OBLIGATORIO)</strong></span>
+        <textarea class="control" rows="3"
+          placeholder="Ej: La puerta vuelve a quedarse abierta después de usar el control."
+          [ngModel]="motivoReapertura()" (ngModelChange)="motivoReapertura.set($event)"></textarea>
+      </label>
+
+      <fieldset class="field" style="margin-top: 12px;">
+        <span>EVIDENCIA DEL PROBLEMA (OPCIONAL · MÁX. 3)</span>
+        <div class="evidencias-upload-box">
+          <label class="btn-adjuntar">
+            <span class="material-symbols-rounded">upload_file</span>
+            <span>Seleccionar archivo o arrastrar</span>
+            <input type="file" accept="image/png, image/jpeg, image/webp" multiple
+              (change)="onSeleccionarArchivosReapertura($event)" hidden />
+          </label>
+          <span class="contador-archivos">{{ archivosReapertura().length }}/3 archivos</span>
+        </div>
+        <small class="evidencias-pendientes" style="color: #64748b; margin-top: 4px;">
+          Puedes adjuntar fotos que muestren que el problema continúa.
+        </small>
+
+        @if (archivosReapertura().length > 0) {
+        <div class="file-chip-list">
+          @for (file of archivosReapertura(); track $index) {
+          <div class="file-chip">
+            <span>{{ file.name }}</span>
+            <button type="button" (click)="eliminarArchivoReapertura($index)">✕</button>
+          </div>
+          }
+        </div>
+        }
+      </fieldset>
+
+      @if (errorConformidad()) {
+      <div class="fail" role="alert" style="margin-top: 10px;">
+        <span class="material-symbols-rounded">error</span>
+        <span>{{ errorConformidad() }}</span>
+      </div>
+      }
+
+      <div class="acciones-form" style="margin-top: 16px;">
+        <button type="button" class="btn btn-confirmar" [disabled]="!puedeReabrir()" (click)="confirmarReapertura()">
+          <span>{{ guardandoConformidad() ? 'REABRIENDO...' : 'CONFIRMAR REAPERTURA ↺' }}</span>
+        </button>
+
+        <button type="button" class="btn-link" (click)="cancelarReapertura()">
+          Cancelar y volver al detalle
+        </button>
+      </div>
+    </div>
+    }
+
+    @if (estadoActual() === 'Cerrada') {
+    <div class="alert-box alert-success">
+      <span class="icon-circle">○</span>
+      <div>
+        <strong>Conformidad registrada</strong>
+        <p>Confirmaste la solución. El caso pasó a estado Cerrada.</p>
+      </div>
+    </div>
+
+    <div class="solucion-registrada-card">
+      <h3 class="section-subtitle">DATOS REGISTRADOS</h3>
+      <div class="dato-bloque">
+        <label>Diagnóstico</label>
+        <p>{{ diagnosticoSolucion() }}</p>
+      </div>
+      <div class="dato-bloque">
+        <label>Acciones realizadas</label>
+        <p>{{ accionesSolucion() }}</p>
+      </div>
+      <div class="firma-tecnico">
+        Responsable asignado:
+        {{ inc.responsableNombre || 'No asignado' }}
+        ·
+        Fecha de solución:
+        {{
+        inc.fechaSolucion
+        ? (inc.fechaSolucion | date: 'dd/MM/yyyy, HH:mm')
+        : 'No registrada'
+        }}
+      </div>
+    </div>
+
+    <a class="btn btn-volver-mis" routerLink="/incidencias/mis-incidencias">
+      <span class="material-symbols-rounded">arrow_back</span>
+      <span>VOLVER A MIS INCIDENCIAS</span>
+    </a>
+    }
+
+    @if (estadoActual() !== 'Solucionada' && estadoActual() !== 'Cerrada' && !modoReapertura()) {
+    <div class="info" role="status">
+      <span class="material-symbols-rounded">info</span>
+      <span>Esta incidencia se encuentra en atención por parte del personal de mantenimiento.</span>
+    </div>
+    }
+    }
   </div>
+
+  <section class="panel side">
+    <header class="panel__head">
+      <h2 class="label">Datos del caso</h2>
+      <app-estado-badge [estado]="inc.estado" />
+    </header>
+
+    <dl>
+      <dt>Descripción</dt>
+      <dd>{{ inc.descripcion }}</dd>
+      <dt>Ubicación</dt>
+      <dd>{{ inc.ubicacion }}</dd>
+      <dt>Reportada por</dt>
+      <dd>{{ inc.autor }}</dd>
+      <dt>Fecha reporte</dt>
+      <dd>{{ inc.creada | date: 'd MMM yyyy, HH:mm' }}</dd>
+      <dt>Categoría</dt>
+      <dd>{{ inc.categoria }}</dd>
+      <dt>Asignado a</dt>
+      <dd>{{ esPersonalTecnico() ? 'Mantenimiento' : 'Mantenimiento Prueba' }}</dd>
+    </dl>
+
+    <section class="evidencias-consulta" aria-labelledby="evidencias-titulo">
+      <div class="evidencias-consulta__head">
+        <h3 id="evidencias-titulo" class="stepper-subtitulo">EVIDENCIAS DEL CASO</h3>
+        <span class="evidencias-contador">{{ evidenciasSolucion().length }}</span>
+      </div>
+
+      @if (evidenciasSolucion().length === 0) {
+      <p class="evidencias-vacias">No hay evidencias registradas para esta solución.</p>
+      } @else {
+      <div class="evidencias-grid" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+        @for (evidencia of evidenciasSolucion(); track evidencia.id) {
+        <div
+          style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);">
+          <span class="material-symbols-rounded" style="color: var(--c-primary, #10b981);">
+            {{ esImagenEvidencia(evidencia) ? 'image' : 'description' }}
+          </span>
+          <div style="flex: 1; min-width: 0;">
+            <div
+              style="font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff;">
+              {{ evidencia.nombreArchivo }}
+            </div>
+            <small style="color: rgba(255,255,255,0.5); font-size: 0.72rem;">
+              {{ evidencia.descripcion || 'Evidencia adjunta' }}
+              @if (evidencia.creadoEn) {
+              · {{ evidencia.creadoEn | date: 'd MMM yyyy, HH:mm' }}
+              }
+            </small>
+          </div>
+          <span
+            style="font-size: 0.7rem; background: rgba(16,185,129,0.15); color: #10b981; padding: 2px 8px; border-radius: 6px; font-weight: 600;">
+            Almacenado
+          </span>
+        </div>
+        }
+      </div>
+      }
+    </section>
+
+    <div class="stepper-seccion">
+      <h3 class="stepper-subtitulo">LÍNEA DE ESTADO</h3>
+      <div class="stepper">
+        <div class="step" [class.step--done]="pasoActivo() > 1" [class.step--active]="pasoActivo() === 1">
+          <div class="step__circle">
+            @if (pasoActivo() > 1) { <span class="material-symbols-rounded">check</span> } @else { 1 }
+          </div>
+          <span class="step__label">Reportada</span>
+        </div>
+        <div class="step__line" [class.step__line--done]="pasoActivo() > 1"></div>
+
+        <div class="step" [class.step--done]="pasoActivo() > 2" [class.step--active]="pasoActivo() === 2">
+          <div class="step__circle">
+            @if (pasoActivo() > 2) { <span class="material-symbols-rounded">check</span> } @else { 2 }
+          </div>
+          <span class="step__label">Clasificada</span>
+        </div>
+        <div class="step__line" [class.step__line--done]="pasoActivo() > 2"></div>
+
+        <div class="step" [class.step--done]="pasoActivo() > 3" [class.step--active]="pasoActivo() === 3">
+          <div class="step__circle">
+            @if (pasoActivo() > 3) { <span class="material-symbols-rounded">check</span> } @else { 3 }
+          </div>
+          <span class="step__label">Asignada</span>
+        </div>
+        <div class="step__line" [class.step__line--done]="pasoActivo() > 3"></div>
+
+        <div class="step" [class.step--done]="pasoActivo() > 4" [class.step--active]="pasoActivo() === 4">
+          <div class="step__circle">
+            @if (pasoActivo() > 4) { <span class="material-symbols-rounded">check</span> } @else { 4 }
+          </div>
+          <span class="step__label">En atención</span>
+        </div>
+        <div class="step__line" [class.step__line--done]="pasoActivo() >= 5"></div>
+
+        <div class="step" [class.step--done]="pasoActivo() >= 5" [class.step--active]="pasoActivo() === 5">
+          <div class="step__circle">
+            @if (pasoActivo() >= 5) { <span class="material-symbols-rounded">check</span> } @else { 5 }
+          </div>
+          <span class="step__label">{{ estadoActual() === 'Cerrada' ? 'Cerrada' : 'Solucionada' }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
 } @else if (cargando()) {
-  <section class="panel dock">
-    <header class="panel__head"><h2 class="label">Cargando incidencia</h2></header>
-    <p class="vacio">Consultando el caso y verificando que esté disponible para tu usuario.</p>
-  </section>
+<section class="panel dock">
+  <header class="panel__head">
+    <h2 class="label">Cargando incidencia</h2>
+  </header>
+  <p class="vacio">Consultando el caso y verificando que esté disponible para tu usuario.</p>
+</section>
 } @else {
-  <section class="panel dock">
-    <header class="panel__head"><h2 class="label">Incidencia no disponible</h2></header>
-    <p class="vacio">No se encontró la incidencia solicitada o no tienes acceso.</p>
-    <a class="btn" [routerLink]="esPersonalTecnico() ? '/incidencias/asignadas' : '/incidencias/mis-incidencias'">Volver</a>
-  </section>
+<section class="panel dock">
+  <header class="panel__head">
+    <h2 class="label">Incidencia no disponible</h2>
+  </header>
+  <p class="vacio">No se encontró la incidencia solicitada o no tienes acceso.</p>
+  <a class="btn"
+    [routerLink]="esPersonalTecnico() ? '/incidencias/asignadas' : '/incidencias/mis-incidencias'">Volver</a>
+</section>
 }
