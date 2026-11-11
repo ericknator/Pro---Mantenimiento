@@ -128,13 +128,7 @@ public class IncidenciaRestController {
 	public IncidenciaEntity reabrir (@PathVariable Long id, @RequestBody Map<String, String> body) {
 		String motivo = body.get("motivo");
 		return servicio.reabrir(id, motivo);
+		
 	}
 	
-
-	    @PatchMapping("/{id}/reabrir")
-    public IncidenciaEntity reabrir(
-            @PathVariable Long id,
-            @RequestParam(value = "motivo", required = false) String motivo) {
-        return servicio.reabrir(id, motivo);
-    }
 }
