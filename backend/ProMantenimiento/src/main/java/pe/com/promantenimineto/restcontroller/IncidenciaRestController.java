@@ -125,5 +125,10 @@ public class IncidenciaRestController {
 	    return servicio.confirmarSolucion(id);
 	}
 
-	
+	    @PatchMapping("/{id}/reabrir")
+    public IncidenciaEntity reabrir(
+            @PathVariable Long id,
+            @RequestParam(value = "motivo", required = false) String motivo) {
+        return servicio.reabrir(id, motivo);
+    }
 }

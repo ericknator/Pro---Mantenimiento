@@ -33,5 +33,7 @@ public interface IncidenciaService {
 	IncidenciaEntity finalizarAtencion( Long id,  String diagnosticoTecnico, String accionesRealizadas, List<MultipartFile> archivos );
 	
 	IncidenciaEntity confirmarSolucion(Long id);
+
+	IncidenciaEntity reabrir(Long id, String motivo);
 	
 }

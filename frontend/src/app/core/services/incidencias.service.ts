@@ -138,9 +138,6 @@ export class IncidenciasService {
     });
   }
 
-  /**
-   * Consulta el caso solicitado e integra sus evidencias persistidas en MySQL.
-   */
   async cargarDetalle(id: string): Promise<void> {
     this._todas.set([]);
     this.cargando.set(true);
@@ -158,7 +155,6 @@ export class IncidenciasService {
         Authorization: `Bearer ${token}`,
       });
 
-      // Consultamos en paralelo el detalle de la incidencia y la lista de evidencias
       const [respuesta, listaEvidencias] = await Promise.all([
         firstValueFrom(
           this.http.get<IncidenciaApi>(
@@ -171,7 +167,6 @@ export class IncidenciasService {
         ).catch(() => [] as any[])
       ]);
 
-      // Asociamos las evidencias que pertenecen a esta incidencia
       const evidenciasDeIncidencia = (listaEvidencias || []).filter(
         (ev: any) => String(ev.incidencia?.id ?? ev.incidencia) === String(id)
       );
@@ -200,7 +195,6 @@ export class IncidenciasService {
     this._todas.set(this.mapearIncidencias(respuesta));
   }
 
-  /** Consulta las incidencias asignadas al técnico autenticado (PMS-136 / PMS-137). */
   async cargarAsignadas(): Promise<void> {
     this._todas.set([]);
     this.cargando.set(true);
@@ -230,14 +224,12 @@ export class IncidenciasService {
   readonly cargando = signal(false);
   readonly error = signal<string | null>(null);
 
-  /** Incidencias ordenadas de la más reciente a la más antigua. */
   readonly propias = computed(() =>
     [...this._todas()].sort(
       (a, b) => b.creada.getTime() - a.creada.getTime()
     )
   );
 
-  /** Espera a que Firebase determine si hay un usuario autenticado. */
   private esperarUsuario(): Promise<User | null> {
     if (auth.currentUser) {
       return Promise.resolve(auth.currentUser);
@@ -255,7 +247,6 @@ export class IncidenciasService {
     });
   }
 
-  /** Consulta las incidencias del backend. */
   async cargar(): Promise<void> {
     this._todas.set([]);
     this.cargando.set(true);
@@ -310,7 +301,6 @@ export class IncidenciasService {
     return 'No se pudo consultar la incidencia. Inténtalo nuevamente.';
   }
 
-  /** Registra una incidencia y adjunta hasta 3 evidencias. */
   async crearConEvidencias(
     incidencia: {
       categoria: { id: number };
@@ -353,7 +343,6 @@ export class IncidenciasService {
     return respuesta;
   }
 
-  /** Busca una incidencia por su ID. */
   obtenerPropia(id: string | null): Incidencia | undefined {
     if (!id) {
       return undefined;
@@ -368,7 +357,6 @@ export class IncidenciasService {
     return incidencia.estado.trim().toLowerCase() === 'solucionada';
   }
 
-  /** Acepta una incidencia asignada y confirma el estado actualizado desde el backend. */
   async aceptarIncidencia(id: string): Promise<Incidencia> {
     const usuario = await this.esperarUsuario();
 
@@ -412,10 +400,6 @@ export class IncidenciasService {
     }
   }
 
-  /**
-   * HU-INC-06 / PMS-160:
-   * Finaliza la atención enviando diagnóstico, acciones y los archivos de evidencia vía Multipart.
-   */
   async solucionarIncidencia(
     id: string,
     diagnostico: string,
@@ -458,7 +442,6 @@ export class IncidenciasService {
       )
     );
 
-    // Recargamos el detalle para traer el caso y sus evidencias persistidas
     await this.cargarDetalle(id);
 
     const incidenciaActualizada = this.obtenerPropia(id);
@@ -473,5 +456,86 @@ export class IncidenciasService {
     }
 
     return incidenciaActualizada;
+  }
+
+  async confirmarSolucion(id: string | number): Promise<Incidencia> {
+    const numericId = String(id).replace(/\D/g, '') || String(id);
+    const usuario = await this.esperarUsuario();
+
+    if (!usuario) {
+      throw new Error('Debes iniciar sesión para confirmar la solución.');
+    }
+
+    this.cargando.set(true);
+
+    try {
+      const token = await usuario.getIdToken();
+      const headers = new HttpHeaders({
+        Authorization: `Bearer ${token}`
+      });
+
+      await firstValueFrom(
+        this.http.patch<unknown>(
+          `${this.apiUrl}/${encodeURIComponent(numericId)}/confirmar-solucion`,
+          {},
+          { headers }
+        )
+      );
+
+      await this.cargarDetalle(String(numericId));
+
+      const incidenciaActualizada = this.obtenerPropia(String(numericId));
+      if (!incidenciaActualizada) {
+        throw new Error('La incidencia actualizada no se pudo recuperar.');
+      }
+
+      return incidenciaActualizada;
+    } finally {
+      this.cargando.set(false);
+    }
+  }
+
+  async reabrirIncidencia(
+    id: string | number,
+    motivo: string,
+    archivos: File[] = []
+  ): Promise<Incidencia> {
+    const numericId = String(id).replace(/\D/g, '') || String(id);
+    const usuario = await this.esperarUsuario();
+
+    if (!usuario) {
+      throw new Error('Debes iniciar sesión para reabrir la incidencia.');
+    }
+
+    this.cargando.set(true);
+
+    try {
+      const token = await usuario.getIdToken();
+      const headers = new HttpHeaders({
+        Authorization: `Bearer ${token}`
+      });
+
+      await firstValueFrom(
+        this.http.patch<unknown>(
+          `${this.apiUrl}/${encodeURIComponent(numericId)}/reabrir`,
+          { motivo },
+          {
+            headers,
+            params: { motivo }
+          }
+        )
+      );
+
+      await this.cargarDetalle(String(numericId));
+
+      const incidenciaActualizada = this.obtenerPropia(String(numericId));
+      if (!incidenciaActualizada) {
+        throw new Error('La incidencia reabierta no se pudo recuperar.');
+      }
+
+      return incidenciaActualizada;
+    } finally {
+      this.cargando.set(false);
+    }
   }
 }

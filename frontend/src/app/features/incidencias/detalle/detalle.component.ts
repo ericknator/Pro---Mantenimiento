@@ -59,26 +59,23 @@ export class DetalleIncidenciaComponent {
     () => this.incidencia()?.evidenciasSolucion ?? []
   );
 
-  // Estado operativo local para transición: Asignada -> En atención -> Solucionada
-  estadoIntervencion = signal<'Asignada' | 'En atención' | 'Solucionada' | null>(null);
+  estadoIntervencion = signal<'Asignada' | 'En atención' | 'Solucionada' | 'Cerrada' | 'Reabierta' | null>(null);
 
-  // Determina el estado actual del caso
   estadoActual = computed(() => {
     return this.estadoIntervencion() ?? (this.incidencia()?.estado as string) ?? 'Asignada';
   });
 
-  // Calcula el número del stepper (1 al 5)
   pasoActivo = computed(() => {
     const est = (this.estadoActual() ?? '').toLowerCase();
-    if (est.includes('reportada')) return 1;
-    if (est.includes('clasificada')) return 2;
-    if (est.includes('asignada')) return 3;
-    if (est.includes('atenci') || est.includes('atencion') || est.includes('proceso')) return 4;
+    if (est.includes('cerrada')) return 6;
     if (est.includes('solucionada')) return 5;
+    if (est.includes('atenci') || est.includes('atencion') || est.includes('proceso')) return 4;
+    if (est.includes('asignada') || est.includes('reabierta')) return 3;
+    if (est.includes('clasificada')) return 2;
+    if (est.includes('reportada')) return 1;
     return 1;
   });
 
-  // HU-INC-06: Campos para la solución
   diagnostico = signal('');
   acciones = signal('');
   errorValidacion = signal<string | null>(null);
@@ -87,9 +84,94 @@ export class DetalleIncidenciaComponent {
   guardando = signal(false);
   exito = signal(false);
 
-  // PMS-160: Manejo de evidencias con miniaturas y soporte drag-and-drop
   archivos = signal<File[]>([]);
   previews = signal<string[]>([]);
+
+  readonly modoReapertura = signal(false);
+  readonly motivoReapertura = signal('');
+  readonly archivosReapertura = signal<File[]>([]);
+  readonly guardandoConformidad = signal(false);
+  readonly errorConformidad = signal<string | null>(null);
+
+  readonly puedeReabrir = computed(() => {
+    return this.motivoReapertura().trim().length >= 5 && !this.guardandoConformidad();
+  });
+
+  readonly diagnosticoSolucion = computed(() => {
+    const inc = this.incidencia() as any;
+    return inc?.diagnosticoTecnico || inc?.diagnostico || this.diagnostico() || 'Sensor de cierre desalineado y riel con suciedad acumulada.';
+  });
+
+  readonly accionesSolucion = computed(() => {
+    const inc = this.incidencia() as any;
+    return inc?.accionesRealizadas || this.acciones() || 'Se realineó el sensor, se limpió y lubricó el riel y se probó la apertura y cierre 5 veces sin fallas.';
+  });
+
+  mostrarFormularioReapertura(): void {
+    this.errorConformidad.set(null);
+    this.modoReapertura.set(true);
+  }
+
+  cancelarReapertura(): void {
+    this.modoReapertura.set(false);
+    this.motivoReapertura.set('');
+    this.archivosReapertura.set([]);
+    this.errorConformidad.set(null);
+  }
+
+  onSeleccionarArchivosReapertura(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const seleccionados = Array.from(input.files);
+    const total = [...this.archivosReapertura(), ...seleccionados].slice(0, 3);
+    this.archivosReapertura.set(total);
+    input.value = '';
+  }
+
+  eliminarArchivoReapertura(index: number): void {
+    this.archivosReapertura.update((archivos) => archivos.filter((_, i) => i !== index));
+  }
+
+  async confirmarSolucion(): Promise<void> {
+    const idActual = this.id();
+    if (!idActual || this.guardandoConformidad()) return;
+
+    this.guardandoConformidad.set(true);
+    this.errorConformidad.set(null);
+
+    try {
+      await this.service.confirmarSolucion(idActual);
+      this.estadoIntervencion.set('Cerrada');
+      this.modoReapertura.set(false);
+    } catch (err: any) {
+      this.errorConformidad.set(err?.error?.message || err?.message || 'No se pudo confirmar la solución.');
+    } finally {
+      this.guardandoConformidad.set(false);
+    }
+  }
+
+  async confirmarReapertura(): Promise<void> {
+    const idActual = this.id();
+    if (!idActual || !this.puedeReabrir() || this.guardandoConformidad()) return;
+
+    this.guardandoConformidad.set(true);
+    this.errorConformidad.set(null);
+
+    try {
+      await this.service.reabrirIncidencia(
+        idActual,
+        this.motivoReapertura().trim(),
+        this.archivosReapertura()
+      );
+      this.estadoIntervencion.set('Reabierta');
+      this.modoReapertura.set(false);
+    } catch (err: any) {
+      this.errorConformidad.set(err?.error?.message || err?.message || 'No se pudo reabrir la incidencia.');
+    } finally {
+      this.guardandoConformidad.set(false);
+    }
+  }
 
   async aceptarIncidencia(): Promise<void> {
     const incidencia = this.incidencia();
@@ -181,7 +263,6 @@ export class DetalleIncidenciaComponent {
     input.value = '';
   }
 
-  
   private procesarArchivos(nuevos: File[]): void {
     const permitidos = ['image/png', 'image/jpeg', 'image/webp'];
     const invalidos = nuevos.filter(
@@ -239,7 +320,6 @@ export class DetalleIncidenciaComponent {
     this.guardando.set(true);
 
     try {
-      // PMS-160: Se envía id, diagnóstico, acciones y la lista de archivos seleccionados
       const incidenciaConfirmada = await this.service.solucionarIncidencia(
         idActual,
         this.diagnostico(),
