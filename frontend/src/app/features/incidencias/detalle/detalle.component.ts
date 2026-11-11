@@ -98,13 +98,29 @@ export class DetalleIncidenciaComponent {
   });
 
   readonly diagnosticoSolucion = computed(() => {
-    const inc = this.incidencia() as any;
-    return inc?.diagnosticoTecnico || inc?.diagnostico || this.diagnostico() || 'Sensor de cierre desalineado y riel con suciedad acumulada.';
+    const inc = this.incidencia() as
+      | (typeof this.incidencia extends never ? never : {
+        diagnosticoTecnico?: string | null;
+        diagnostico?: string | null;
+      })
+      | undefined;
+
+    return (
+      inc?.diagnosticoTecnico?.trim() ||
+      inc?.diagnostico?.trim() ||
+      'Diagnóstico no disponible.'
+    );
   });
 
   readonly accionesSolucion = computed(() => {
-    const inc = this.incidencia() as any;
-    return inc?.accionesRealizadas || this.acciones() || 'Se realineó el sensor, se limpió y lubricó el riel y se probó la apertura y cierre 5 veces sin fallas.';
+    const inc = this.incidencia() as
+      | { accionesRealizadas?: string | null }
+      | undefined;
+
+    return (
+      inc?.accionesRealizadas?.trim() ||
+      'Acciones realizadas no disponibles.'
+    );
   });
 
   mostrarFormularioReapertura(): void {
@@ -135,17 +151,30 @@ export class DetalleIncidenciaComponent {
 
   async confirmarSolucion(): Promise<void> {
     const idActual = this.id();
+
     if (!idActual || this.guardandoConformidad()) return;
 
     this.guardandoConformidad.set(true);
     this.errorConformidad.set(null);
 
     try {
-      await this.service.confirmarSolucion(idActual);
+      const incidencia = await this.service.confirmarSolucion(idActual);
+
+      if (incidencia.estado !== 'Cerrada') {
+        throw new Error(
+          'El servidor no confirmó el cierre de la incidencia.'
+        );
+      }
+
       this.estadoIntervencion.set('Cerrada');
       this.modoReapertura.set(false);
-    } catch (err: any) {
-      this.errorConformidad.set(err?.error?.message || err?.message || 'No se pudo confirmar la solución.');
+
+    } catch (error: unknown) {
+      this.errorConformidad.set(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo confirmar la solución.'
+      );
     } finally {
       this.guardandoConformidad.set(false);
     }
@@ -153,21 +182,40 @@ export class DetalleIncidenciaComponent {
 
   async confirmarReapertura(): Promise<void> {
     const idActual = this.id();
-    if (!idActual || !this.puedeReabrir() || this.guardandoConformidad()) return;
+
+    if (
+      !idActual ||
+      !this.puedeReabrir() ||
+      this.guardandoConformidad()
+    ) return;
 
     this.guardandoConformidad.set(true);
     this.errorConformidad.set(null);
 
     try {
-      await this.service.reabrirIncidencia(
+      const incidencia = await this.service.reabrirIncidencia(
         idActual,
         this.motivoReapertura().trim(),
         this.archivosReapertura()
       );
+
+      if (incidencia.estado !== 'Reabierta') {
+        throw new Error(
+          'El servidor no confirmó la reapertura de la incidencia.'
+        );
+      }
+
       this.estadoIntervencion.set('Reabierta');
       this.modoReapertura.set(false);
-    } catch (err: any) {
-      this.errorConformidad.set(err?.error?.message || err?.message || 'No se pudo reabrir la incidencia.');
+      this.motivoReapertura.set('');
+      this.archivosReapertura.set([]);
+
+    } catch (error: unknown) {
+      this.errorConformidad.set(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo reabrir la incidencia.'
+      );
     } finally {
       this.guardandoConformidad.set(false);
     }
