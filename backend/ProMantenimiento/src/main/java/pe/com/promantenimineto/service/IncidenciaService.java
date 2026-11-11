@@ -36,4 +36,6 @@ public interface IncidenciaService {
 
 	IncidenciaEntity reabrir(Long id, String motivo);
 	
+	IncidenciaEntity reabrir(Long id, String motivo);
+	
 }

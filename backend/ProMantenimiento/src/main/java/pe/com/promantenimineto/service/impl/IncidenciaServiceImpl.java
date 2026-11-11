@@ -1265,6 +1265,114 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 
 	    return repositorio.save(incidencia);
 	}
+	
+	@Override
+	@Transactional(rollbackFor = Exception.class)
+	public IncidenciaEntity reabrir(Long id, String motivo) {
+
+	    // 1. Obtener usuario autenticado.
+	    Authentication authentication =
+	        SecurityContextHolder.getContext().getAuthentication();
+
+	    if (authentication == null
+	            || !authentication.isAuthenticated()
+	            || !(authentication.getPrincipal()
+	                instanceof UsuarioPerfilEntity residente)) {
+
+	        throw new ResponseStatusException(
+	            HttpStatus.UNAUTHORIZED,
+	            "Debes iniciar sesión."
+	        );
+	    }
+
+	    // 2. Validar rol.
+	    if (residente.getRol() == null
+	            || !"RESIDENTE".equals(residente.getRol().getCodigo())) {
+
+	        throw new ResponseStatusException(
+	            HttpStatus.FORBIDDEN,
+	            "Solo un residente puede reabrir una incidencia."
+	        );
+	    }
+
+	    // 3. Validar motivo.
+	    if (motivo == null || motivo.isBlank()) {
+	        throw new ResponseStatusException(
+	            HttpStatus.BAD_REQUEST,
+	            "Debes indicar el motivo de la reapertura."
+	        );
+	    }
+
+	    // 4. Buscar incidencia.
+	    IncidenciaEntity incidencia = repositorio.findById(id)
+	        .orElseThrow(() -> new ResponseStatusException(
+	            HttpStatus.NOT_FOUND,
+	            "Incidencia no encontrada."
+	        ));
+
+	    // 5. Validar que pertenezca al residente.
+	    if (incidencia.getSolicitante() == null
+	            || !incidencia.getSolicitante().getId()
+	                .equals(residente.getId())) {
+
+	        throw new ResponseStatusException(
+	            HttpStatus.FORBIDDEN,
+	            "No puedes reabrir una incidencia que no has reportado."
+	        );
+	    }
+
+	    // 6. Validar estado actual.
+	    if (incidencia.getEstado() == null
+	            || !"SOLUCIONADA".equals(
+	                incidencia.getEstado().getCodigo())) {
+
+	        throw new ResponseStatusException(
+	            HttpStatus.CONFLICT,
+	            "Solo puedes reabrir incidencias en estado SOLUCIONADA."
+	        );
+	    }
+
+	    // 7. Obtener estado REABIERTA.
+	    EstadoIncidenciaEntity estadoReabierta =
+	        estadoRepositorio.findByCodigo("REABIERTA")
+	            .orElseThrow(() -> new ResponseStatusException(
+	                HttpStatus.INTERNAL_SERVER_ERROR,
+	                "No existe el estado REABIERTA en el catálogo."
+	            ));
+
+	    // 8. Obtener tipo de acción REAPERTURA.
+	    TipoAccionIncidenciaEntity tipoReapertura =
+	        tipoAccionRepositorio.findByCodigo("REAPERTURA")
+	            .orElseThrow(() -> new ResponseStatusException(
+	                HttpStatus.INTERNAL_SERVER_ERROR,
+	                "No existe el tipo de acción REAPERTURA."
+	            ));
+
+	    LocalDateTime ahora = LocalDateTime.now();
+
+	    EstadoIncidenciaEntity estadoAnterior = incidencia.getEstado();
+
+	    // 9. Registrar reapertura en el historial.
+	    ActuacionIncidenciaEntity actuacion =
+	        ActuacionIncidenciaEntity.builder()
+	            .incidencia(incidencia)
+	            .actor(residente)
+	            .tipoAccion(tipoReapertura)
+	            .descripcion("El residente indicó que el problema continúa. Motivo: "
+	                + motivo.trim())
+	            .estadoAnterior(estadoAnterior)
+	            .estadoNuevo(estadoReabierta)
+	            .creadoEn(ahora)
+	            .build();
+
+	    actuacionRepositorio.save(actuacion);
+
+	    // 10. Actualizar incidencia.
+	    incidencia.setEstado(estadoReabierta);
+	    incidencia.setActualizadoEn(ahora);
+
+	    return repositorio.save(incidencia);
+	}
 
 
 	
