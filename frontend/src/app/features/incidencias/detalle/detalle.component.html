@@ -282,7 +282,15 @@
     </a>
     }
 
-    @if (estadoActual() !== 'Solucionada' && estadoActual() !== 'Cerrada' && !modoReapertura()) {
+    @if (estadoActual() === 'Reabierta' && !modoReapertura()) {
+    <div class="alert-box alert-success" role="status">
+      <span class="material-symbols-rounded">check_circle</span>
+      <div>
+        <strong>Incidencia reabierta correctamente</strong>
+        <p>Tu incidencia volvió al circuito de atención para que el personal responsable pueda darle seguimiento.</p>
+      </div>
+    </div>
+    } @else if (estadoActual() !== 'Solucionada' && estadoActual() !== 'Cerrada' && !modoReapertura()) {
     <div class="info" role="status">
       <span class="material-symbols-rounded">info</span>
       <span>Esta incidencia se encuentra en atención por parte del personal de mantenimiento.</span>
