@@ -125,10 +125,20 @@ public class IncidenciaRestController {
 	}
 	
 	@PatchMapping("/{id}/reabrir")
-	public IncidenciaEntity reabrir (@PathVariable Long id, @RequestBody Map<String, String> body) {
-		String motivo = body.get("motivo");
-		return servicio.reabrir(id, motivo);
-		
+	public Map<String, Object> reabrir(
+	        @PathVariable Long id,
+	        @RequestBody Map<String, String> body) {
+
+	    String motivo = body.get("motivo");
+
+	    IncidenciaEntity incidencia = servicio.reabrir(id, motivo);
+
+	    Map<String, Object> respuesta = new java.util.HashMap<>();
+
+	    respuesta.put("incidencia", incidencia);
+	    respuesta.put("motivoReapertura", motivo);
+
+	    return respuesta;
 	}
 	
 }
