@@ -540,16 +540,24 @@ export class IncidenciasService {
         Authorization: `Bearer ${token}`
       });
 
-      await firstValueFrom(
-        this.http.patch<unknown>(
+      // El PATCH devuelve el motivo de esta operación, no el historial persistido.
+      const respuesta = await firstValueFrom(
+        this.http.patch<{
+          incidencia?: { estado?: { codigo?: string } | null } | null;
+          motivoReapertura?: string | null;
+        }>(
           `${this.apiUrl}/${encodeURIComponent(numericId)}/reabrir`,
           { motivo },
-          {
-            headers,
-            params: { motivo }
-          }
+          { headers }
         )
       );
+
+      if (
+        respuesta?.incidencia?.estado?.codigo !== 'REABIERTA' ||
+        respuesta.motivoReapertura?.trim() !== motivo.trim()
+      ) {
+        throw new Error('El servidor no confirmó correctamente la reapertura y su motivo.');
+      }
 
       await this.cargarDetalle(String(numericId));
 
