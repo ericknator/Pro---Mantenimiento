@@ -540,22 +540,42 @@ export class IncidenciasService {
         Authorization: `Bearer ${token}`
       });
 
-      await firstValueFrom(
-        this.http.patch<unknown>(
+      // Ambas versiones devuelven una incidencia, pero con formatos distintos:
+      // antiguo: IncidenciaEntity; nuevo: { incidencia, motivoReapertura }.
+      // Ninguno de los formatos sustituye a un endpoint de historial.
+      const respuesta = await firstValueFrom(
+        this.http.patch<{
+          id?: number;
+          estado?: { codigo?: string } | null;
+          incidencia?: { id?: number; estado?: { codigo?: string } | null } | null;
+          motivoReapertura?: string | null;
+        }>(
           `${this.apiUrl}/${encodeURIComponent(numericId)}/reabrir`,
           { motivo },
-          {
-            headers,
-            params: { motivo }
-          }
+          { headers }
         )
       );
 
-      await this.cargarDetalle(String(numericId));
+      const formatoNuevo = respuesta?.incidencia != null;
+      const estadoRespuesta = formatoNuevo
+        ? respuesta.incidencia?.estado?.codigo
+        : respuesta?.estado?.codigo;
 
+      // Comprobar siempre el estado realmente almacenado (GET), no solo el HTTP 200.
+      await this.cargarDetalle(String(numericId));
       const incidenciaActualizada = this.obtenerPropia(String(numericId));
-      if (!incidenciaActualizada) {
-        throw new Error('La incidencia reabierta no se pudo recuperar.');
+
+      if (!incidenciaActualizada || incidenciaActualizada.estado !== 'Reabierta') {
+        throw new Error('El backend no confirmó la reapertura persistida de la incidencia.');
+      }
+
+      if (estadoRespuesta !== 'REABIERTA') {
+        throw new Error('La respuesta de reapertura no coincide con el estado persistido.');
+      }
+
+      // Solo el contrato nuevo permite verificar que el motivo fue devuelto.
+      if (formatoNuevo && respuesta.motivoReapertura?.trim() !== motivo.trim()) {
+        throw new Error('El servidor no devolvió correctamente el motivo de reapertura.');
       }
 
       return incidenciaActualizada;
