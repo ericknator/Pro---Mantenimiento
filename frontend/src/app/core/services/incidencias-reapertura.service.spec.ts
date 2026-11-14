@@ -46,7 +46,7 @@ describe('IncidenciasService - PMS-202 reapertura', () => {
     for (let i = 0; i < 6; i++) await Promise.resolve();
   }
 
-  async function responderPatch(respuesta: unknown): Promise<void> {
+  async function responderPatch(respuesta: object): Promise<void> {
     await avanzarPromesas();
     const patch = http.expectOne(`${base}/incidencia/3/reabrir`);
     expect(patch.request.method).toBe('PATCH');
