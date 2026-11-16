@@ -1,0 +1,204 @@
+:host {
+    display: block;
+}
+
+.mis-alertas-page {
+    width: min(100%, 1100px);
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+}
+
+.page-header {
+    margin-bottom: 1.75rem;
+
+    .eyebrow {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        color: #64748b;
+    }
+
+    h1 {
+        margin: 0.65rem 0;
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        color: #0f172a;
+    }
+
+    p {
+        color: #64748b;
+    }
+}
+
+.alertas-card {
+    padding: 1.5rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+}
+
+.card-heading,
+.alerta-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.card-heading {
+    margin-bottom: 1.25rem;
+
+    h2 {
+        margin: 0;
+        color: #0f172a;
+    }
+
+    p {
+        margin: 0.4rem 0;
+        color: #64748b;
+        font-size: 0.875rem;
+    }
+}
+
+.refresh-button {
+    padding: 0.7rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.6rem;
+    background: white;
+    color: #334155;
+    font: inherit;
+    cursor: pointer;
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+}
+
+.total {
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #64748b;
+}
+
+.alertas-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.alerta-item {
+    padding: 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.85rem;
+    background: #f8fafc;
+
+    h3 {
+        margin: 0.35rem 0;
+        color: #0f172a;
+    }
+}
+
+.alerta-id {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #64748b;
+}
+
+.estado-badge {
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+
+    &--emitida {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    &--recibida {
+        background: #dcfce7;
+        color: #166534;
+    }
+}
+
+.alerta-details {
+    display: grid;
+    gap: 0.9rem;
+    margin: 1.1rem 0;
+
+    dt {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    dd {
+        margin: 0.25rem 0 0;
+        color: #334155;
+        overflow-wrap: anywhere;
+    }
+}
+
+.descripcion {
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+
+    strong {
+        font-size: 0.8rem;
+        color: #475569;
+    }
+
+    p {
+        color: #334155;
+        overflow-wrap: anywhere;
+    }
+}
+
+.estado-info {
+    margin: 1rem 0 0;
+    font-size: 0.82rem;
+    color: #92400e;
+
+    &--recibida {
+        color: #166534;
+    }
+}
+
+.feedback {
+    padding: 2rem;
+    text-align: center;
+    color: #64748b;
+
+    &--error {
+        color: #b91c1c;
+    }
+
+    button {
+        margin-top: 0.75rem;
+    }
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 1.5rem;
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+@media (max-width: 600px) {
+    .mis-alertas-page {
+        padding: 1rem;
+    }
+
+    .alertas-card {
+        padding: 1rem;
+    }
+
+    .card-heading {
+        flex-wrap: wrap;
+    }
+}

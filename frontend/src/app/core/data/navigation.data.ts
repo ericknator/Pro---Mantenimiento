@@ -56,10 +56,7 @@ export const MANTENIMIENTO_ACTIONS: NavItem[] = [
   { label: 'Historial', icon: 'history', route: '/mantenimiento/historial' },
 ];
 
-/**
- * Resuelve las rutas de navegación según el rol autenticado.
- * No modifica el arreglo original de navegación.
- */
+
 export function resolverNavegacionPorRol(
   items: NavItem[],
   rol?: string
@@ -72,6 +69,10 @@ export function resolverNavegacionPorRol(
 
       if (rol === 'administrador') {
         return { ...item, route: '/administrador/alertas' };
+      }
+
+      if (rol === 'residente') {
+        return { ...item, route: '/modulo/mis-alertas' };
       }
     }
 
