@@ -1,0 +1,130 @@
+<main class="mis-alertas-page">
+
+    <header class="page-header">
+        <span class="eyebrow">CONDOMINIO NUEVO ALCÁZAR</span>
+        <h1>Mis alertas</h1>
+        <p>
+            Consulta el estado de las alertas internas
+            que has registrado.
+        </p>
+    </header>
+
+    <section class="alertas-card">
+
+        <div class="card-heading">
+            <div>
+                <h2>Historial de alertas</h2>
+                <p>Información actualizada desde el sistema.</p>
+            </div>
+
+            <button type="button" class="refresh-button" [disabled]="cargando()" (click)="cargarAlertas()">
+                Actualizar
+            </button>
+        </div>
+
+        @if (cargando()) {
+        <div class="feedback" role="status">
+            Cargando tus alertas...
+        </div>
+        }
+
+        @if (error()) {
+        <div class="feedback feedback--error" role="alert">
+            <p>{{ error() }}</p>
+            <button type="button" (click)="cargarAlertas()">
+                Reintentar
+            </button>
+        </div>
+        }
+
+        @if (!cargando() && !error()) {
+
+        <p class="total">
+            {{ alertas().length }}
+            {{ alertas().length === 1 ? 'alerta registrada' : 'alertas registradas' }}
+        </p>
+
+        @if (alertas().length === 0) {
+        <div class="feedback">
+            <h3>Aún no tienes alertas registradas</h3>
+            <p>Cuando registres una alerta, aparecerá aquí.</p>
+            <a routerLink="/modulo/alertas">Registrar una alerta</a>
+        </div>
+        } @else {
+        <div class="alertas-list">
+
+            @for (alerta of alertas(); track alerta.id) {
+
+            <article class="alerta-item">
+
+                <div class="alerta-top">
+                    <div>
+                        <span class="alerta-id">ALERTA #{{ alerta.id }}</span>
+                        <h3>{{ nombreTipo(alerta) }}</h3>
+                    </div>
+
+                    <span class="estado-badge" [class.estado-badge--emitida]="codigoEstado(alerta) === 'EMITIDA'"
+                        [class.estado-badge--recibida]="codigoEstado(alerta) === 'RECIBIDA'">
+                        {{ nombreEstado(alerta) }}
+                    </span>
+                </div>
+
+                <dl class="alerta-details">
+                    <div>
+                        <dt>Ubicación</dt>
+                        <dd>{{ alerta.ubicacion }}</dd>
+                    </div>
+
+                    <div>
+                        <dt>Fecha de emisión</dt>
+                        <dd>{{ alerta.fechaEmision | date:'dd/MM/yyyy HH:mm' }}</dd>
+                    </div>
+
+                    <div>
+                        <dt>Última actualización</dt>
+                        <dd>
+                            @if (alerta.actualizadoEn) {
+                            {{ alerta.actualizadoEn | date:'dd/MM/yyyy HH:mm' }}
+                            } @else {
+                            No disponible
+                            }
+                        </dd>
+                    </div>
+                </dl>
+
+                @if (alerta.descripcion) {
+                <div class="descripcion">
+                    <strong>Descripción</strong>
+                    <p>{{ alerta.descripcion }}</p>
+                </div>
+                }
+
+                @if (codigoEstado(alerta) === 'EMITIDA') {
+                <p class="estado-info">
+                    La alerta fue emitida y está pendiente
+                    de confirmación de recepción.
+                </p>
+                }
+
+                @if (codigoEstado(alerta) === 'RECIBIDA') {
+                <p class="estado-info estado-info--recibida">
+                    El sistema registra esta alerta como recibida.
+                </p>
+                }
+
+            </article>
+            }
+
+        </div>
+        }
+        }
+
+
+        <a class="back-link" routerLink="/modulo/alertas">
+            + Registrar nueva alerta
+        </a>
+
+
+    </section>
+
+</main>

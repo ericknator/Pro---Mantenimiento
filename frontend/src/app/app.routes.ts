@@ -340,18 +340,21 @@ export const routes: Routes = [
         },
       },
 
+
       {
-        path: 'modulo/alertas',
-        title: 'Alertas internas',
+        // PMS-263 | HU-ALT-05: Seguimiento de alertas del residente
+        path: 'modulo/mis-alertas',
+        title: 'Mis alertas',
         canActivate: [roleGuard],
         data: {
           roles: ['residente'],
           fondo: 'edificio'
         },
         loadComponent: () =>
-          import('./features/alertas-internas/reportar-alerta.component')
-            .then((m) => m.ReportarAlertaComponent),
+          import('./features/alertas-internas/mis-alertas.component')
+            .then((m) => m.MisAlertasComponent),
       },
+
 
       ...modulosPendientes,
     ],

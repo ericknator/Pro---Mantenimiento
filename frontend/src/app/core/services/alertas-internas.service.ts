@@ -24,6 +24,7 @@ export interface AlertaInterna {
     ubicacion: string;
     descripcion: string | null;
     fechaEmision: string;
+    actualizadoEn: string;
     tipoAlerta: TipoAlertaInterna;
     estado: {
         id: number;
@@ -47,6 +48,18 @@ export class AlertasInternasService {
         return firstValueFrom(
             this.http.get<AlertaInterna[]>(
                 `${this.apiUrl}/alerta-interna/bandeja`,
+                { headers }
+            )
+        );
+    }
+
+
+    async obtenerMisAlertas(): Promise<AlertaInterna[]> {
+        const headers = await this.obtenerCabeceras();
+
+        return firstValueFrom(
+            this.http.get<AlertaInterna[]>(
+                `${this.apiUrl}/alerta-interna/mis-alertas`,
                 { headers }
             )
         );
