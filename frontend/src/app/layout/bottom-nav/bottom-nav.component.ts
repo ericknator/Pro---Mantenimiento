@@ -1,9 +1,14 @@
+
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { NAV_ITEMS } from '../../core/data/navigation.data';
+
+import {
+  NAV_ITEMS,
+  resolverNavegacionPorRol
+} from '../../core/data/navigation.data';
+
 import { AuthService } from '../../core/services/auth.service';
 import { NavItem } from '../../models/nav-item.model';
-
 
 @Component({
   selector: 'app-bottom-nav',
@@ -15,14 +20,36 @@ export class BottomNavComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
-  items = input<NavItem[]>(NAV_ITEMS);
-  principales = computed(() => this.items().filter((i) => i.bottom));
-  otros = computed(() => this.items().filter((i) => !i.bottom));
-  abierto = signal(false);
+  // Elementos originales de navegación.
+  readonly items = input<NavItem[]>(NAV_ITEMS);
 
-  alternar(): void { this.abierto.update((v) => !v); }
-  cerrar(): void { this.abierto.set(false); }
+  // Resuelve las rutas según el rol del usuario autenticado.
+  readonly itemsPorRol = computed(() =>
+    resolverNavegacionPorRol(
+      this.items(),
+      this.auth.usuario()?.rol
+    )
+  );
 
+  // Elementos visibles en la barra inferior.
+  readonly principales = computed(() =>
+    this.itemsPorRol().filter((item) => item.bottom)
+  );
+
+  // Elementos visibles en el menú "Más opciones".
+  readonly otros = computed(() =>
+    this.itemsPorRol().filter((item) => !item.bottom)
+  );
+
+  readonly abierto = signal(false);
+
+  alternar(): void {
+    this.abierto.update((valor) => !valor);
+  }
+
+  cerrar(): void {
+    this.abierto.set(false);
+  }
 
   async salir(): Promise<void> {
     this.cerrar();

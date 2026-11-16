@@ -1,6 +1,9 @@
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { NAV_ITEMS } from '../../core/data/navigation.data';
+import {
+  NAV_ITEMS,
+  resolverNavegacionPorRol
+} from '../../core/data/navigation.data';
 import { NavItem } from '../../models/nav-item.model';
 import { AuthService } from '../../core/services/auth.service';
 
@@ -21,12 +24,16 @@ export class SidebarComponent {
   // Filtro de rol: 'Mantenimientos' solo aparece para mantenimiento y administrador
   readonly itemsVisibles = computed(() => {
     const rol = this.auth.usuario()?.rol;
-    return this.items().filter((item) => {
+
+    const visibles = this.items().filter((item) => {
       if (item.route === '/mantenimiento') {
         return rol === 'mantenimiento' || rol === 'administrador';
       }
+
       return true;
     });
+
+    return resolverNavegacionPorRol(visibles, rol);
   });
 
   esItemActivo(item: NavItem): boolean {
