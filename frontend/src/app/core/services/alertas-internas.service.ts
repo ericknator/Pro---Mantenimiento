@@ -36,6 +36,22 @@ export interface AlertaInterna {
 export class AlertasInternasService {
     private readonly http = inject(HttpClient);
 
+    /**
+ * Obtiene la bandeja de alertas internas.
+ * Acceso autorizado por el backend para:
+ * ADMINISTRADOR y PORTERIA_SEGURIDAD.
+ */
+    async obtenerBandeja(): Promise<AlertaInterna[]> {
+        const headers = await this.obtenerCabeceras();
+
+        return firstValueFrom(
+            this.http.get<AlertaInterna[]>(
+                `${this.apiUrl}/alerta-interna/bandeja`,
+                { headers }
+            )
+        );
+    }
+
     private readonly apiUrl =
         'http://localhost:8085/promantenimiento/api';
 
