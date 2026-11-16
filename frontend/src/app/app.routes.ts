@@ -198,6 +198,22 @@ export const routes: Routes = [
             .then((m) => m.HomeComponent),
       },
 
+
+      {
+        // PMS-238 | HU-ALT-02: Bandeja de alertas para portería
+        path: 'seguridad/alertas',
+        title: 'Bandeja de alertas internas',
+        canActivate: [roleGuard],
+        data: {
+          roles: ['seguridad'],
+          fondo: 'edificio'
+        },
+        loadComponent: () =>
+          import('./features/alertas-internas/bandeja-alertas.component')
+            .then((m) => m.BandejaAlertasComponent),
+      },
+
+
       {
         path: 'incidencias',
         pathMatch: 'full',
