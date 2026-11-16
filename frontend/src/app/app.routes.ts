@@ -1,3 +1,4 @@
+
 import { Route, Routes } from '@angular/router';
 import { NAV_ITEMS, NOTIFICACIONES_ITEM, MANTENIMIENTO_ACTIONS } from './core/data/navigation.data';
 import { authGuard, guestGuard, roleGuard } from './core/guards/auth.guard';
@@ -198,7 +199,6 @@ export const routes: Routes = [
             .then((m) => m.HomeComponent),
       },
 
-
       {
         // PMS-238 | HU-ALT-02: Bandeja de alertas para portería
         path: 'seguridad/alertas',
@@ -212,7 +212,6 @@ export const routes: Routes = [
           import('./features/alertas-internas/bandeja-alertas.component')
             .then((m) => m.BandejaAlertasComponent),
       },
-
 
       {
         path: 'incidencias',
@@ -340,9 +339,22 @@ export const routes: Routes = [
         },
       },
 
-
+      // PMS-230 | HU-ALT-01: Restaurar el formulario de alertas internas
       {
-        // PMS-263 | HU-ALT-05: Seguimiento de alertas del residente
+        path: 'modulo/alertas',
+        title: 'Alertas internas',
+        canActivate: [roleGuard],
+        data: {
+          roles: ['residente'],
+          fondo: 'edificio'
+        },
+        loadComponent: () =>
+          import('./features/alertas-internas/reportar-alerta.component')
+            .then((m) => m.ReportarAlertaComponent),
+      },
+
+      // PMS-263 | HU-ALT-05: Seguimiento de alertas del residente
+      {
         path: 'modulo/mis-alertas',
         title: 'Mis alertas',
         canActivate: [roleGuard],
@@ -354,7 +366,6 @@ export const routes: Routes = [
           import('./features/alertas-internas/mis-alertas.component')
             .then((m) => m.MisAlertasComponent),
       },
-
 
       ...modulosPendientes,
     ],
