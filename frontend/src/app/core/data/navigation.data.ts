@@ -56,3 +56,25 @@ export const MANTENIMIENTO_ACTIONS: NavItem[] = [
   { label: 'Historial', icon: 'history', route: '/mantenimiento/historial' },
 ];
 
+/**
+ * Resuelve las rutas de navegación según el rol autenticado.
+ * No modifica el arreglo original de navegación.
+ */
+export function resolverNavegacionPorRol(
+  items: NavItem[],
+  rol?: string
+): NavItem[] {
+  return items.map((item) => {
+    if (item.route === '/modulo/alertas') {
+      if (rol === 'seguridad') {
+        return { ...item, route: '/seguridad/alertas' };
+      }
+
+      if (rol === 'administrador') {
+        return { ...item, route: '/administrador/alertas' };
+      }
+    }
+
+    return item;
+  });
+}
