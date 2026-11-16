@@ -156,6 +156,37 @@
                 }
 
             </article>
+
+            <!-- PMS-246: interfaz preparada para confirmar recepción.
+     La acción permanecerá deshabilitada hasta integrar PMS-244/PMS-245. -->
+            @if (identificarEstado(alerta) === 'EMITIDA') {
+            <div class="confirmacion-panel">
+                <button type="button" class="confirmacion-button" disabled
+                    title="Confirmación pendiente de integración con el backend">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" aria-hidden="true">
+                        <path d="m4 12 4 4L20 4" />
+                        <path d="m12 16 3 3 6-6" />
+                    </svg>
+                    <span>Confirmar recepción</span>
+                </button>
+
+                <p class="confirmacion-help">
+                    Esta acción estará disponible cuando se complete
+                    la integración de confirmación.
+                </p>
+            </div>
+            } @else if (identificarEstado(alerta) === 'RECIBIDA') {
+            <div class="confirmacion-panel confirmacion-panel--recibida" role="status">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <path d="m4 12 4 4L20 4" />
+                    <path d="m12 16 3 3 6-6" />
+                </svg>
+                <span>Recepción confirmada</span>
+            </div>
+            }
+
             }
 
         </div>

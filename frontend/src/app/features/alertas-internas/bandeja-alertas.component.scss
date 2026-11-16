@@ -400,3 +400,58 @@
         animation: none;
     }
 }
+
+/* PMS-246: confirmación de recepción */
+
+.confirmacion-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.confirmacion-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.1rem;
+    border: 0;
+    border-radius: 0.65rem;
+    background: #e2e8f0;
+    color: #64748b;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: not-allowed;
+
+    svg {
+        width: 1.1rem;
+        height: 1.1rem;
+        flex-shrink: 0;
+    }
+}
+
+.confirmacion-help {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.confirmacion-panel--recibida {
+    flex-direction: row;
+    align-items: center;
+    color: #15803d;
+    font-size: 0.875rem;
+    font-weight: 600;
+
+    svg {
+        width: 1.2rem;
+        height: 1.2rem;
+        flex-shrink: 0;
+    }
+}
