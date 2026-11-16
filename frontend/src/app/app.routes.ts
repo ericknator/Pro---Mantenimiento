@@ -9,7 +9,11 @@ import { ADMIN_ALERTAS_ACTIONS } from './core/data/admin-alertas.data';
 
 // Módulos del menú que aún no tienen pantalla propia: comparten la pantalla "en construcción"
 const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM, ...MANTENIMIENTO_ACTIONS]
-  .filter((i) => i.route.startsWith('/modulo/'))
+
+  .filter((i) =>
+    i.route.startsWith('/modulo/') &&
+    i.route !== '/modulo/alertas'
+  )
   .map((i) => ({
     path: i.route.substring(1),
     title: i.label,
@@ -23,7 +27,7 @@ const adminPendientes: Route[] = [
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/dashboard', volverTexto: 'Volver al dashboard' },
   })),
-  ...ADMIN_INCIDENCIAS_ACTIONS.filter( (i) => i.route !== '/administrador/incidencias/pendientes' && i.route !== '/administrador/incidencias/todas' ).map((i) => ({
+  ...ADMIN_INCIDENCIAS_ACTIONS.filter((i) => i.route !== '/administrador/incidencias/pendientes' && i.route !== '/administrador/incidencias/todas').map((i) => ({
     path: i.route.replace('/administrador/', ''),
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/incidencias', volverTexto: 'Volver a Incidencias' },
@@ -108,7 +112,7 @@ export const routes: Routes = [
           import('./features/administrador/activos/registrar/registrar-activo.component')
             .then((m) => m.RegistrarActivoComponent),
       },
-      
+
       // HU-MAN-03: Módulo de Alertas del Administrador
       {
         path: 'alertas',
@@ -319,7 +323,20 @@ export const routes: Routes = [
           volverTexto: 'Volver a Mantenimiento',
         },
       },
-      
+
+      {
+        path: 'modulo/alertas',
+        title: 'Alertas internas',
+        canActivate: [roleGuard],
+        data: {
+          roles: ['residente'],
+          fondo: 'edificio'
+        },
+        loadComponent: () =>
+          import('./features/alertas-internas/reportar-alerta.component')
+            .then((m) => m.ReportarAlertaComponent),
+      },
+
       ...modulosPendientes,
     ],
   },
