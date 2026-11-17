@@ -1,4 +1,3 @@
-
 import { Route, Routes } from '@angular/router';
 import { NAV_ITEMS, NOTIFICACIONES_ITEM, MANTENIMIENTO_ACTIONS } from './core/data/navigation.data';
 import { authGuard, guestGuard, roleGuard } from './core/guards/auth.guard';
@@ -8,9 +7,7 @@ import { ADMIN_MANTENIMIENTO_ACTIONS, ADMIN_NAV_ITEMS } from './core/data/admin-
 import { ADMIN_INCIDENCIAS_ACTIONS } from './core/data/admin-incidencias.data';
 import { ADMIN_ALERTAS_ACTIONS } from './core/data/admin-alertas.data';
 
-// Módulos del menú que aún no tienen pantalla propia: comparten la pantalla "en construcción"
 const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM, ...MANTENIMIENTO_ACTIONS]
-
   .filter((i) =>
     i.route.startsWith('/modulo/') &&
     i.route !== '/modulo/alertas'
@@ -33,7 +30,7 @@ const adminPendientes: Route[] = [
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/incidencias', volverTexto: 'Volver a Incidencias' },
   })),
-  ...ADMIN_MANTENIMIENTO_ACTIONS.filter((i) => i.route !== '/administrador/mantenimiento/programar').map((i) => ({
+  ...ADMIN_MANTENIMIENTO_ACTIONS.filter((i) => !['/administrador/mantenimiento/programar', '/administrador/mantenimiento/activos', '/administrador/mantenimiento/historial'].includes(i.route)).map((i) => ({
     path: i.route.replace('/administrador/', ''),
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', menu: 'rail', volver: '/administrador/mantenimiento', volverTexto: 'Volver a Mantenimiento' },
@@ -50,7 +47,6 @@ const adminPendientes: Route[] = [
 }));
 
 export const routes: Routes = [
-  // Espacio del Administrador (con su propio layout y menú)
   {
     path: 'administrador',
     component: AdminLayoutComponent,
@@ -78,8 +74,7 @@ export const routes: Routes = [
         title: 'Todas las incidencias',
         data: { fondo: 'edificio' },
         loadComponent: () =>
-          import('./features/administrador/incidencias/todas/todas.component')
-            .then((m) => m.TodasComponent),
+          import('./features/administrador/incidencias/todas/todas.component').then((m) => m.TodasComponent),
       },
       {
         path: 'incidencias/detalle/:id',
@@ -88,7 +83,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/administrador/incidencias/detalle/detalle-admin.component').then((m) => m.DetalleAdminComponent),
       },
-      // Redirige enlaces viejos
       { path: 'incidencias/clasificar/:id', redirectTo: 'incidencias/detalle/:id' },
       {
         path: 'mantenimiento',
@@ -110,11 +104,22 @@ export const routes: Routes = [
         title: 'Registrar activo',
         data: { menu: 'rail', fondo: 'terraza' },
         loadComponent: () =>
-          import('./features/administrador/activos/registrar/registrar-activo.component')
-            .then((m) => m.RegistrarActivoComponent),
+          import('./features/administrador/activos/registrar/registrar-activo.component').then((m) => m.RegistrarActivoComponent),
       },
-
-      // HU-MAN-03: Módulo de Alertas del Administrador
+      {
+        path: 'mantenimiento/historial',
+        title: 'Historial de activos',
+        data: { menu: 'rail', fondo: 'terraza' },
+        loadComponent: () =>
+          import('./features/administrador/mantenimiento/historial/historial-activo.component').then((m) => m.HistorialActivoComponent),
+      },
+      {
+        path: 'mantenimiento/historial/:id',
+        title: 'Historial de activo',
+        data: { menu: 'rail', fondo: 'terraza' },
+        loadComponent: () =>
+          import('./features/administrador/mantenimiento/historial/historial-activo.component').then((m) => m.HistorialActivoComponent),
+      },
       {
         path: 'alertas',
         pathMatch: 'full',
@@ -130,20 +135,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/administrador/alertas/activas/alertas-activas.component').then((m) => m.AlertasActivasComponent),
       },
-
       ...adminPendientes,
     ],
   },
-
-  // Login
   {
     path: 'login',
     title: 'Iniciar sesión',
     canActivate: [guestGuard],
     loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
   },
-
-  // Espacio de Residentes y otros roles
   {
     path: '',
     component: MainLayoutComponent,
@@ -154,65 +154,38 @@ export const routes: Routes = [
         path: 'inicio',
         title: 'Inicio',
         canActivate: [roleGuard],
-        data: {
-          fondo: 'ciudad',
-          roles: ['residente'],
-        },
-        loadComponent: () =>
-          import('./features/home/home.component')
-            .then((m) => m.HomeComponent),
+        data: { fondo: 'ciudad', roles: ['residente'] },
+        loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
       },
       {
         path: 'administrador/inicio',
         title: 'Inicio del administrador',
         canActivate: [roleGuard],
-        data: {
-          fondo: 'ciudad',
-          roles: ['administrador'],
-        },
-        loadComponent: () =>
-          import('./features/home/home.component')
-            .then((m) => m.HomeComponent),
+        data: { fondo: 'ciudad', roles: ['administrador'] },
+        loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
       },
       {
         path: 'mantenimiento/inicio',
         title: 'Inicio de mantenimiento',
         canActivate: [roleGuard],
-        data: {
-          fondo: 'ciudad',
-          roles: ['mantenimiento'],
-        },
-        loadComponent: () =>
-          import('./features/home/home.component')
-            .then((m) => m.HomeComponent),
+        data: { fondo: 'ciudad', roles: ['mantenimiento'] },
+        loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
       },
       {
         path: 'seguridad/inicio',
         title: 'Inicio de portería y seguridad',
         canActivate: [roleGuard],
-        data: {
-          fondo: 'ciudad',
-          roles: ['seguridad'],
-        },
-        loadComponent: () =>
-          import('./features/home/home.component')
-            .then((m) => m.HomeComponent),
+        data: { fondo: 'ciudad', roles: ['seguridad'] },
+        loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
       },
-
       {
-        // PMS-238 | HU-ALT-02: Bandeja de alertas para portería
         path: 'seguridad/alertas',
         title: 'Bandeja de alertas internas',
         canActivate: [roleGuard],
-        data: {
-          roles: ['seguridad'],
-          fondo: 'edificio'
-        },
+        data: { roles: ['seguridad'], fondo: 'edificio' },
         loadComponent: () =>
-          import('./features/alertas-internas/bandeja-alertas.component')
-            .then((m) => m.BandejaAlertasComponent),
+          import('./features/alertas-internas/bandeja-alertas.component').then((m) => m.BandejaAlertasComponent),
       },
-
       {
         path: 'incidencias',
         pathMatch: 'full',
@@ -260,113 +233,65 @@ export const routes: Routes = [
         path: 'incidencias/asignadas',
         title: 'Incidencias asignadas',
         data: { fondo: 'edificio', titulo: 'Incidencias asignadas', filtro: 'asignadas' },
-        loadComponent: () =>
-          import('./features/incidencias/listado/listado.component').then((m) => m.ListadoIncidenciasComponent),
+        loadComponent: () => import('./features/incidencias/listado/listado.component').then((m) => m.ListadoIncidenciasComponent),
       },
       {
         path: 'mantenimiento',
         pathMatch: 'full',
         title: 'Mantenimientos',
-        loadComponent: () =>
-          import('./features/mantenimiento/mantenimiento.component').then(
-            (m) => m.MantenimientoComponent
-          ),
         data: { fondo: 'edificio' },
+        loadComponent: () => import('./features/mantenimiento/mantenimiento.component').then((m) => m.MantenimientoComponent),
       },
       {
         path: 'mantenimiento/tareas-asignadas',
         title: 'Tareas preventivas asignadas',
         canActivate: [roleGuard],
-        data: {
-          menu: 'rail',
-          fondo: 'terraza',
-          titulo: 'Tareas preventivas asignadas',
-          roles: ['mantenimiento', 'administrador'],
-        },
+        data: { menu: 'rail', fondo: 'terraza', titulo: 'Tareas preventivas asignadas', roles: ['mantenimiento', 'administrador'] },
         loadComponent: () =>
-          import(
-            './features/mantenimiento/tareas-asignadas/tareas-asignadas.component'
-          ).then((m) => m.TareasAsignadasComponent),
+          import('./features/mantenimiento/tareas-asignadas/tareas-asignadas.component').then((m) => m.TareasAsignadasComponent),
       },
       {
         path: 'mantenimiento/tarea/:id',
         title: 'Detalle de tarea preventiva',
         canActivate: [roleGuard],
-        data: {
-          menu: 'rail',
-          fondo: 'edificio',
-          roles: ['mantenimiento', 'administrador'],
-        },
+        data: { menu: 'rail', fondo: 'edificio', roles: ['mantenimiento', 'administrador'] },
         loadComponent: () =>
-          import(
-            './features/mantenimiento/detalle-tarea/detalle-tarea.component'
-          ).then((m) => m.DetalleTareaComponent),
+          import('./features/mantenimiento/detalle-tarea/detalle-tarea.component').then((m) => m.DetalleTareaComponent),
       },
       {
         path: 'mantenimiento/correctivos',
         title: 'Mantenimientos correctivos',
-        loadComponent: () =>
-          import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
-        data: {
-          titulo: 'Mantenimientos correctivos',
-          fondo: 'edificio',
-          volver: '/mantenimiento',
-          volverTexto: 'Volver a Mantenimiento',
-        },
+        data: { titulo: 'Mantenimientos correctivos', fondo: 'edificio', volver: '/mantenimiento', volverTexto: 'Volver a Mantenimiento' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
       },
       {
         path: 'mantenimiento/calendario',
         title: 'Calendario de mantenimiento',
-        loadComponent: () =>
-          import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
-        data: {
-          titulo: 'Calendario de mantenimiento',
-          fondo: 'edificio',
-          volver: '/mantenimiento',
-          volverTexto: 'Volver a Mantenimiento',
-        },
+        data: { titulo: 'Calendario de mantenimiento', fondo: 'edificio', volver: '/mantenimiento', volverTexto: 'Volver a Mantenimiento' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
       },
       {
         path: 'mantenimiento/historial',
         title: 'Historial de mantenimientos',
-        loadComponent: () =>
-          import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
-        data: {
-          titulo: 'Historial de mantenimientos',
-          fondo: 'edificio',
-          volver: '/mantenimiento',
-          volverTexto: 'Volver a Mantenimiento',
-        },
+        data: { titulo: 'Historial de mantenimientos', fondo: 'edificio', volver: '/mantenimiento', volverTexto: 'Volver a Mantenimiento' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
       },
-
-      // PMS-230 | HU-ALT-01: Restaurar el formulario de alertas internas
       {
         path: 'modulo/alertas',
         title: 'Alertas internas',
         canActivate: [roleGuard],
-        data: {
-          roles: ['residente'],
-          fondo: 'edificio'
-        },
+        data: { roles: ['residente'], fondo: 'edificio' },
         loadComponent: () =>
-          import('./features/alertas-internas/reportar-alerta.component')
-            .then((m) => m.ReportarAlertaComponent),
+          import('./features/alertas-internas/reportar-alerta.component').then((m) => m.ReportarAlertaComponent),
       },
-
-      // PMS-263 | HU-ALT-05: Seguimiento de alertas del residente
       {
         path: 'modulo/mis-alertas',
         title: 'Mis alertas',
         canActivate: [roleGuard],
-        data: {
-          roles: ['residente'],
-          fondo: 'edificio'
-        },
+        data: { roles: ['residente'], fondo: 'edificio' },
         loadComponent: () =>
-          import('./features/alertas-internas/mis-alertas.component')
-            .then((m) => m.MisAlertasComponent),
+          import('./features/alertas-internas/mis-alertas.component').then((m) => m.MisAlertasComponent),
       },
-
       ...modulosPendientes,
     ],
   },
