@@ -1,0 +1,101 @@
+<app-page-hero
+  eyebrow="CONDOMINIO NUEVO ALCÁZAR · ADMINISTRACIÓN"
+  [title]="activoSeleccionado()?.nombre || 'Historial de activos'"
+  [subtitle]="
+    (activoSeleccionado()?.codigo || 'ACT-000') +
+    ' · ' +
+    (activoSeleccionado()?.ubicacion || 'Ubicación') +
+    ' · ' +
+    (activoSeleccionado()?.tipo || 'Activo') +
+    ' · ' +
+    (activoSeleccionado()?.estado || 'OPERATIVO')
+  "
+  backLink="/administrador/mantenimiento"
+  backLabel="VOLVER A ACTIVOS"
+/>
+
+<div class="historial-container">
+  <div class="selector-activo-bar" *ngIf="activos().length > 1">
+    <label for="selectActivo">Activo a evaluar:</label>
+    <select
+      id="selectActivo"
+      [ngModel]="activoSeleccionado()?.id?.toString()"
+      (ngModelChange)="onCambioActivo($event)"
+    >
+      <option *ngFor="let act of activos()" [value]="act.id?.toString()">
+        {{ act.nombre }} ({{ act.codigo }})
+      </option>
+    </select>
+  </div>
+
+  <section class="card-historial">
+    <header class="card-historial__head">
+      <div class="head-left">
+        <h2 class="card-title">HISTORIAL DEL ACTIVO</h2>
+        <span class="badge-total">{{ totalRegistros() }} registros</span>
+      </div>
+
+      <div class="tabs-group">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.tab-btn--active]="pestanaActiva() === 'TODOS'"
+          (click)="cambiarPestana('TODOS')"
+        >
+          Todos ({{ totalRegistros() }})
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.tab-btn--active]="pestanaActiva() === 'MANTENIMIENTO'"
+          (click)="cambiarPestana('MANTENIMIENTO')"
+        >
+          Mantenimientos ({{ totalMantenimientos() }})
+        </button>
+
+        <button
+          type="button"
+          class="tab-btn"
+          [class.tab-btn--active]="pestanaActiva() === 'FALLA'"
+          (click)="cambiarPestana('FALLA')"
+        >
+          Fallas ({{ totalFallas() }})
+        </button>
+      </div>
+    </header>
+
+    <div class="timeline-list">
+      <div
+        class="timeline-item"
+        *ngFor="let item of registrosFiltrados()"
+        [class.timeline-item--mantenimiento]="item.tipo === 'MANTENIMIENTO'"
+        [class.timeline-item--falla]="item.tipo === 'FALLA'"
+        [class.timeline-item--registro]="item.tipo === 'REGISTRO'"
+      >
+        <div class="item-content">
+          <strong class="item-title">{{ item.titulo }}</strong>
+          <p class="item-sub">{{ item.descripcion }}</p>
+        </div>
+
+        <div class="item-meta">
+          <span
+            class="badge-tipo"
+            [class.badge-tipo--mantenimiento]="item.tipo === 'MANTENIMIENTO'"
+            [class.badge-tipo--falla]="item.tipo === 'FALLA'"
+            [class.badge-tipo--registro]="item.tipo === 'REGISTRO'"
+          >
+            {{ item.tipo }}
+          </span>
+          <time class="item-date">{{ item.fecha | date: 'd MMM yyyy, HH:mm' }}</time>
+        </div>
+      </div>
+
+      <div class="vacio-box" *ngIf="registrosFiltrados().length === 0 && !cargando()">
+        <span class="material-symbols-rounded icon-vacio">schedule</span>
+        <h3>Sin intervenciones registradas</h3>
+        <p>No existen registros de mantenimiento ni fallas para este activo.</p>
+      </div>
+    </div>
+  </section>
+</div>
