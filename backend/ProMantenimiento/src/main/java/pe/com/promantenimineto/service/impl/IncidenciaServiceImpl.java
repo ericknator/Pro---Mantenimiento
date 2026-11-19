@@ -124,19 +124,24 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	
 	    // El administrador puede consultar todas las incidencias.
 	    if ("ADMINISTRADOR".equals(rol)) {
-	        return repositorio.findAll();
+	        return cargarMotivosReapertura(repositorio.findAll());
 	    }
 	
 	    // El residente consulta únicamente sus incidencias reportadas.
 	    if ("RESIDENTE".equals(rol)) {
-	        return repositorio.findBySolicitanteId(usuario.getId());
+	        return cargarMotivosReapertura(
+	                repositorio.findBySolicitanteId(usuario.getId())
+	        );
 	    }
 	
 	    // Mantenimiento y seguridad consultan las incidencias
 	    // que ellos mismos reportaron.
-	    if ("MANTENIMIENTO".equals(rol) || "PORTERIA_SEGURIDAD".equals(rol)) {
-	
-	        return repositorio.findBySolicitanteId(usuario.getId());
+	    if ("MANTENIMIENTO".equals(rol)
+	            || "PORTERIA_SEGURIDAD".equals(rol)) {
+
+	        return cargarMotivosReapertura(
+	                repositorio.findBySolicitanteId(usuario.getId())
+	        );
 	    }
 	
 	    throw new ResponseStatusException(
@@ -236,21 +241,24 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	
 	    // Administrador: puede consultar cualquier incidencia.
 	    if ("ADMINISTRADOR".equals(rol)) {
+	        cargarMotivoReapertura(incidencia);
 	        return incidencia;
 	    }
 	
 	    // Residente: solo puede consultar sus propias incidencias.
 	    if ("RESIDENTE".equals(rol)) {
-	
+
 	        if (incidencia.getSolicitante() == null
 	                || !incidencia.getSolicitante().getId()
-	                    .equals(usuario.getId())) {
+	                        .equals(usuario.getId())) {
+
 	            throw new ResponseStatusException(
-	                HttpStatus.NOT_FOUND,
-	                "Incidencia no encontrada"
+	                    HttpStatus.NOT_FOUND,
+	                    "Incidencia no encontrada"
 	            );
 	        }
-	
+
+	        cargarMotivoReapertura(incidencia);
 	        return incidencia;
 	    }
 	    
@@ -262,14 +270,15 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 
 	        if (incidencia.getResponsableActual() == null
 	                || !incidencia.getResponsableActual().getId()
-	                    .equals(usuario.getId())) {
+	                        .equals(usuario.getId())) {
 
 	            throw new ResponseStatusException(
-	                HttpStatus.FORBIDDEN,
-	                "La incidencia no te corresponde. Actualmente está asignada a otro personal."
+	                    HttpStatus.FORBIDDEN,
+	                    "La incidencia no te corresponde. Actualmente está asignada a otro personal."
 	            );
 	        }
 
+	        cargarMotivoReapertura(incidencia);
 	        return incidencia;
 	    }
 	
@@ -1372,6 +1381,40 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	    incidencia.setActualizadoEn(ahora);
 
 	    return repositorio.save(incidencia);
+	}
+	
+	private void cargarMotivoReapertura(IncidenciaEntity incidencia) {
+
+	    if (incidencia.getEstado() != null
+	            && "REABIERTA".equals(incidencia.getEstado().getCodigo())) {
+
+	        actuacionRepositorio
+	            .findFirstByIncidenciaIdAndTipoAccionCodigoOrderByCreadoEnDesc(
+	                incidencia.getId(), "REAPERTURA")
+	            .ifPresent(actuacion -> {
+
+	                String descripcion = actuacion.getDescripcion();
+
+	                if (descripcion != null && descripcion.contains("Motivo: ")) {
+
+	                    String motivo = descripcion.substring(
+	                        descripcion.lastIndexOf("Motivo: ") + 8
+	                    );
+
+	                    incidencia.setMotivoReapertura(motivo.trim());
+	                }
+	            });
+	    }
+	}
+
+	private List<IncidenciaEntity> cargarMotivosReapertura(
+	        List<IncidenciaEntity> incidencias) {
+
+	    for (IncidenciaEntity incidencia : incidencias) {
+	        cargarMotivoReapertura(incidencia);
+	    }
+
+	    return incidencias;
 	}
 
 

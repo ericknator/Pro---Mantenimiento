@@ -53,6 +53,9 @@ public class IncidenciaEntity {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String descripcion;
+    
+    @Transient
+    private String motivoReapertura;
 
     @Column(name = "fecha_reporte", nullable = false)
     private LocalDateTime fechaReporte;
