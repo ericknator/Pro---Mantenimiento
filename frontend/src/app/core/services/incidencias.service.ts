@@ -123,6 +123,7 @@ export class IncidenciasService {
         categoria: item.categoria.nombre,
         ubicacion: item.ubicacion,
         descripcion: item.descripcion,
+        motivoReapertura: item.motivoReapertura?.trim() || null,
         evidencias: [],
         evidenciasSolucion: this.mapearEvidencias(item),
         evidenciasConsultaDisponible,

@@ -55,13 +55,13 @@ describe('IncidenciasService - PMS-202 reapertura', () => {
     patch.flush(respuesta);
   }
 
-  async function responderGet(estado: string): Promise<void> {
+  async function responderGet(estado: string, motivoPersistido?: string | null): Promise<void> {
     await avanzarPromesas();
     const detalle = http.expectOne(`${base}/incidencia/3`);
     const evidencias = http.expectOne(`${base}/evidencia-incidencia`);
     expect(detalle.request.method).toBe('GET');
     expect(evidencias.request.method).toBe('GET');
-    detalle.flush(incidencia(estado));
+    detalle.flush({ ...incidencia(estado), motivoReapertura: motivoPersistido });
     evidencias.flush([]);
   }
 
@@ -75,8 +75,12 @@ describe('IncidenciasService - PMS-202 reapertura', () => {
   it('acepta el contrato nuevo y valida el motivo devuelto', async () => {
     const operacion = service.reabrirIncidencia(3, motivo);
     await responderPatch({ incidencia: incidencia('REABIERTA'), motivoReapertura: motivo });
-    await responderGet('REABIERTA');
-    expect((await operacion).estado).toBe('Reabierta');
+    await responderGet('REABIERTA', motivo);
+
+    const resultado = await operacion;
+    expect(resultado.estado).toBe('Reabierta');
+    expect(resultado.motivoReapertura).toBe(motivo);
+    expect(service.obtenerPropia('3')?.motivoReapertura).toBe(motivo);
   });
 
   it('no declara éxito si GET conserva SOLUCIONADA', async () => {
@@ -95,5 +99,37 @@ describe('IncidenciasService - PMS-202 reapertura', () => {
     await expectAsync(operacion).toBeRejectedWithError(
       'El servidor no devolvió correctamente el motivo de reapertura.'
     );
+  });
+
+  it("conserva el motivo persistido devuelto por GET", async () => {
+    const operacion = service.cargarDetalle("3");
+    await responderGet("REABIERTA", motivo);
+    await operacion;
+
+    expect(service.obtenerPropia("3")?.motivoReapertura).toBe(motivo);
+  });
+
+  it("normaliza a null un motivo ausente", async () => {
+    const operacion = service.cargarDetalle("3");
+    await responderGet("REABIERTA");
+    await operacion;
+
+    expect(service.obtenerPropia("3")?.motivoReapertura).toBeNull();
+  });
+
+  it("normaliza a null un motivo nulo", async () => {
+    const operacion = service.cargarDetalle("3");
+    await responderGet("REABIERTA", null);
+    await operacion;
+
+    expect(service.obtenerPropia("3")?.motivoReapertura).toBeNull();
+  });
+
+  it("normaliza a null un motivo compuesto solo por espacios", async () => {
+    const operacion = service.cargarDetalle("3");
+    await responderGet("REABIERTA", "   ");
+    await operacion;
+
+    expect(service.obtenerPropia("3")?.motivoReapertura).toBeNull();
   });
 });

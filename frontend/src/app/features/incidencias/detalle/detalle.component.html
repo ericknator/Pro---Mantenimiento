@@ -293,6 +293,12 @@
         <strong>Incidencia en seguimiento</strong>
         <p>Tu incidencia se encuentra reabierta y continúa en el circuito de atención.</p>
         }
+        @if (motivoReaperturaPersistido(); as motivo) {
+        <div class="dato-bloque">
+          <label>Motivo de reapertura</label>
+          <p>{{ motivo }}</p>
+        </div>
+        }
       </div>
     </div>
     } @else if (estadoActual() !== 'Solucionada' && estadoActual() !== 'Cerrada' && !modoReapertura()) {

@@ -44,6 +44,10 @@ export class DetalleIncidenciaComponent {
 
   incidencia = computed(() => this.service.obtenerPropia(this.id()));
 
+  readonly motivoReaperturaPersistido = computed(
+    () => this.incidencia()?.motivoReapertura?.trim() || null
+  );
+
   readonly esPersonalTecnico = computed(() => {
     const rol = this.auth.usuario()?.rol;
     return rol === 'mantenimiento' || rol === 'seguridad' || rol === 'administrador';
