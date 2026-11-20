@@ -33,6 +33,13 @@ public class AlertaInternaEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "estado_id", nullable = false)
     private EstadoAlertaInternaEntity estado;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "recibido_por_id")
+    private UsuarioPerfilEntity recibidoPor;
+
+    @Column(name = "fecha_recepcion")
+    private LocalDateTime fechaRecepcion;
 
     @Column(nullable = false, length = 255)
     private String ubicacion;

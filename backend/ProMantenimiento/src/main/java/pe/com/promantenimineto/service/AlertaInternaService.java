@@ -18,5 +18,7 @@ public interface AlertaInternaService {
     List<AlertaInternaEntity> findAllBandeja();
 
     List<AlertaInternaEntity> findByResidente();
+    
+    AlertaInternaEntity confirmarRecepcion(Long id);
 
 }

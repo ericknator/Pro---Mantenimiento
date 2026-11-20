@@ -165,4 +165,69 @@ public class AlertaInternaServiceImpl implements AlertaInternaService {
                 residente.getId()
         );
     }
+    
+    
+    
+    @Override
+    public AlertaInternaEntity confirmarRecepcion(Long id) {
+
+        UsuarioPerfilEntity portero = obtenerUsuarioAutenticado();
+
+        // Validar que el usuario sea personal de portería.
+        if (portero.getRol() == null
+                || !"PORTERIA_SEGURIDAD".equals(portero.getRol().getCodigo())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Solo el personal de portería puede confirmar la recepción."
+            );
+        }
+
+        // Buscar la alerta.
+        AlertaInternaEntity alerta = repositorio.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No se encontró la alerta interna."
+                ));
+
+        // CA-02: Evitar confirmaciones duplicadas.
+        if ("RECIBIDA".equals(alerta.getEstado().getCodigo())) {
+            return alerta;
+        }
+
+        // Validar que la alerta esté emitida.
+        if (!"EMITIDA".equals(alerta.getEstado().getCodigo())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "La alerta no se encuentra en estado EMITIDA."
+            );
+        }
+
+        // Obtener el estado RECIBIDA.
+        EstadoAlertaInternaEntity estadoRecibida =
+                estadoAlertaRepositorio.findByCodigo("RECIBIDA")
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.INTERNAL_SERVER_ERROR,
+                                "No existe el estado RECIBIDA en el catálogo."
+                        ));
+
+        // Validar que el estado esté activo.
+        if (!Boolean.TRUE.equals(estadoRecibida.getActivo())) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "El estado RECIBIDA se encuentra inactivo."
+            );
+        }
+
+        // Registrar usuario y fecha de recepción.
+        LocalDateTime ahora = LocalDateTime.now();
+
+        alerta.setEstado(estadoRecibida);
+        alerta.setRecibidoPor(portero);
+        alerta.setFechaRecepcion(ahora);
+        alerta.setActualizadoEn(ahora);
+
+        return repositorio.save(alerta);
+    }
+    
 }
