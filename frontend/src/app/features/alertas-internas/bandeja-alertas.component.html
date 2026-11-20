@@ -42,6 +42,21 @@
             </button>
         </div>
 
+        @if (errorAccion()) {
+        <div class="feedback feedback--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 7v6" />
+                <path d="M12 17h.01" />
+            </svg>
+            <div>
+                <strong>Aviso de acción</strong>
+                <p>{{ errorAccion() }}</p>
+            </div>
+        </div>
+        }
+
         @if (cargando()) {
         <div class="feedback" role="status">
             <span class="spinner" aria-hidden="true"></span>
@@ -146,12 +161,49 @@
                         </div>
                     </div>
 
+                    @if (alerta.fechaRecepcion) {
+                    <div class="detail-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+
+                        <div>
+                            <strong>Fecha de recepción</strong>
+                            <p>
+                                {{ alerta.fechaRecepcion | date:'dd/MM/yyyy HH:mm' }}
+                            </p>
+                        </div>
+                    </div>
+                    }
+
                 </div>
 
                 @if (alerta.descripcion) {
                 <div class="alerta-description">
                     <strong>Descripción</strong>
                     <p>{{ alerta.descripcion }}</p>
+                </div>
+                }
+
+                @if (identificarEstado(alerta) === 'EMITIDA') {
+                <div class="confirmacion-panel">
+                    <button type="button" class="confirmacion-button" [disabled]="confirmandoId() === alerta.id"
+                        (click)="confirmar(alerta)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>{{ confirmandoId() === alerta.id ? 'Confirmando...' : 'Confirmar recepción' }}</span>
+                    </button>
+                </div>
+                } @else if (identificarEstado(alerta) === 'RECIBIDA') {
+                <div class="confirmacion-panel confirmacion-panel--recibida" role="status">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Recepción confirmada</span>
                 </div>
                 }
 

@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -25,6 +24,12 @@ export interface AlertaInterna {
     descripcion: string | null;
     fechaEmision: string;
     actualizadoEn: string;
+    fechaRecepcion?: string | null;
+    recibidoPor?: {
+        id: number;
+        nombres: string;
+        apellidos: string;
+    } | null;
     tipoAlerta: TipoAlertaInterna;
     estado: {
         id: number;
@@ -37,11 +42,6 @@ export interface AlertaInterna {
 export class AlertasInternasService {
     private readonly http = inject(HttpClient);
 
-    /**
- * Obtiene la bandeja de alertas internas.
- * Acceso autorizado por el backend para:
- * ADMINISTRADOR y PORTERIA_SEGURIDAD.
- */
     async obtenerBandeja(): Promise<AlertaInterna[]> {
         const headers = await this.obtenerCabeceras();
 
@@ -53,6 +53,17 @@ export class AlertasInternasService {
         );
     }
 
+    async confirmarRecepcion(id: number): Promise<AlertaInterna> {
+        const headers = await this.obtenerCabeceras();
+
+        return firstValueFrom(
+            this.http.patch<AlertaInterna>(
+                `${this.apiUrl}/alerta-interna/${id}/confirmar-recepcion`,
+                {},
+                { headers }
+            )
+        );
+    }
 
     async obtenerMisAlertas(): Promise<AlertaInterna[]> {
         const headers = await this.obtenerCabeceras();
