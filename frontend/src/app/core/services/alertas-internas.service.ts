@@ -25,15 +25,16 @@ export interface AlertaInterna {
     descripcion: string | null;
     fechaEmision: string;
     actualizadoEn: string;
+
     tipoAlerta: TipoAlertaInterna;
+
     estado: {
         id: number;
         codigo: string;
         nombre: string;
     };
 
-    // PMS-246: información de recepción confirmada.
-    // Los campos permanecen vacíos hasta que portería confirma.
+    // PMS-246: confirmación de recepción.
     recibidoPor?: {
         id: number;
         nombre?: string;
@@ -41,19 +42,23 @@ export interface AlertaInterna {
     } | null;
 
     fechaRecepcion?: string | null;
+
+    // HU-ALT-04: última observación,
+    // cuando el backend la incluya en la respuesta.
+    observacion?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AlertasInternasService {
+
     private readonly http = inject(HttpClient);
 
     private readonly apiUrl =
         'http://localhost:8085/promantenimiento/api';
 
     /**
-     * Obtiene la bandeja de alertas internas.
-     * Acceso autorizado por el backend para:
-     * ADMINISTRADOR y PORTERIA_SEGURIDAD.
+     * Consulta la bandeja de alertas internas.
+     * El backend controla el acceso por rol.
      */
     async obtenerBandeja(): Promise<AlertaInterna[]> {
         const headers = await this.obtenerCabeceras();
@@ -69,19 +74,13 @@ export class AlertasInternasService {
     /**
      * PMS-246 / HU-ALT-03
      *
-     * Confirma la recepción de una alerta interna.
-     *
-     * El backend es responsable de:
-     * - Validar el rol PORTERIA_SEGURIDAD.
-     * - Verificar que la alerta exista.
-     * - Cambiar EMITIDA a RECIBIDA.
-     * - Registrar el usuario y la fecha de recepción.
-     * - Evitar confirmaciones duplicadas.
-     *
-     * No se modifica el estado local artificialmente.
-     * Se devuelve la respuesta real del backend.
+     * Confirma la recepción de una alerta.
+     * El backend determina el estado, actor y fecha.
      */
-    async confirmarRecepcion(id: number): Promise<AlertaInterna> {
+    async confirmarRecepcion(
+        id: number
+    ): Promise<AlertaInterna> {
+
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
@@ -94,9 +93,37 @@ export class AlertasInternasService {
     }
 
     /**
+     * PMS-255 / HU-ALT-04
+     *
+     * Solicita la siguiente transición de estado.
+     *
+     * RECIBIDA -> EN_ATENCION
+     * EN_ATENCION -> ATENDIDA
+     *
+     * El backend valida permisos y transiciones,
+     * actualiza la alerta y registra su actuación.
+     */
+    async actualizarEstado(
+        id: number,
+        observacion: string | null = null
+    ): Promise<AlertaInterna> {
+
+        const headers = await this.obtenerCabeceras();
+
+        return firstValueFrom(
+            this.http.patch<AlertaInterna>(
+                `${this.apiUrl}/alerta-interna/${id}/actualizar-estado`,
+                { observacion },
+                { headers }
+            )
+        );
+    }
+
+    /**
      * Consulta las alertas del residente autenticado.
      */
     async obtenerMisAlertas(): Promise<AlertaInterna[]> {
+
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
@@ -107,26 +134,42 @@ export class AlertasInternasService {
         );
     }
 
+    /**
+     * Espera a que Firebase confirme la sesión.
+     */
     private async obtenerUsuario(): Promise<User> {
+
         if (auth.currentUser) {
             return auth.currentUser;
         }
 
-        const usuario = await new Promise<User | null>((resolve) => {
-            const unsubscribe = onAuthStateChanged(auth, (user) => {
-                unsubscribe();
-                resolve(user);
-            });
-        });
+        const usuario = await new Promise<User | null>(
+            (resolve) => {
+                const unsubscribe = onAuthStateChanged(
+                    auth,
+                    (user) => {
+                        unsubscribe();
+                        resolve(user);
+                    }
+                );
+            }
+        );
 
         if (!usuario) {
-            throw new Error('Debes iniciar sesión para continuar.');
+            throw new Error(
+                'Debes iniciar sesión para continuar.'
+            );
         }
 
         return usuario;
     }
 
+    /**
+     * Obtiene el token Firebase para solicitudes
+     * protegidas por Spring Security.
+     */
     private async obtenerCabeceras(): Promise<HttpHeaders> {
+
         const usuario = await this.obtenerUsuario();
         const token = await usuario.getIdToken();
 
@@ -135,7 +178,11 @@ export class AlertasInternasService {
         });
     }
 
+    /**
+     * Obtiene los tipos de alertas activos.
+     */
     async obtenerTipos(): Promise<TipoAlertaInterna[]> {
+
         const headers = await this.obtenerCabeceras();
 
         const tipos = await firstValueFrom(
@@ -145,12 +192,16 @@ export class AlertasInternasService {
             )
         );
 
-        return tipos.filter((tipo) => tipo.activo);
+        return tipos.filter(tipo => tipo.activo);
     }
 
+    /**
+     * Permite al residente registrar una alerta.
+     */
     async registrar(
         datos: CrearAlertaInterna
     ): Promise<AlertaInterna> {
+
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
