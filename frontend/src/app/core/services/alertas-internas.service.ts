@@ -31,17 +31,30 @@ export interface AlertaInterna {
         codigo: string;
         nombre: string;
     };
+
+    // PMS-246: información de recepción confirmada.
+    // Los campos permanecen vacíos hasta que portería confirma.
+    recibidoPor?: {
+        id: number;
+        nombre?: string;
+        apellido?: string;
+    } | null;
+
+    fechaRecepcion?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AlertasInternasService {
     private readonly http = inject(HttpClient);
 
+    private readonly apiUrl =
+        'http://localhost:8085/promantenimiento/api';
+
     /**
- * Obtiene la bandeja de alertas internas.
- * Acceso autorizado por el backend para:
- * ADMINISTRADOR y PORTERIA_SEGURIDAD.
- */
+     * Obtiene la bandeja de alertas internas.
+     * Acceso autorizado por el backend para:
+     * ADMINISTRADOR y PORTERIA_SEGURIDAD.
+     */
     async obtenerBandeja(): Promise<AlertaInterna[]> {
         const headers = await this.obtenerCabeceras();
 
@@ -53,7 +66,36 @@ export class AlertasInternasService {
         );
     }
 
+    /**
+     * PMS-246 / HU-ALT-03
+     *
+     * Confirma la recepción de una alerta interna.
+     *
+     * El backend es responsable de:
+     * - Validar el rol PORTERIA_SEGURIDAD.
+     * - Verificar que la alerta exista.
+     * - Cambiar EMITIDA a RECIBIDA.
+     * - Registrar el usuario y la fecha de recepción.
+     * - Evitar confirmaciones duplicadas.
+     *
+     * No se modifica el estado local artificialmente.
+     * Se devuelve la respuesta real del backend.
+     */
+    async confirmarRecepcion(id: number): Promise<AlertaInterna> {
+        const headers = await this.obtenerCabeceras();
 
+        return firstValueFrom(
+            this.http.patch<AlertaInterna>(
+                `${this.apiUrl}/alerta-interna/${id}/confirmar-recepcion`,
+                null,
+                { headers }
+            )
+        );
+    }
+
+    /**
+     * Consulta las alertas del residente autenticado.
+     */
     async obtenerMisAlertas(): Promise<AlertaInterna[]> {
         const headers = await this.obtenerCabeceras();
 
@@ -64,9 +106,6 @@ export class AlertasInternasService {
             )
         );
     }
-
-    private readonly apiUrl =
-        'http://localhost:8085/promantenimiento/api';
 
     private async obtenerUsuario(): Promise<User> {
         if (auth.currentUser) {

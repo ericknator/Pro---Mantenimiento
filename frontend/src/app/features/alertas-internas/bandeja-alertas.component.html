@@ -155,6 +155,45 @@
                 </div>
                 }
 
+
+                <!-- PMS-246: confirmación de recepción de alerta interna -->
+
+                @if (identificarEstado(alerta) === 'EMITIDA') {
+                <div class="confirmacion-panel">
+
+                    <button type="button" class="confirmacion-button"
+                        [disabled]="confirmandoId() !== null || cargando()" (click)="confirmarRecepcion(alerta)">
+                        @if (confirmandoId() === alerta.id) {
+                        <span>Confirmando recepción...</span>
+                        } @else {
+                        <span>Confirmar recepción</span>
+                        }
+                    </button>
+
+                    @if (errorConfirmacion()?.id === alerta.id) {
+                    <p class="confirmacion-error" role="alert">
+                        {{ errorConfirmacion()?.mensaje }}
+                    </p>
+                    }
+
+                </div>
+                }
+
+                @if (identificarEstado(alerta) === 'RECIBIDA') {
+                <div class="confirmacion-panel confirmacion-panel--recibida" role="status">
+
+                    <span>Recepción confirmada</span>
+
+                    @if (alerta.fechaRecepcion) {
+                    <span class="confirmacion-fecha">
+                        {{ alerta.fechaRecepcion | date:'dd/MM/yyyy HH:mm' }}
+                    </span>
+                    }
+
+                </div>
+                }
+
+
             </article>
             }
 
