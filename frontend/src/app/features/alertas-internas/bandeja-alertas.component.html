@@ -194,6 +194,44 @@
                 }
 
 
+                @if (identificarEstado(alerta) === 'RECIBIDA' ||
+                identificarEstado(alerta) === 'EN_ATENCION') {
+
+                <div class="transicion-panel">
+
+                    <div class="transicion-panel__info">
+                        <strong>Siguiente etapa de atención</strong>
+
+                        @if (identificarEstado(alerta) === 'RECIBIDA') {
+                        <p>
+                            La alerta fue recibida por portería.
+                            La opción para iniciar su atención está
+                            pendiente de integración con el backend.
+                        </p>
+                        } @else {
+                        <p>
+                            La alerta se encuentra en atención.
+                            La opción para finalizarla está
+                            pendiente de integración con el backend.
+                        </p>
+                        }
+                    </div>
+
+                    <button type="button" class="transicion-button" disabled
+                        title="Funcionalidad pendiente de integración con el backend">
+
+                        @if (identificarEstado(alerta) === 'RECIBIDA') {
+                        Iniciar atención
+                        } @else {
+                        Marcar como atendida
+                        }
+
+                    </button>
+
+                </div>
+                }
+
+
             </article>
             }
 

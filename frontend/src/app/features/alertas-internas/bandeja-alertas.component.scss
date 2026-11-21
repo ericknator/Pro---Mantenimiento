@@ -401,3 +401,64 @@
   font-size: 0.8rem;
   line-height: 1.5;
 }
+
+
+// PMS-255: controles visuales pendientes de integración.
+
+.transicion-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+
+  &__info {
+    flex: 1;
+    min-width: 200px;
+
+    strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #334155;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    p {
+      margin: 0;
+      color: #64748b;
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+  }
+}
+
+.transicion-button {
+  flex-shrink: 0;
+  padding: 10px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #e2e8f0;
+  color: #64748b;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+@media (max-width: 640px) {
+  .transicion-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .transicion-button {
+    width: 100%;
+  }
+}
