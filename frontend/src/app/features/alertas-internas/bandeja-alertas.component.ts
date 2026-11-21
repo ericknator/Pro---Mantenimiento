@@ -1,7 +1,7 @@
-
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -11,7 +11,7 @@ import {
 
 @Component({
     selector: 'app-bandeja-alertas',
-    imports: [DatePipe, RouterLink],
+    imports: [DatePipe, FormsModule, RouterLink],
     templateUrl: './bandeja-alertas.component.html',
     styleUrl: './bandeja-alertas.component.scss'
 })
@@ -23,14 +23,12 @@ export class BandejaAlertasComponent implements OnInit {
     readonly alertas = signal<AlertaInterna[]>([]);
     readonly cargando = signal(false);
     readonly error = signal<string | null>(null);
+    readonly procesandoId = signal<number | null>(null);
+    readonly errorAccion = signal<string | null>(null);
 
-    // PMS-246: confirmación de recepción.
-    readonly confirmandoId = signal<number | null>(null);
-
-    readonly errorConfirmacion = signal<{
-        id: number;
-        mensaje: string;
-    } | null>(null);
+    readonly alertaModal = signal<AlertaInterna | null>(null);
+    readonly proximoEstado = signal<'EN_ATENCION' | 'ATENDIDA' | null>(null);
+    observacionTexto: string = '';
 
     // PMS-255: actualización de estados.
     readonly actualizandoId = signal<number | null>(null);
@@ -51,12 +49,7 @@ export class BandejaAlertasComponent implements OnInit {
      * una recepción o actualiza un estado.
      */
     async cargarBandeja(): Promise<void> {
-
-        if (
-            this.cargando() ||
-            this.confirmandoId() !== null ||
-            this.actualizandoId() !== null
-        ) {
+        if (this.cargando()) {
             return;
         }
 
@@ -75,11 +68,7 @@ export class BandejaAlertasComponent implements OnInit {
 
             this.alertas.set(resultado);
 
-            this.errorConfirmacion.set(null);
-            this.errorActualizacion.set(null);
-
         } catch (err: unknown) {
-
             this.alertas.set([]);
 
             if (err instanceof HttpErrorResponse) {
@@ -118,235 +107,97 @@ export class BandejaAlertasComponent implements OnInit {
         }
     }
 
-    /**
-     * PMS-246 / HU-ALT-03
-     *
-     * Confirma la recepción de una alerta EMITIDA.
-     * El backend registra el usuario y fecha reales.
-     */
-    async confirmarRecepcion(
-        alerta: AlertaInterna
-    ): Promise<void> {
-
-        if (
-            this.confirmandoId() !== null ||
-            this.actualizandoId() !== null ||
-            this.cargando()
-        ) {
+    async confirmar(alerta: AlertaInterna): Promise<void> {
+        if (this.procesandoId() !== null || this.identificarEstado(alerta) !== 'EMITIDA') {
             return;
         }
 
-        const alertaActual = this.alertas().find(
-            item => item.id === alerta.id
-        );
-
-        if (
-            !alertaActual ||
-            this.identificarEstado(alertaActual) !== 'EMITIDA'
-        ) {
-            return;
-        }
-
-        this.confirmandoId.set(alerta.id);
-        this.errorConfirmacion.set(null);
+        this.procesandoId.set(alerta.id);
+        this.errorAccion.set(null);
 
         try {
-            const respuesta =
-                await this.alertasService.confirmarRecepcion(
-                    alerta.id
-                );
+            const actualizada = await this.alertasService.confirmarRecepcion(alerta.id);
 
-            if (
-                respuesta?.id !== alerta.id ||
-                respuesta.estado?.codigo !== 'RECIBIDA'
-            ) {
-                throw new Error(
-                    'El servidor no devolvió una confirmación válida.'
-                );
-            }
-
-            this.alertas.update(actuales =>
-                actuales.map(item =>
-                    item.id === alerta.id
-                        ? respuesta
-                        : item
-                )
+            this.alertas.update((actuales) =>
+                actuales.map((item) => (item.id === alerta.id ? actualizada : item))
             );
-
         } catch (err: unknown) {
-
-            let mensaje =
-                'No se pudo confirmar la recepción de la alerta.';
-
-            if (err instanceof HttpErrorResponse) {
-                switch (err.status) {
-                    case 401:
-                        mensaje =
-                            'Tu sesión expiró. Inicia sesión nuevamente.';
-                        break;
-
-                    case 403:
-                        mensaje =
-                            'No tienes permisos para confirmar esta alerta.';
-                        break;
-
-                    case 404:
-                        mensaje =
-                            'La alerta ya no existe. Actualiza la bandeja.';
-                        break;
-
-                    case 409:
-                        mensaje =
-                            'La alerta no permite esta transición. Actualiza la bandeja para comprobar su estado.';
-                        break;
-
-                    case 0:
-                        mensaje =
-                            'No se pudo conectar con el servidor. Comprueba la conexión y actualiza la bandeja antes de reintentar.';
-                        break;
-                }
-
-            } else if (err instanceof Error) {
-                mensaje = err.message;
+            if (err instanceof HttpErrorResponse && err.status === 409) {
+                void this.cargarBandeja();
+                return;
             }
-
-            this.errorConfirmacion.set({
-                id: alerta.id,
-                mensaje
-            });
-
+            this.errorAccion.set('No se pudo confirmar la recepción de la alerta.');
         } finally {
-            this.confirmandoId.set(null);
+            this.procesandoId.set(null);
         }
     }
 
-    /**
-     * PMS-255 / HU-ALT-04
-     *
-     * Solicita al backend la siguiente transición.
-     *
-     * RECIBIDA -> EN_ATENCION
-     * EN_ATENCION -> ATENDIDA
-     *
-     * No se modifica el estado artificialmente.
-     */
-    async actualizarEstado(
-        alerta: AlertaInterna
-    ): Promise<void> {
+    abrirModalTransicion(alerta: AlertaInterna, destino: 'EN_ATENCION' | 'ATENDIDA'): void {
+        this.alertaModal.set(alerta);
+        this.proximoEstado.set(destino);
+        this.observacionTexto = destino === 'EN_ATENCION'
+            ? 'El personal de seguridad se dirige al punto para verificar la situación.'
+            : 'Situación atendida y controlada por seguridad.';
+        this.errorAccion.set(null);
+    }
 
-        if (
-            this.cargando() ||
-            this.confirmandoId() !== null ||
-            this.actualizandoId() !== null
-        ) {
+    cerrarModal(): void {
+        this.alertaModal.set(null);
+        this.proximoEstado.set(null);
+        this.observacionTexto = '';
+    }
+
+    async guardarTransicion(): Promise<void> {
+        const alerta = this.alertaModal();
+        const destino = this.proximoEstado();
+
+        if (!alerta || !destino || this.procesandoId() !== null) {
             return;
         }
 
-        const actual = this.alertas().find(
-            item => item.id === alerta.id
-        );
+        const estadoActual = this.identificarEstado(alerta);
 
-        if (!actual) {
+        if (destino === 'EN_ATENCION' && estadoActual !== 'RECIBIDA') {
+            this.errorAccion.set('Transición no permitida: la alerta debe estar RECIBIDA para iniciar atención.');
+            this.cerrarModal();
             return;
         }
 
-        const estadoActual =
-            this.identificarEstado(actual);
-
-        const siguienteEstado =
-            estadoActual === 'RECIBIDA'
-                ? 'EN_ATENCION'
-                : estadoActual === 'EN_ATENCION'
-                    ? 'ATENDIDA'
-                    : null;
-
-        // Solo se permiten transiciones conocidas.
-        // El backend realiza la validación definitiva.
-        if (!siguienteEstado) {
+        if (destino === 'ATENDIDA' && estadoActual !== 'EN_ATENCION') {
+            this.errorAccion.set('Transición no permitida: la alerta debe estar EN ATENCIÓN para marcarse como atendida.');
+            this.cerrarModal();
             return;
         }
 
-        this.actualizandoId.set(alerta.id);
-        this.errorActualizacion.set(null);
+        this.procesandoId.set(alerta.id);
+        this.errorAccion.set(null);
 
         try {
-            const respuesta =
-                await this.alertasService.actualizarEstado(
-                    alerta.id
-                );
-
-            // Exigir el estado esperado en la respuesta.
-            if (
-                respuesta?.id !== alerta.id ||
-                respuesta.estado?.codigo !== siguienteEstado
-            ) {
-                throw new Error(
-                    'El servidor no devolvió el estado esperado. Actualiza la bandeja para verificar el resultado.'
-                );
-            }
-
-            // Actualizar únicamente con la respuesta real.
-            this.alertas.update(actuales =>
-                actuales.map(item =>
-                    item.id === alerta.id
-                        ? respuesta
-                        : item
-                )
-            );
-
-        } catch (err: unknown) {
-
-            let mensaje =
-                'No se pudo actualizar el estado de la alerta.';
-
-            if (err instanceof HttpErrorResponse) {
-                switch (err.status) {
-                    case 401:
-                        mensaje =
-                            'Tu sesión expiró. Inicia sesión nuevamente.';
-                        break;
-
-                    case 403:
-                        mensaje =
-                            'No tienes permisos para actualizar esta alerta.';
-                        break;
-
-                    case 404:
-                        mensaje =
-                            'La alerta ya no existe. Actualiza la bandeja.';
-                        break;
-
-                    case 409:
-                        mensaje =
-                            'Esta transición no está permitida. Actualiza la bandeja para comprobar el estado real.';
-                        break;
-
-                    case 0:
-                        mensaje =
-                            'No se pudo conectar con el servidor. Comprueba el estado de la alerta antes de reintentar.';
-                        break;
-                }
-
-            } else if (err instanceof Error) {
-                mensaje = err.message;
-            }
-
-            this.errorActualizacion.set({
-                id: alerta.id,
-                mensaje
+            const actualizada = await this.alertasService.actualizarEstado(alerta.id, {
+                nuevoEstadoCodigo: destino,
+                observacion: this.observacionTexto.trim() || undefined
             });
 
+            this.alertas.update((actuales) =>
+                actuales.map((item) => (item.id === alerta.id ? actualizada : item))
+            );
+            this.cerrarModal();
+        } catch (err: unknown) {
+            if (err instanceof HttpErrorResponse) {
+                if (err.status === 409 || err.status === 400) {
+                    this.errorAccion.set('Transición rechazada por el sistema. El estado vigente fue conservado.');
+                    void this.cargarBandeja();
+                    this.cerrarModal();
+                    return;
+                }
+            }
+            this.errorAccion.set('Ocurrió un error al actualizar el estado de la alerta.');
         } finally {
-            this.actualizandoId.set(null);
+            this.procesandoId.set(null);
         }
     }
 
-    /**
-     * Identifica el estado real devuelto por la API.
-     */
-    identificarEstado(
-        alerta: AlertaInterna
-    ): string {
+    identificarEstado(alerta: AlertaInterna): string {
         return alerta.estado?.codigo ?? 'DESCONOCIDO';
     }
 

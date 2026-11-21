@@ -1,4 +1,3 @@
-
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -19,13 +18,24 @@ export interface CrearAlertaInterna {
     descripcion: string | null;
 }
 
+export interface ActualizarEstadoAlerta {
+    nuevoEstadoCodigo?: string;
+    estadoNuevoId?: number;
+    observacion?: string;
+}
+
 export interface AlertaInterna {
     id: number;
     ubicacion: string;
     descripcion: string | null;
     fechaEmision: string;
     actualizadoEn: string;
-
+    fechaRecepcion?: string | null;
+    recibidoPor?: {
+        id: number;
+        nombres: string;
+        apellidos: string;
+    } | null;
     tipoAlerta: TipoAlertaInterna;
 
     estado: {
@@ -33,19 +43,6 @@ export interface AlertaInterna {
         codigo: string;
         nombre: string;
     };
-
-    // PMS-246: confirmación de recepción.
-    recibidoPor?: {
-        id: number;
-        nombre?: string;
-        apellido?: string;
-    } | null;
-
-    fechaRecepcion?: string | null;
-
-    // HU-ALT-04: última observación,
-    // cuando el backend la incluya en la respuesta.
-    observacion?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -53,13 +50,6 @@ export class AlertasInternasService {
 
     private readonly http = inject(HttpClient);
 
-    private readonly apiUrl =
-        'http://localhost:8085/promantenimiento/api';
-
-    /**
-     * Consulta la bandeja de alertas internas.
-     * El backend controla el acceso por rol.
-     */
     async obtenerBandeja(): Promise<AlertaInterna[]> {
         const headers = await this.obtenerCabeceras();
 
@@ -71,57 +61,33 @@ export class AlertasInternasService {
         );
     }
 
-    /**
-     * PMS-246 / HU-ALT-03
-     *
-     * Confirma la recepción de una alerta.
-     * El backend determina el estado, actor y fecha.
-     */
-    async confirmarRecepcion(
-        id: number
-    ): Promise<AlertaInterna> {
-
+    async confirmarRecepcion(id: number): Promise<AlertaInterna> {
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
             this.http.patch<AlertaInterna>(
                 `${this.apiUrl}/alerta-interna/${id}/confirmar-recepcion`,
-                null,
+                {},
                 { headers }
             )
         );
     }
 
-    /**
-     * PMS-255 / HU-ALT-04
-     *
-     * Solicita la siguiente transición de estado.
-     *
-     * RECIBIDA -> EN_ATENCION
-     * EN_ATENCION -> ATENDIDA
-     *
-     * El backend valida permisos y transiciones,
-     * actualiza la alerta y registra su actuación.
-     */
     async actualizarEstado(
         id: number,
-        observacion: string | null = null
+        datos: ActualizarEstadoAlerta
     ): Promise<AlertaInterna> {
-
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
             this.http.patch<AlertaInterna>(
                 `${this.apiUrl}/alerta-interna/${id}/actualizar-estado`,
-                { observacion },
+                datos,
                 { headers }
             )
         );
     }
 
-    /**
-     * Consulta las alertas del residente autenticado.
-     */
     async obtenerMisAlertas(): Promise<AlertaInterna[]> {
 
         const headers = await this.obtenerCabeceras();
@@ -134,9 +100,9 @@ export class AlertasInternasService {
         );
     }
 
-    /**
-     * Espera a que Firebase confirme la sesión.
-     */
+    private readonly apiUrl =
+        'http://localhost:8085/promantenimiento/api';
+
     private async obtenerUsuario(): Promise<User> {
 
         if (auth.currentUser) {
