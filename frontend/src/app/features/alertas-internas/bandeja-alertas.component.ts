@@ -17,7 +17,8 @@ import {
 })
 export class BandejaAlertasComponent implements OnInit {
 
-    private readonly alertasService = inject(AlertasInternasService);
+    private readonly alertasService =
+        inject(AlertasInternasService);
 
     readonly alertas = signal<AlertaInterna[]>([]);
     readonly cargando = signal(false);
@@ -29,10 +30,24 @@ export class BandejaAlertasComponent implements OnInit {
     readonly proximoEstado = signal<'EN_ATENCION' | 'ATENDIDA' | null>(null);
     observacionTexto: string = '';
 
+    // PMS-255: actualización de estados.
+    readonly actualizandoId = signal<number | null>(null);
+
+    readonly errorActualizacion = signal<{
+        id: number;
+        mensaje: string;
+    } | null>(null);
+
     ngOnInit(): void {
         void this.cargarBandeja();
     }
 
+    /**
+     * Consulta la bandeja desde el backend.
+     *
+     * No permite recargas mientras se confirma
+     * una recepción o actualiza un estado.
+     */
     async cargarBandeja(): Promise<void> {
         if (this.cargando()) {
             return;
@@ -42,10 +57,13 @@ export class BandejaAlertasComponent implements OnInit {
         this.error.set(null);
 
         try {
-            const resultado = await this.alertasService.obtenerBandeja();
+            const resultado =
+                await this.alertasService.obtenerBandeja();
 
             if (!Array.isArray(resultado)) {
-                throw new Error('Respuesta de bandeja inesperada.');
+                throw new Error(
+                    'Respuesta de bandeja inesperada.'
+                );
             }
 
             this.alertas.set(resultado);
@@ -183,11 +201,23 @@ export class BandejaAlertasComponent implements OnInit {
         return alerta.estado?.codigo ?? 'DESCONOCIDO';
     }
 
-    obtenerNombreTipo(alerta: AlertaInterna): string {
-        return alerta.tipoAlerta?.nombre ?? 'Tipo no disponible';
+    /**
+     * Obtiene el nombre del tipo de alerta.
+     */
+    obtenerNombreTipo(
+        alerta: AlertaInterna
+    ): string {
+        return alerta.tipoAlerta?.nombre ??
+            'Tipo no disponible';
     }
 
-    obtenerNombreEstado(alerta: AlertaInterna): string {
-        return alerta.estado?.nombre ?? 'Estado no disponible';
+    /**
+     * Obtiene el nombre del estado.
+     */
+    obtenerNombreEstado(
+        alerta: AlertaInterna
+    ): string {
+        return alerta.estado?.nombre ??
+            'Estado no disponible';
     }
 }

@@ -25,12 +25,23 @@
             </div>
 
             <div class="card-heading__text">
-                <span class="eyebrow">PORTERÍA Y SEGURIDAD</span>
-                <h2 id="bandeja-titulo">Alertas recibidas</h2>
-                <p>Información registrada por los residentes.</p>
+                <span class="eyebrow">
+                    PORTERÍA Y SEGURIDAD
+                </span>
+
+                <h2 id="bandeja-titulo">
+                    Alertas recibidas
+                </h2>
+
+                <p>
+                    Información registrada por los residentes.
+                </p>
             </div>
 
-            <button class="refresh-button" type="button" [disabled]="cargando()" (click)="cargarBandeja()">
+            <button class="refresh-button" type="button" [disabled]="cargando() ||
+                            confirmandoId() !== null ||
+                            actualizandoId() !== null" (click)="cargarBandeja()">
+
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                     stroke-linejoin="round" aria-hidden="true">
                     <path d="M20 11a8 8 0 0 0-14-5L4 8" />
@@ -38,6 +49,7 @@
                     <path d="M4 13a8 8 0 0 0 14 5l2-2" />
                     <path d="M20 20v-4h-4" />
                 </svg>
+
                 <span>Actualizar</span>
             </button>
         </div>
@@ -74,7 +86,9 @@
             </svg>
 
             <div>
-                <strong>No se pudo consultar la bandeja</strong>
+                <strong>
+                    No se pudo consultar la bandeja
+                </strong>
                 <p>{{ error() }}</p>
             </div>
         </div>
@@ -85,11 +99,14 @@
         <div class="list-heading">
             <span>
                 {{ alertas().length }}
-                {{ alertas().length === 1 ? 'alerta registrada' : 'alertas registradas' }}
+                {{ alertas().length === 1
+                ? 'alerta registrada'
+                : 'alertas registradas' }}
             </span>
         </div>
 
         @if (alertas().length === 0) {
+
         <div class="empty-state" role="status">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
                 stroke-linejoin="round" aria-hidden="true">
@@ -98,6 +115,7 @@
             </svg>
 
             <h3>No hay alertas registradas</h3>
+
             <p>
                 Cuando los residentes emitan alertas internas,
                 podrás consultarlas aquí.
@@ -109,6 +127,7 @@
         <div class="alertas-list">
 
             @for (alerta of alertas(); track alerta.id) {
+
             <article class="alerta-item">
 
                 <div class="alerta-item__top">
@@ -127,6 +146,7 @@
                         [class.estado-badge--atencion]="identificarEstado(alerta) === 'EN_ATENCION'"
                         [class.estado-badge--atendida]="identificarEstado(alerta) === 'ATENDIDA'"
                         [class.estado-badge--cancelada]="identificarEstado(alerta) === 'CANCELADA'">
+
                         {{ obtenerNombreEstado(alerta) }}
                     </span>
                 </div>
@@ -244,11 +264,13 @@
         }
 
         <a class="back-link" routerLink="/seguridad/inicio">
+
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round" aria-hidden="true">
                 <path d="M19 12H5" />
                 <path d="m12 19-7-7 7-7" />
             </svg>
+
             <span>Volver al inicio</span>
         </a>
 

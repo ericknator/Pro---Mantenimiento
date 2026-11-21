@@ -37,6 +37,7 @@ export interface AlertaInterna {
         apellidos: string;
     } | null;
     tipoAlerta: TipoAlertaInterna;
+
     estado: {
         id: number;
         codigo: string;
@@ -46,6 +47,7 @@ export interface AlertaInterna {
 
 @Injectable({ providedIn: 'root' })
 export class AlertasInternasService {
+
     private readonly http = inject(HttpClient);
 
     async obtenerBandeja(): Promise<AlertaInterna[]> {
@@ -87,6 +89,7 @@ export class AlertasInternasService {
     }
 
     async obtenerMisAlertas(): Promise<AlertaInterna[]> {
+
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
@@ -101,25 +104,38 @@ export class AlertasInternasService {
         'http://localhost:8085/promantenimiento/api';
 
     private async obtenerUsuario(): Promise<User> {
+
         if (auth.currentUser) {
             return auth.currentUser;
         }
 
-        const usuario = await new Promise<User | null>((resolve) => {
-            const unsubscribe = onAuthStateChanged(auth, (user) => {
-                unsubscribe();
-                resolve(user);
-            });
-        });
+        const usuario = await new Promise<User | null>(
+            (resolve) => {
+                const unsubscribe = onAuthStateChanged(
+                    auth,
+                    (user) => {
+                        unsubscribe();
+                        resolve(user);
+                    }
+                );
+            }
+        );
 
         if (!usuario) {
-            throw new Error('Debes iniciar sesión para continuar.');
+            throw new Error(
+                'Debes iniciar sesión para continuar.'
+            );
         }
 
         return usuario;
     }
 
+    /**
+     * Obtiene el token Firebase para solicitudes
+     * protegidas por Spring Security.
+     */
     private async obtenerCabeceras(): Promise<HttpHeaders> {
+
         const usuario = await this.obtenerUsuario();
         const token = await usuario.getIdToken();
 
@@ -128,7 +144,11 @@ export class AlertasInternasService {
         });
     }
 
+    /**
+     * Obtiene los tipos de alertas activos.
+     */
     async obtenerTipos(): Promise<TipoAlertaInterna[]> {
+
         const headers = await this.obtenerCabeceras();
 
         const tipos = await firstValueFrom(
@@ -138,12 +158,16 @@ export class AlertasInternasService {
             )
         );
 
-        return tipos.filter((tipo) => tipo.activo);
+        return tipos.filter(tipo => tipo.activo);
     }
 
+    /**
+     * Permite al residente registrar una alerta.
+     */
     async registrar(
         datos: CrearAlertaInterna
     ): Promise<AlertaInterna> {
+
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
