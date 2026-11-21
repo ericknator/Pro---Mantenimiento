@@ -1,7 +1,6 @@
-
-import { DatePipe } from '@angular/common';
-import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -17,7 +16,7 @@ import {
 })
 export class MisAlertasComponent implements OnInit {
 
-    private readonly alertasService = inject(AlertasInternasService);
+    private readonly service = inject(AlertasInternasService);
 
     readonly alertas = signal<AlertaInterna[]>([]);
     readonly cargando = signal(false);
@@ -28,52 +27,34 @@ export class MisAlertasComponent implements OnInit {
     }
 
     async cargarAlertas(): Promise<void> {
-        if (this.cargando()) return;
-
         this.cargando.set(true);
         this.error.set(null);
 
         try {
-            const resultado = await this.alertasService.obtenerMisAlertas();
-
-            if (!Array.isArray(resultado)) {
-                throw new Error('Respuesta inesperada del servidor.');
-            }
-
-            this.alertas.set(resultado);
-
+            const data = await this.service.obtenerMisAlertas();
+            this.alertas.set(data);
         } catch (err: unknown) {
             this.alertas.set([]);
-
             if (err instanceof HttpErrorResponse) {
-                switch (err.status) {
-                    case 401:
-                        this.error.set('Tu sesión no es válida. Inicia sesión nuevamente.');
-                        break;
-                    case 403:
-                        this.error.set('No tienes permiso para consultar estas alertas.');
-                        break;
-                    case 0:
-                        this.error.set('No se pudo conectar con el servidor.');
-                        break;
-                    default:
-                        this.error.set('No se pudieron cargar tus alertas.');
+                if (err.status === 403 || err.status === 401) {
+                    this.error.set('No tienes autorización para consultar estas alertas.');
+                } else {
+                    this.error.set('No se pudieron cargar tus alertas. Intenta nuevamente.');
                 }
             } else {
                 this.error.set('Ocurrió un problema al consultar tus alertas.');
             }
-
         } finally {
             this.cargando.set(false);
         }
     }
 
-    nombreEstado(alerta: AlertaInterna): string {
-        return alerta.estado?.nombre ?? 'Estado no disponible';
-    }
-
     codigoEstado(alerta: AlertaInterna): string {
         return alerta.estado?.codigo ?? 'DESCONOCIDO';
+    }
+
+    nombreEstado(alerta: AlertaInterna): string {
+        return alerta.estado?.nombre ?? 'Estado no disponible';
     }
 
     nombreTipo(alerta: AlertaInterna): string {
