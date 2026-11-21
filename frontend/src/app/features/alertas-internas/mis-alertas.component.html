@@ -64,7 +64,10 @@
                     </div>
 
                     <span class="estado-badge" [class.estado-badge--emitida]="codigoEstado(alerta) === 'EMITIDA'"
-                        [class.estado-badge--recibida]="codigoEstado(alerta) === 'RECIBIDA'">
+                        [class.estado-badge--recibida]="codigoEstado(alerta) === 'RECIBIDA'"
+                        [class.estado-badge--atencion]="codigoEstado(alerta) === 'EN_ATENCION'"
+                        [class.estado-badge--atendida]="codigoEstado(alerta) === 'ATENDIDA'"
+                        [class.estado-badge--cancelada]="codigoEstado(alerta) === 'CANCELADA'">
                         {{ nombreEstado(alerta) }}
                     </span>
                 </div>
@@ -90,6 +93,18 @@
                             }
                         </dd>
                     </div>
+
+                    @if (alerta.fechaRecepcion) {
+                    <div class="acuse-box">
+                        <dt>Acuse de recepción</dt>
+                        <dd>
+                            Confirmada el {{ alerta.fechaRecepcion | date:'dd/MM/yyyy HH:mm' }}
+                            @if (alerta.recibidoPor) {
+                            por {{ alerta.recibidoPor.nombres }} {{ alerta.recibidoPor.apellidos }}
+                            }
+                        </dd>
+                    </div>
+                    }
                 </dl>
 
                 @if (alerta.descripcion) {
@@ -102,13 +117,25 @@
                 @if (codigoEstado(alerta) === 'EMITIDA') {
                 <p class="estado-info">
                     La alerta fue emitida y está pendiente
-                    de confirmación de recepción.
+                    de confirmación de recepción por portería.
                 </p>
                 }
 
                 @if (codigoEstado(alerta) === 'RECIBIDA') {
                 <p class="estado-info estado-info--recibida">
-                    El sistema registra esta alerta como recibida.
+                    El personal de portería ha recibido la alerta y está en proceso de atención.
+                </p>
+                }
+
+                @if (codigoEstado(alerta) === 'EN_ATENCION') {
+                <p class="estado-info estado-info--atencion">
+                    El personal de seguridad se encuentra atendiendo la situación en el lugar.
+                </p>
+                }
+
+                @if (codigoEstado(alerta) === 'ATENDIDA') {
+                <p class="estado-info estado-info--atendida">
+                    La alerta fue atendida y la situación ha sido resuelta.
                 </p>
                 }
 
@@ -119,11 +146,9 @@
         }
         }
 
-
         <a class="back-link" routerLink="/modulo/alertas">
             + Registrar nueva alerta
         </a>
-
 
     </section>
 
