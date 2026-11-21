@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config/api.config';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   Incidencia,
@@ -16,14 +17,11 @@ export class IncidenciasService {
 
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl =
-    'http://localhost:8085/promantenimiento/api/incidencia';
+  private readonly apiUrl = `${API_BASE_URL}/incidencia`;
 
-  private readonly apiAsignadasUrl =
-    'http://localhost:8085/promantenimiento/api/incidencia/asignadas';
+  private readonly apiAsignadasUrl = `${API_BASE_URL}/incidencia/asignadas`;
 
-  private readonly apiEvidenciasUrl =
-    'http://localhost:8085/promantenimiento/api/evidencia-incidencia';
+  private readonly apiEvidenciasUrl = `${API_BASE_URL}/evidencia-incidencia`;
 
   private mapearEvidencias(
     incidencia: IncidenciaApi

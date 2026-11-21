@@ -1,4 +1,4 @@
-
+import { API_BASE_URL } from '../config/api.config';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -47,8 +47,7 @@ export interface AlertaInterna {
 export class AlertasInternasService {
     private readonly http = inject(HttpClient);
 
-    private readonly apiUrl =
-        'http://localhost:8085/promantenimiento/api';
+    private readonly apiUrl = API_BASE_URL;
 
     /**
      * Obtiene la bandeja de alertas internas.
