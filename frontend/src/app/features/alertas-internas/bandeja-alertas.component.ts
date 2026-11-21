@@ -1,7 +1,7 @@
-
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
 import {
@@ -11,7 +11,7 @@ import {
 
 @Component({
     selector: 'app-bandeja-alertas',
-    imports: [DatePipe, RouterLink],
+    imports: [DatePipe, FormsModule, RouterLink],
     templateUrl: './bandeja-alertas.component.html',
     styleUrl: './bandeja-alertas.component.scss'
 })
@@ -22,21 +22,19 @@ export class BandejaAlertasComponent implements OnInit {
     readonly alertas = signal<AlertaInterna[]>([]);
     readonly cargando = signal(false);
     readonly error = signal<string | null>(null);
+    readonly procesandoId = signal<number | null>(null);
+    readonly errorAccion = signal<string | null>(null);
 
-    // PMS-246: control de confirmación de recepción.
-    readonly confirmandoId = signal<number | null>(null);
-    readonly errorConfirmacion = signal<{
-        id: number;
-        mensaje: string;
-    } | null>(null);
+    readonly alertaModal = signal<AlertaInterna | null>(null);
+    readonly proximoEstado = signal<'EN_ATENCION' | 'ATENDIDA' | null>(null);
+    observacionTexto: string = '';
 
     ngOnInit(): void {
         void this.cargarBandeja();
     }
 
     async cargarBandeja(): Promise<void> {
-        // Evitar actualizar la lista durante una confirmación.
-        if (this.cargando() || this.confirmandoId() !== null) {
+        if (this.cargando()) {
             return;
         }
 
@@ -46,16 +44,13 @@ export class BandejaAlertasComponent implements OnInit {
         try {
             const resultado = await this.alertasService.obtenerBandeja();
 
-            // Validar la estructura antes de mostrar los datos.
             if (!Array.isArray(resultado)) {
                 throw new Error('Respuesta de bandeja inesperada.');
             }
 
             this.alertas.set(resultado);
-            this.errorConfirmacion.set(null);
 
         } catch (err: unknown) {
-            // No conservar información anterior si falla la consulta.
             this.alertas.set([]);
 
             if (err instanceof HttpErrorResponse) {
@@ -94,110 +89,96 @@ export class BandejaAlertasComponent implements OnInit {
         }
     }
 
-    /**
-     * PMS-246 / HU-ALT-03
-     *
-     * Confirma la recepción de una alerta emitida.
-     *
-     * El backend valida los permisos, registra el usuario,
-     * almacena la fecha de recepción y evita duplicados.
-     */
-    async confirmarRecepcion(alerta: AlertaInterna): Promise<void> {
-
-        // Evitar solicitudes simultáneas.
-        if (this.confirmandoId() !== null || this.cargando()) {
+    async confirmar(alerta: AlertaInterna): Promise<void> {
+        if (this.procesandoId() !== null || this.identificarEstado(alerta) !== 'EMITIDA') {
             return;
         }
 
-        // Solo confirmar alertas que la interfaz conoce como EMITIDA.
-        // El backend realiza la validación definitiva del estado.
-        const alertaActual = this.alertas().find(
-            item => item.id === alerta.id
-        );
-
-        if (
-            !alertaActual ||
-            this.identificarEstado(alertaActual) !== 'EMITIDA'
-        ) {
-            return;
-        }
-
-        this.confirmandoId.set(alerta.id);
-        this.errorConfirmacion.set(null);
+        this.procesandoId.set(alerta.id);
+        this.errorAccion.set(null);
 
         try {
-            const respuesta = await this.alertasService.confirmarRecepcion(
-                alerta.id
+            const actualizada = await this.alertasService.confirmarRecepcion(alerta.id);
+
+            this.alertas.update((actuales) =>
+                actuales.map((item) => (item.id === alerta.id ? actualizada : item))
             );
-
-            // No asumir que la confirmación se realizó correctamente.
-            // Debemos recibir el estado RECIBIDA desde el backend.
-            if (
-                respuesta?.id !== alerta.id ||
-                respuesta.estado?.codigo !== 'RECIBIDA'
-            ) {
-                throw new Error(
-                    'El servidor no devolvió una confirmación válida.'
-                );
-            }
-
-            // Actualizar únicamente la alerta confirmada,
-            // usando la respuesta real del servidor.
-            this.alertas.update(actuales =>
-                actuales.map(item =>
-                    item.id === alerta.id ? respuesta : item
-                )
-            );
-
         } catch (err: unknown) {
-
-            let mensaje =
-                'No se pudo confirmar la recepción de la alerta.';
-
-            if (err instanceof HttpErrorResponse) {
-                switch (err.status) {
-                    case 401:
-                        mensaje =
-                            'Tu sesión expiró. Inicia sesión nuevamente.';
-                        break;
-
-                    case 403:
-                        mensaje =
-                            'No tienes permisos para confirmar esta alerta.';
-                        break;
-
-                    case 404:
-                        mensaje =
-                            'La alerta ya no existe. Actualiza la bandeja.';
-                        break;
-
-                    case 409:
-                        mensaje =
-                            'La alerta no permite esta transición. Actualiza la bandeja para comprobar su estado.';
-                        break;
-
-                    case 0:
-                        mensaje =
-                            'No se pudo conectar con el servidor. Comprueba la conexión y actualiza la bandeja antes de reintentar.';
-                        break;
-                }
-            } else if (err instanceof Error) {
-                mensaje = err.message;
+            if (err instanceof HttpErrorResponse && err.status === 409) {
+                void this.cargarBandeja();
+                return;
             }
-
-            this.errorConfirmacion.set({
-                id: alerta.id,
-                mensaje
-            });
-
+            this.errorAccion.set('No se pudo confirmar la recepción de la alerta.');
         } finally {
-            this.confirmandoId.set(null);
+            this.procesandoId.set(null);
         }
     }
 
-    /**
-     * Identifica el estado real de una alerta.
-     */
+    abrirModalTransicion(alerta: AlertaInterna, destino: 'EN_ATENCION' | 'ATENDIDA'): void {
+        this.alertaModal.set(alerta);
+        this.proximoEstado.set(destino);
+        this.observacionTexto = destino === 'EN_ATENCION'
+            ? 'El personal de seguridad se dirige al punto para verificar la situación.'
+            : 'Situación atendida y controlada por seguridad.';
+        this.errorAccion.set(null);
+    }
+
+    cerrarModal(): void {
+        this.alertaModal.set(null);
+        this.proximoEstado.set(null);
+        this.observacionTexto = '';
+    }
+
+    async guardarTransicion(): Promise<void> {
+        const alerta = this.alertaModal();
+        const destino = this.proximoEstado();
+
+        if (!alerta || !destino || this.procesandoId() !== null) {
+            return;
+        }
+
+        const estadoActual = this.identificarEstado(alerta);
+
+        if (destino === 'EN_ATENCION' && estadoActual !== 'RECIBIDA') {
+            this.errorAccion.set('Transición no permitida: la alerta debe estar RECIBIDA para iniciar atención.');
+            this.cerrarModal();
+            return;
+        }
+
+        if (destino === 'ATENDIDA' && estadoActual !== 'EN_ATENCION') {
+            this.errorAccion.set('Transición no permitida: la alerta debe estar EN ATENCIÓN para marcarse como atendida.');
+            this.cerrarModal();
+            return;
+        }
+
+        this.procesandoId.set(alerta.id);
+        this.errorAccion.set(null);
+
+        try {
+            const actualizada = await this.alertasService.actualizarEstado(alerta.id, {
+                nuevoEstadoCodigo: destino,
+                observacion: this.observacionTexto.trim() || undefined
+            });
+
+            this.alertas.update((actuales) =>
+                actuales.map((item) => (item.id === alerta.id ? actualizada : item))
+            );
+            this.cerrarModal();
+        } catch (err: unknown) {
+            if (err instanceof HttpErrorResponse) {
+                if (err.status === 409 || err.status === 400) {
+                    this.errorAccion.set('Transición rechazada por el sistema. El estado vigente fue conservado.');
+                    void this.cargarBandeja();
+                    this.cerrarModal();
+                    return;
+                }
+            }
+            this.errorAccion.set('Ocurrió un error al actualizar el estado de la alerta.');
+        } finally {
+            this.procesandoId.set(null);
+        }
+    }
+
     identificarEstado(alerta: AlertaInterna): string {
         return alerta.estado?.codigo ?? 'DESCONOCIDO';
     }

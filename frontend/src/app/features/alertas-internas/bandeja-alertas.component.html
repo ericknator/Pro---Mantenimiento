@@ -42,6 +42,21 @@
             </button>
         </div>
 
+        @if (errorAccion()) {
+        <div class="feedback feedback--error" role="alert">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 7v6" />
+                <path d="M12 17h.01" />
+            </svg>
+            <div>
+                <strong>Aviso de acción</strong>
+                <p>{{ errorAccion() }}</p>
+            </div>
+        </div>
+        }
+
         @if (cargando()) {
         <div class="feedback" role="status">
             <span class="spinner" aria-hidden="true"></span>
@@ -146,6 +161,22 @@
                         </div>
                     </div>
 
+                    @if (alerta.fechaRecepcion) {
+                    <div class="detail-row">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+
+                        <div>
+                            <strong>Fecha de recepción</strong>
+                            <p>
+                                {{ alerta.fechaRecepcion | date:'dd/MM/yyyy HH:mm' }}
+                            </p>
+                        </div>
+                    </div>
+                    }
+
                 </div>
 
                 @if (alerta.descripcion) {
@@ -155,44 +186,55 @@
                 </div>
                 }
 
+                <div class="controles-estado">
 
-                <!-- PMS-246: confirmación de recepción de alerta interna -->
-
-                @if (identificarEstado(alerta) === 'EMITIDA') {
-                <div class="confirmacion-panel">
-
-                    <button type="button" class="confirmacion-button"
-                        [disabled]="confirmandoId() !== null || cargando()" (click)="confirmarRecepcion(alerta)">
-                        @if (confirmandoId() === alerta.id) {
-                        <span>Confirmando recepción...</span>
-                        } @else {
-                        <span>Confirmar recepción</span>
-                        }
+                    @if (identificarEstado(alerta) === 'EMITIDA') {
+                    <button type="button" class="btn-accion btn-accion--confirmar"
+                        [disabled]="procesandoId() === alerta.id" (click)="confirmar(alerta)">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>{{ procesandoId() === alerta.id ? 'Confirmando...' : 'Confirmar recepción' }}</span>
                     </button>
+                    }
 
-                    @if (errorConfirmacion()?.id === alerta.id) {
-                    <p class="confirmacion-error" role="alert">
-                        {{ errorConfirmacion()?.mensaje }}
-                    </p>
+                    @if (identificarEstado(alerta) === 'RECIBIDA') {
+                    <button type="button" class="btn-accion btn-accion--atencion"
+                        [disabled]="procesandoId() === alerta.id"
+                        (click)="abrirModalTransicion(alerta, 'EN_ATENCION')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        <span>Iniciar atención</span>
+                    </button>
+                    }
+
+                    @if (identificarEstado(alerta) === 'EN_ATENCION') {
+                    <button type="button" class="btn-accion btn-accion--atendida"
+                        [disabled]="procesandoId() === alerta.id" (click)="abrirModalTransicion(alerta, 'ATENDIDA')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                        <span>Marcar como atendida</span>
+                    </button>
+                    }
+
+                    @if (identificarEstado(alerta) === 'ATENDIDA') {
+                    <div class="estado-final estado-final--exito" role="status">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>Alerta atendida satisfactoriamente</span>
+                    </div>
                     }
 
                 </div>
-                }
-
-                @if (identificarEstado(alerta) === 'RECIBIDA') {
-                <div class="confirmacion-panel confirmacion-panel--recibida" role="status">
-
-                    <span>Recepción confirmada</span>
-
-                    @if (alerta.fechaRecepcion) {
-                    <span class="confirmacion-fecha">
-                        {{ alerta.fechaRecepcion | date:'dd/MM/yyyy HH:mm' }}
-                    </span>
-                    }
-
-                </div>
-                }
-
 
             </article>
             }
@@ -211,5 +253,36 @@
         </a>
 
     </section>
+
+    @if (alertaModal() && proximoEstado()) {
+    <div class="modal-backdrop" role="dialog" aria-modal="true">
+        <div class="modal-card">
+            <h3>
+                {{ proximoEstado() === 'EN_ATENCION' ? 'Iniciar atención de alerta' : 'Marcar alerta como atendida' }}
+            </h3>
+
+            <p class="modal-sub">
+                Alerta #{{ alertaModal()?.id }} - {{ obtenerNombreTipo(alertaModal()!) }}
+            </p>
+
+            <div class="form-group">
+                <label for="obs">Observación de la actuación:</label>
+                <textarea id="obs" rows="3" [(ngModel)]="observacionTexto"
+                    placeholder="Detalla las acciones tomadas por el personal..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancelar" [disabled]="procesandoId() !== null"
+                    (click)="cerrarModal()">
+                    Cancelar
+                </button>
+                <button type="button" class="btn-confirmar" [disabled]="procesandoId() !== null"
+                    (click)="guardarTransicion()">
+                    {{ procesandoId() !== null ? 'Guardando...' : 'Confirmar cambio' }}
+                </button>
+            </div>
+        </div>
+    </div>
+    }
 
 </main>
