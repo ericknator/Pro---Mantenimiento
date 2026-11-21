@@ -24,12 +24,20 @@ export class BandejaAlertasComponent implements OnInit {
     readonly confirmandoId = signal<number | null>(null);
     readonly errorAccion = signal<string | null>(null);
 
+    // PMS-246: control de confirmación de recepción.
+    readonly confirmandoId = signal<number | null>(null);
+    readonly errorConfirmacion = signal<{
+        id: number;
+        mensaje: string;
+    } | null>(null);
+
     ngOnInit(): void {
         void this.cargarBandeja();
     }
 
     async cargarBandeja(): Promise<void> {
-        if (this.cargando()) {
+        // Evitar actualizar la lista durante una confirmación.
+        if (this.cargando() || this.confirmandoId() !== null) {
             return;
         }
 
@@ -44,6 +52,7 @@ export class BandejaAlertasComponent implements OnInit {
             }
 
             this.alertas.set(resultado);
+            this.errorConfirmacion.set(null);
 
         } catch (err: unknown) {
             this.alertas.set([]);

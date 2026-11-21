@@ -20,5 +20,7 @@ public interface AlertaInternaService {
     List<AlertaInternaEntity> findByResidente();
     
     AlertaInternaEntity confirmarRecepcion(Long id);
+    
+    AlertaInternaEntity actualizarEstado(Long id, String observacion);
 
 }

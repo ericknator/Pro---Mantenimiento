@@ -36,6 +36,16 @@ export interface AlertaInterna {
         codigo: string;
         nombre: string;
     };
+
+    // PMS-246: información de recepción confirmada.
+    // Los campos permanecen vacíos hasta que portería confirma.
+    recibidoPor?: {
+        id: number;
+        nombre?: string;
+        apellido?: string;
+    } | null;
+
+    fechaRecepcion?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -65,6 +75,18 @@ export class AlertasInternasService {
         );
     }
 
+        return firstValueFrom(
+            this.http.patch<AlertaInterna>(
+                `${this.apiUrl}/alerta-interna/${id}/confirmar-recepcion`,
+                null,
+                { headers }
+            )
+        );
+    }
+
+    /**
+     * Consulta las alertas del residente autenticado.
+     */
     async obtenerMisAlertas(): Promise<AlertaInterna[]> {
         const headers = await this.obtenerCabeceras();
 
@@ -75,9 +97,6 @@ export class AlertasInternasService {
             )
         );
     }
-
-    private readonly apiUrl =
-        'http://localhost:8085/promantenimiento/api';
 
     private async obtenerUsuario(): Promise<User> {
         if (auth.currentUser) {
