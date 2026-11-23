@@ -17,13 +17,13 @@ export class IncidenciasService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    'http://localhost:8085/promantenimiento/api/incidencia';
+    'http://localhost:8086/promantenimiento/api/incidencia';
 
   private readonly apiAsignadasUrl =
-    'http://localhost:8085/promantenimiento/api/incidencia/asignadas';
+    'http://localhost:8086/promantenimiento/api/incidencia/asignadas';
 
   private readonly apiEvidenciasUrl =
-    'http://localhost:8085/promantenimiento/api/evidencia-incidencia';
+    'http://localhost:8086/promantenimiento/api/evidencia-incidencia';
 
   private mapearEvidencias(
     incidencia: IncidenciaApi

@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
     uniqueConstraints = {
         @UniqueConstraint(
             name = "uq_unidad",
-            columnNames = {"torre", "piso", "numero"}
+            columnNames = {"torre_id", "piso", "numero"}
         )
     }
 )

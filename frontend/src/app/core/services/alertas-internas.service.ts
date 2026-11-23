@@ -101,7 +101,7 @@ export class AlertasInternasService {
     }
 
     private readonly apiUrl =
-        'http://localhost:8085/promantenimiento/api';
+        'http://localhost:8086/promantenimiento/api';
 
     private async obtenerUsuario(): Promise<User> {
 

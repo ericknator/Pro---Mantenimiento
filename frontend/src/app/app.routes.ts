@@ -20,7 +20,7 @@ const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM, ...MANTEN
   }));
 
 const adminPendientes: Route[] = [
-  ...ADMIN_NAV_ITEMS.filter((i) => !['/administrador/mantenimiento', '/administrador/incidencias', '/administrador/alertas'].includes(i.route)).map((i) => ({
+  ...ADMIN_NAV_ITEMS.filter((i) => !['/administrador/mantenimiento', '/administrador/incidencias', '/administrador/alertas', '/administrador/residentes'].includes(i.route)).map((i) => ({
     path: i.route.replace('/administrador/', ''),
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/dashboard', volverTexto: 'Volver al dashboard' },
@@ -135,6 +135,17 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/administrador/alertas/activas/alertas-activas.component').then((m) => m.AlertasActivasComponent),
       },
+
+      // PMS-276: Gestión de usuarios
+      {
+        path: 'residentes',
+        title: 'Gestión de usuarios',
+        data: { fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/administrador/usuarios/gestion-usuarios/gestion-usuarios.component')
+            .then((m) => m.GestionUsuariosComponent),
+      },
+
       ...adminPendientes,
     ],
   },

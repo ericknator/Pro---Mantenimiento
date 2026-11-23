@@ -56,7 +56,7 @@ describe('IncidenciasService PMS-157', () => {
     await Promise.resolve();
 
     const request = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/incidencia/asignadas'
+      'http://localhost:8086/promantenimiento/api/incidencia/asignadas'
     );
     request.flush([incidenciaSolucionada]);
 
@@ -72,7 +72,7 @@ describe('IncidenciasService PMS-157', () => {
     await Promise.resolve();
 
     const request = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/incidencia/asignadas'
+      'http://localhost:8086/promantenimiento/api/incidencia/asignadas'
     );
     request.flush([
       {
@@ -92,7 +92,7 @@ describe('IncidenciasService PMS-157', () => {
     await Promise.resolve();
 
     const patch = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/incidencia/17/finalizar-atencion'
+      'http://localhost:8086/promantenimiento/api/incidencia/17/finalizar-atencion'
     );
     expect(patch.request.method).toBe('PATCH');
     expect(patch.request.body instanceof FormData).toBeTrue();
@@ -104,7 +104,7 @@ describe('IncidenciasService PMS-157', () => {
     await Promise.resolve();
 
     const refresh = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/incidencia/asignadas'
+      'http://localhost:8086/promantenimiento/api/incidencia/asignadas'
     );
     expect(refresh.request.method).toBe('GET');
     refresh.flush([incidenciaSolucionada]);
@@ -120,12 +120,12 @@ describe('IncidenciasService PMS-157', () => {
     await Promise.resolve();
     await Promise.resolve();
     const patch = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/incidencia/17/finalizar-atencion'
+      'http://localhost:8086/promantenimiento/api/incidencia/17/finalizar-atencion'
     );
     patch.flush({ message: 'No autorizado' }, { status: 403, statusText: 'Forbidden' });
 
     await expectAsync(promise).toBeRejected();
-    http.expectNone('http://localhost:8085/promantenimiento/api/incidencia/asignadas');
+    http.expectNone('http://localhost:8086/promantenimiento/api/incidencia/asignadas');
   });
 
   it('carga el detalle autorizado y conserva las evidencias que el contrato devuelva', async () => {
@@ -134,7 +134,7 @@ describe('IncidenciasService PMS-157', () => {
     await Promise.resolve();
 
     const request = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/incidencia/17'
+      'http://localhost:8086/promantenimiento/api/incidencia/17'
     );
     expect(request.request.method).toBe('GET');
     expect(request.request.headers.get('Authorization')).toBe('Bearer firebase-token');
@@ -171,7 +171,7 @@ describe('IncidenciasService PMS-157', () => {
     await Promise.resolve();
 
     const request = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/incidencia/17'
+      'http://localhost:8086/promantenimiento/api/incidencia/17'
     );
     request.flush({}, { status: 403, statusText: 'Forbidden' });
 

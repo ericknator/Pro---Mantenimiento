@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pms276-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: bdpromantenimiento_pms276_test
+      MYSQL_USER: pms276
+      MYSQL_PASSWORD: pms276_test
+      MYSQL_ROOT_PASSWORD: pms276_root
+    ports:
+      - "3310:3306"
+    volumes:
+      - pms276_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pms276_mysql_data:

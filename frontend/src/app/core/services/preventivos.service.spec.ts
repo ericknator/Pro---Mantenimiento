@@ -49,7 +49,7 @@ describe('PreventivosService PMS-178', () => {
     await Promise.resolve();
 
     const request = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/tarea-preventiva'
+      'http://localhost:8086/promantenimiento/api/tarea-preventiva'
     );
     request.flush([
       {
@@ -102,7 +102,7 @@ describe('PreventivosService PMS-178', () => {
     await Promise.resolve();
 
     const request = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/tarea-preventiva/44/iniciar-atencion'
+      'http://localhost:8086/promantenimiento/api/tarea-preventiva/44/iniciar-atencion'
     );
     expect(request.request.method).toBe('PATCH');
     expect(request.request.body).toBeNull();
@@ -142,7 +142,7 @@ describe('PreventivosService PMS-178', () => {
     await Promise.resolve();
 
     const request = http.expectOne(
-      'http://localhost:8085/promantenimiento/api/tarea-preventiva/44/registrar-intervencion'
+      'http://localhost:8086/promantenimiento/api/tarea-preventiva/44/registrar-intervencion'
     );
     expect(request.request.method).toBe('POST');
     expect(request.request.headers.get('Authorization')).toBe('Bearer firebase-token');
