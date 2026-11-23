@@ -36,6 +36,14 @@ export const MANTENIMIENTO_ACTIONS: NavItem[] = [
 ];
 */
 
+export const ALERTAS_ACTIONS: NavItem[] = [
+  { label: 'Alertas activas del edificio', icon: 'warning', route: '/modulo/alertas/activas' },
+  { label: 'Historial de alertas', icon: 'schedule', route: '/modulo/alertas/historial' },
+  { label: 'Detalle de alerta', icon: 'warning', route: '/modulo/alertas/detalle' },
+  { label: 'Generar alerta interna', icon: 'warning', route: '/modulo/alertas/generar' },
+  { label: 'Mis alertas', icon: 'warning', route: '/modulo/mis-alertas' },
+];
+
 export const CATEGORIAS_INCIDENCIA = [
   'Gasfitería',
   'Electricidad',
@@ -66,16 +74,13 @@ export function resolverNavegacionPorRol(
       if (rol === 'seguridad') {
         return { ...item, route: '/seguridad/alertas' };
       }
-
       if (rol === 'administrador') {
         return { ...item, route: '/administrador/alertas' };
       }
-
       if (rol === 'residente') {
-        return { ...item, route: '/modulo/mis-alertas' };
+        return { ...item, route: '/modulo/alertas' };
       }
     }
-
     return item;
   });
 }

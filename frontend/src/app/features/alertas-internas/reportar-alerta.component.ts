@@ -1,5 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
+import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
@@ -7,22 +8,34 @@ import {
   AlertaInterna,
   TipoAlertaInterna,
 } from '../../core/services/alertas-internas.service';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-reportar-alerta',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, DatePipe],
   templateUrl: './reportar-alerta.component.html',
   styleUrl: './reportar-alerta.component.scss',
 })
 export class ReportarAlertaComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(AlertasInternasService);
+  private readonly auth = inject(AuthService);
 
   readonly tipos = signal<TipoAlertaInterna[]>([]);
   readonly cargandoTipos = signal(false);
   readonly enviando = signal(false);
   readonly error = signal<string | null>(null);
   readonly creada = signal<AlertaInterna | null>(null);
+
+  readonly usuarioNombre = computed(() => {
+    const u = this.auth.usuario();
+    return u?.nombre ?? 'Residente Prueba';
+  });
+
+  readonly tipoSeleccionadoNombre = computed(() => {
+    const id = this.form.controls.tipoAlertaId.value;
+    return this.tipos().find((t) => t.id === id)?.nombre ?? '—';
+  });
 
   readonly form = this.fb.group({
     tipoAlertaId: [null as number | null, Validators.required],
@@ -40,6 +53,12 @@ export class ReportarAlertaComponent implements OnInit {
   invalido(campo: 'tipoAlertaId' | 'ubicacion'): boolean {
     const control = this.form.controls[campo];
     return control.invalid && (control.touched || control.dirty);
+  }
+
+  seleccionarTipo(id: number): void {
+    this.form.controls.tipoAlertaId.setValue(id);
+    this.form.controls.tipoAlertaId.markAsTouched();
+    this.limpiarConfirmacion();
   }
 
   async cargarTipos(): Promise<void> {
@@ -82,11 +101,6 @@ export class ReportarAlertaComponent implements OnInit {
       return;
     }
 
-    if (!this.tipos().some((tipo) => tipo.id === tipoAlertaId)) {
-      this.error.set('Selecciona un tipo de alerta válido.');
-      return;
-    }
-
     this.enviando.set(true);
     this.error.set(null);
 
@@ -98,7 +112,6 @@ export class ReportarAlertaComponent implements OnInit {
       });
 
       this.creada.set(resultado);
-      this.form.reset();
     } catch (err) {
       this.creada.set(null);
 
@@ -113,22 +126,22 @@ export class ReportarAlertaComponent implements OnInit {
           case 403:
             this.error.set('Tu usuario no tiene permiso para registrar alertas.');
             break;
-          case 404:
-            this.error.set('El tipo de alerta seleccionado no está disponible.');
-            break;
           default:
             this.error.set(
-              'No se pudo registrar la alerta. Verifica el resultado antes de volver a enviarla.'
+              'No se pudo registrar la alerta. Verifica tu conexión e inténtalo nuevamente.'
             );
         }
       } else {
-        this.error.set(
-          'No fue posible confirmar el registro. Verifica el resultado antes de volver a enviarla.'
-        );
+        this.error.set('Ocurrió un problema al enviar la alerta.');
       }
     } finally {
       this.enviando.set(false);
     }
+  }
+
+  nuevaAlerta(): void {
+    this.creada.set(null);
+    this.form.reset();
   }
 
   limpiarConfirmacion(): void {
