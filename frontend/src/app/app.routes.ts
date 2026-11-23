@@ -182,7 +182,7 @@ export const routes: Routes = [
         path: 'seguridad/alertas',
         title: 'Bandeja de alertas internas',
         canActivate: [roleGuard],
-        data: { roles: ['seguridad'], fondo: 'edificio' },
+        data: { roles: ['seguridad'], menu: 'rail', fondo: 'terraza' },
         loadComponent: () =>
           import('./features/alertas-internas/bandeja-alertas.component').then((m) => m.BandejaAlertasComponent),
       },
@@ -276,11 +276,19 @@ export const routes: Routes = [
         data: { titulo: 'Historial de mantenimientos', fondo: 'edificio', volver: '/mantenimiento', volverTexto: 'Volver a Mantenimiento' },
         loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
       },
-      {
+         {
         path: 'modulo/alertas',
-        title: 'Alertas internas',
+        title: 'Alertas',
         canActivate: [roleGuard],
         data: { roles: ['residente'], fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/alertas/alertas.component').then((m) => m.AlertasComponent),
+      },
+      {
+        path: 'modulo/alertas/generar',
+        title: 'Generar alerta interna',
+        canActivate: [roleGuard],
+        data: { roles: ['residente'], menu: 'rail', fondo: 'terraza' },
         loadComponent: () =>
           import('./features/alertas-internas/reportar-alerta.component').then((m) => m.ReportarAlertaComponent),
       },
@@ -288,9 +296,27 @@ export const routes: Routes = [
         path: 'modulo/mis-alertas',
         title: 'Mis alertas',
         canActivate: [roleGuard],
-        data: { roles: ['residente'], fondo: 'edificio' },
+        data: { roles: ['residente'], menu: 'rail', fondo: 'terraza' },
         loadComponent: () =>
           import('./features/alertas-internas/mis-alertas.component').then((m) => m.MisAlertasComponent),
+      },
+      {
+        path: 'modulo/alertas/activas',
+        title: 'Alertas activas del edificio',
+        data: { titulo: 'Alertas activas del edificio', fondo: 'edificio', volver: '/modulo/alertas', volverTexto: 'Volver a Alertas' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
+      },
+      {
+        path: 'modulo/alertas/historial',
+        title: 'Historial de alertas',
+        data: { titulo: 'Historial de alertas', fondo: 'edificio', volver: '/modulo/alertas', volverTexto: 'Volver a Alertas' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
+      },
+      {
+        path: 'modulo/alertas/detalle',
+        title: 'Detalle de alerta',
+        data: { titulo: 'Detalle de alerta', fondo: 'edificio', volver: '/modulo/alertas', volverTexto: 'Volver a Alertas' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
       },
       ...modulosPendientes,
     ],

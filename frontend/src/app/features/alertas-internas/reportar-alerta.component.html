@@ -1,195 +1,236 @@
-<main class="alertas-page">
-  <header class="page-intro">
-    <a routerLink="/modulo/mis-alertas" class="back-link">
-      Consultar mis alertas
-    </a>
+<main class="generar-page">
 
-    <span class="eyebrow">CONDOMINIO NUEVO ALCÁZAR</span>
-    <h1>Alertas internas</h1>
-    <p>
-      Comunica situaciones que requieran apoyo de portería o administración del condominio.
-    </p>
+  <header class="page-top">
+    <a routerLink="/modulo/alertas" class="link-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+      <span>VOLVER</span>
+    </a>
+    <h1>Generar alerta interna</h1>
+    <p>Avisa a portería sobre una situación que requiere atención rápida.</p>
   </header>
 
-  <div class="content-grid">
-    <section class="form-card" aria-labelledby="form-title">
-      <header class="card-heading">
-        <div class="card-icon" aria-hidden="true">
+  <div class="cards-layout">
+
+    @if (!creada()) {
+      <section class="card-box card-box--form">
+        <span class="card-eyebrow">NUEVA ALERTA INTERNA</span>
+
+        <div class="info-banner-blue">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-            <path d="M10 21h4" />
-            <path d="M12 10v3" />
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
-        </div>
-
-        <div class="card-heading__content">
-          <span class="eyebrow">NUEVA ALERTA</span>
-          <h2 id="form-title">Reportar alerta interna</h2>
-          <p>Completa los datos para enviar tu reporte.</p>
-        </div>
-      </header>
-
-      @if (creada(); as alerta) {
-        <div class="message message--success" role="status">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="m8 12 3 3 5-6" />
-          </svg>
-          <div class="message__content">
-            <strong>Alerta registrada correctamente</strong>
-            <p>Registro #{{ alerta.id }} · Estado: {{ alerta.estado.nombre }}</p>
+          <div>
+            <strong>La alerta llega de inmediato a portería</strong>
+            <p>Se registrará con la fecha y hora de emisión y el estado Emitida.</p>
           </div>
         </div>
-      }
 
-      @if (error()) {
-        <div class="message message--error" role="alert">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 7v6" />
-            <path d="M12 17h.01" />
-          </svg>
-          <div class="message__content">
+        @if (error()) {
+          <div class="alerta-error" role="alert">
             <p>{{ error() }}</p>
           </div>
-        </div>
-      }
+        }
 
-      <form [formGroup]="form" (ngSubmit)="registrar()" novalidate>
-        <div class="field">
-          <label for="tipoAlerta">
-            Tipo de alerta
-            <span class="required">*</span>
-          </label>
+        <form [formGroup]="form" (ngSubmit)="registrar()" novalidate>
 
-          <select
-            id="tipoAlerta"
-            formControlName="tipoAlertaId"
-            [class.invalid]="invalido('tipoAlertaId')"
-            [attr.aria-invalid]="invalido('tipoAlertaId')"
-            [attr.aria-describedby]="invalido('tipoAlertaId') ? 'tipo-error' : null"
-            (change)="limpiarConfirmacion()"
-          >
-            <option [ngValue]="null">
-              {{ cargandoTipos() ? 'Cargando tipos de alerta...' : 'Selecciona el tipo de alerta' }}
-            </option>
-            @for (tipo of tipos(); track tipo.id) {
-              <option [ngValue]="tipo.id">{{ tipo.nombre }}</option>
+          <div class="form-section">
+            <label class="form-label">
+              TIPO DE SITUACIÓN <span>* (OBLIGATORIO)</span>
+            </label>
+
+            <div class="chips-grid">
+              @for (tipo of tipos(); track tipo.id) {
+                <button
+                  type="button"
+                  class="chip-button"
+                  [class.chip-button--active]="form.controls.tipoAlertaId.value === tipo.id"
+                  (click)="seleccionarTipo(tipo.id)"
+                >
+                  {{ tipo.nombre }}
+                </button>
+              }
+            </div>
+
+            @if (invalido('tipoAlertaId')) {
+              <span class="field-error">Selecciona un tipo de situación.</span>
             }
-          </select>
+          </div>
 
-          @if (invalido('tipoAlertaId')) {
-            <span id="tipo-error" class="field-error">
-              Selecciona un tipo de alerta.
-            </span>
-          }
-        </div>
-
-        <div class="field">
-          <label for="ubicacion">
-            Ubicación
-            <span class="required">*</span>
-          </label>
-
-          <input
-            id="ubicacion"
-            type="text"
-            formControlName="ubicacion"
-            maxlength="255"
-            autocomplete="off"
-            placeholder="Ej. Torre B, segundo piso"
-            [class.invalid]="invalido('ubicacion')"
-            [attr.aria-invalid]="invalido('ubicacion')"
-            [attr.aria-describedby]="invalido('ubicacion') ? 'ubicacion-error' : 'ubicacion-ayuda'"
-            (input)="limpiarConfirmacion()"
-          />
-
-          <div class="field-footer">
+          <div class="form-section">
+            <label class="form-label" for="ubicacionInput">
+              UBICACIÓN <span>* (OBLIGATORIO)</span>
+            </label>
+            <input
+              id="ubicacionInput"
+              type="text"
+              class="form-control"
+              formControlName="ubicacion"
+              placeholder="Selecciona torre, piso o área..."
+              [class.form-control--error]="invalido('ubicacion')"
+              (input)="limpiarConfirmacion()"
+            />
             @if (invalido('ubicacion')) {
-              <span id="ubicacion-error" class="field-error">
-                Ingresa una ubicación. No puede estar vacía ni contener únicamente espacios.
-              </span>
-            } @else {
-              <span id="ubicacion-ayuda" class="field-help">
-                Indica la torre, departamento o área común.
-              </span>
+              <span class="field-error">Ingresa la ubicación del suceso.</span>
             }
+          </div>
 
-            <span class="character-count">
-              {{ form.controls.ubicacion.value?.length ?? 0 }}/255
-            </span>
+          <div class="form-section">
+            <label class="form-label" for="descInput">
+              DESCRIPCIÓN <span>(OPCIONAL)</span>
+            </label>
+            <textarea
+              id="descInput"
+              class="form-control form-control--textarea"
+              rows="3"
+              formControlName="descripcion"
+              placeholder="Ej: Sale agua del techo frente al ascensor."
+              (input)="limpiarConfirmacion()"
+            ></textarea>
+          </div>
+
+          <button class="btn-emitir" type="submit" [disabled]="enviando() || cargandoTipos()">
+            @if (enviando()) {
+              <span>Emitiendo alerta...</span>
+            } @else {
+              <span>EMITIR ALERTA A PORTERÍA</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            }
+          </button>
+
+          <a routerLink="/modulo/alertas" class="btn-cancelar">Cancelar y volver a alertas</a>
+        </form>
+      </section>
+
+      <aside class="card-box card-box--info">
+        <div class="info-head">
+          <div class="info-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 11v5" />
+              <path d="M12 8h.01" />
+            </svg>
+          </div>
+          <div>
+            <span class="card-eyebrow">INFORMACIÓN IMPORTANTE</span>
+            <h2>¿Para qué sirve una alerta interna?</h2>
           </div>
         </div>
 
-        <div class="field">
-          <label for="descripcion">
-            Descripción de la situación
-            <span class="optional">(opcional)</span>
-          </label>
+        <p class="info-text">
+          Permite comunicar una situación puntual al personal de portería o administración del condominio.
+        </p>
 
-          <textarea
-            id="descripcion"
-            formControlName="descripcion"
-            rows="4"
-            placeholder="Describe qué está ocurriendo y qué apoyo necesitas..."
-            (input)="limpiarConfirmacion()"
-          ></textarea>
+        <div class="info-notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3 2 21h20L12 3Z" />
+            <path d="M12 9v5" />
+            <path d="M12 18h.01" />
+          </svg>
+          <p>
+            Si existe un peligro inmediato para la vida o integridad de una persona, solicita asistencia por los canales de emergencia correspondientes.
+          </p>
+        </div>
+      </aside>
 
-          <span class="field-help">
-            Proporciona información clara para facilitar la atención del reporte.
-          </span>
+    } @else {
+
+      <section class="card-box card-box--form">
+        <div class="card-head-row">
+          <span class="card-eyebrow">ALERTA INTERNA</span>
+          <span class="badge badge--emitida">EMITIDA</span>
         </div>
 
-        <button class="submit-button" type="submit" [disabled]="enviando() || cargandoTipos()">
-          @if (enviando()) {
-            <span class="spinner" aria-hidden="true"></span>
-            <span>Enviando alerta...</span>
-          } @else {
-            <span>Enviar alerta interna</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M5 12h14" />
-              <path d="m12 5 7 7-7 7" />
-            </svg>
-          }
-        </button>
-
-        <a class="back-link" routerLink="/inicio">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M19 12H5" />
-            <path d="m12 19-7-7 7-7" />
+        <div class="banner-success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
           </svg>
-          <span>Volver al inicio</span>
+          <div>
+            <strong>Alerta ALT-2026-000{{ creada()?.id }} emitida a portería</strong>
+            <p>Se registró el {{ creada()?.fechaEmision | date:'dd MMM yyyy, HH:mm' }} con estado Emitida. Portería ya puede verla en su bandeja.</p>
+          </div>
+        </div>
+
+        <a routerLink="/modulo/mis-alertas" class="btn-emitir">
+          <span>VER MIS ALERTAS</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
         </a>
-      </form>
-    </section>
 
-    <aside class="info-card" aria-labelledby="info-title">
-      <div class="info-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 11v5" />
-          <path d="M12 8h.01" />
-        </svg>
-      </div>
+        <button type="button" class="btn-cancelar" (click)="nuevaAlerta()">
+          Emitir otra alerta
+        </button>
+      </section>
 
-      <span class="eyebrow">INFORMACIÓN IMPORTANTE</span>
-      <h3 id="info-title">¿Para qué sirve una alerta interna?</h3>
-      <p>
-        Permite comunicar una situación puntual al personal de portería o administración del condominio.
-      </p>
+      <section class="card-box card-box--resumen">
+        <div class="card-head-row">
+          <span class="card-eyebrow">RESUMEN DE LA ALERTA</span>
+          <span class="badge badge--emitida">EMITIDA</span>
+        </div>
 
-      <div class="info-divider"></div>
+        <div class="resumen-grid">
+          <div class="resumen-row">
+            <span class="resumen-lbl">Tipo</span>
+            <span class="resumen-val">{{ creada()?.tipoAlerta?.nombre }}</span>
+          </div>
 
-      <div class="notice">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 3 2 21h20L12 3Z" />
-          <path d="M12 9v5" />
-          <path d="M12 18h.01" />
-        </svg>
-        <p>
-          Si existe un peligro inmediato para la vida o integridad de una persona, solicita asistencia por los canales de emergencia correspondientes.
-        </p>
-      </div>
-    </aside>
+          <div class="resumen-row">
+            <span class="resumen-lbl">Ubicación</span>
+            <span class="resumen-val">{{ creada()?.ubicacion }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Emitida por</span>
+            <span class="resumen-val">{{ usuarioNombre() }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Fecha y hora</span>
+            <span class="resumen-val">{{ creada()?.fechaEmision | date:'dd MMM yyyy, HH:mm' }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Destino</span>
+            <span class="resumen-val">Portería / Seguridad</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Estado</span>
+            <span class="resumen-val">Emitida</span>
+          </div>
+        </div>
+
+        <div class="linea-estado">
+          <span class="card-eyebrow">LÍNEA DE ESTADO</span>
+          <div class="stepper">
+            <div class="step step--active">
+              <span class="step-circle">✓</span>
+              <span class="step-text">Emitida</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+              <span class="step-circle">2</span>
+              <span class="step-text">Recibida</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step">
+              <span class="step-circle">3</span>
+              <span class="step-text">Atendida</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    }
+
   </div>
 </main>

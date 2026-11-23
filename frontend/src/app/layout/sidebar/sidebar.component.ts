@@ -39,13 +39,21 @@ export class SidebarComponent {
   esItemActivo(item: NavItem): boolean {
     const url = this.router.url;
 
-    // Si estamos en el inicio del rol (ej: /mantenimiento/inicio)
     if (url.includes('/inicio')) {
       return item.route === '/inicio';
     }
 
     if (item.route === '/mantenimiento') {
       return url.startsWith('/mantenimiento') && !url.includes('/inicio');
+    }
+
+    if (item.route === '/modulo/alertas' || item.route === '/seguridad/alertas' || item.route === '/administrador/alertas') {
+      return (
+        url.startsWith('/modulo/alertas') ||
+        url.startsWith('/modulo/mis-alertas') ||
+        url.startsWith('/seguridad/alertas') ||
+        url.startsWith('/administrador/alertas')
+      );
     }
 
     return url.startsWith(item.route);
