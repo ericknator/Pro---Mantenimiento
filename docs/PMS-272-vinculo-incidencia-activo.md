@@ -130,3 +130,15 @@ La interfaz conserva estado REPORTADA, categoría Limpieza, prioridad Baja y aus
 Esto acredita el guardado/lectura mediante la aplicación, el filtrado entre dos activos del mismo tipo y el vacío posterior a la retirada. No se observó todavía la tabla de auditoría ni se ejecutó con residente el PATCH nuevo. Tampoco se comprobaron por HTTP los errores de activo inexistente/inactivo, el rollback ante fallo de auditoría o el endpoint global `/api/historial-activos`. Esos límites permanecen separados de las pruebas unitarias y del ensayo SQL. No acredita la aceptación completa de HU-MAN-06, que incluye también mantenimientos y cronología.
 
 No se incorporan a Git capturas con encabezados Authorization ni credenciales. El registro para Anexo A debe incluir esta validación manual realizada por Erick.
+
+## Consulta de auditoría observada — 24/11/2026
+
+Erick ejecutó una consulta de solo lectura en la copia `pms272_qa_20261124_144833_15027`. La fila id 4, código INC-2026-0004, devolvió `activo_id=NULL`. La tabla auditoria_sistema devolvió estos eventos para entidad incidencia, entidad_id 4 y acción ASOCIAR_ACTIVO_INCIDENCIA:
+
+| Auditoría id | usuario_id | Detalle literal | creado_en informado por MySQL |
+| --- | --- | --- | --- |
+| 3 | 3 | activoAnteriorId=null;activoNuevoId=3 | 2026-11-24 15:12:29 |
+| 4 | 3 | activoAnteriorId=3;activoNuevoId=4 | 2026-11-24 15:18:54 |
+| 5 | 3 | activoAnteriorId=4;activoNuevoId=null | 2026-11-24 15:23:07 |
+
+La secuencia corresponde al recorrido de A (id 3), B (id 4) y retirada observado en la interfaz. Esta consulta confirma el estado final persistido y los tres eventos con usuario y fecha. No acredita el rollback del servicio ante un fallo de auditoría ni una prueba de rechazo HTTP con residente. Esas verificaciones continúan separadas y pendientes. Fuente: salida del cliente MySQL compartida por Erick.
