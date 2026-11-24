@@ -1,0 +1,156 @@
+{
+  "issue": "PMS-276",
+  "validation_date": "2026-11-24",
+  "timezone": "America/Lima",
+  "source_commit": "7df77f0a91cdde34b4b4c71b372615a66685be88",
+  "manual_execution_by": "Erick",
+  "documentation_assisted_by": "ChatGPT/Codex",
+  "test_data": "Datos sintéticos de QA en el entorno local habitual; no son residentes ni incidentes reales del condominio.",
+  "test_reports": [
+    {
+      "executed_by": "Erick",
+      "suite": "pe.com.promantenimineto.service.AdminUsuarioServiceTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": 0.656,
+      "report_sha256": "4dae3f23d85d3dee6382375a88587b8522e5f1900227b7f735fd702126de1304",
+      "test_cases": [
+        {
+          "name": "conservaFalloOriginalYRecuperacionPendienteSiFirebaseNoElimina",
+          "failed": false,
+          "error": false,
+          "skipped": false
+        },
+        {
+          "name": "registraFirebasePerfilRelacionYAuditoria",
+          "failed": false,
+          "error": false,
+          "skipped": false
+        },
+        {
+          "name": "compensaFirebaseSiFallaElCommitDespuesDeGuardar",
+          "failed": false,
+          "error": false,
+          "skipped": false
+        },
+        {
+          "name": "compensaFirebaseSiFallaLaPersistenciaMysql",
+          "failed": false,
+          "error": false,
+          "skipped": false
+        },
+        {
+          "name": "rechazaRelacionNoPermitidaAntesDeContactarFirebase",
+          "failed": false,
+          "error": false,
+          "skipped": false
+        }
+      ]
+    },
+    {
+      "executed_by": "ChatGPT/Codex",
+      "suite": "pe.com.promantenimineto.service.AlertaInternaPropiedadTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_seconds": 0.692,
+      "report_sha256": "61b703997b0369c5610a861311cab47b18f61dbfa08a30aac77e3b8352c0e2ec",
+      "test_cases": [
+        {
+          "name": "propietarioConsultaSuAlertaPorIdentificador",
+          "failed": false,
+          "error": false,
+          "skipped": false
+        },
+        {
+          "name": "listadoDelSegundoResidenteNoIncluyeAlertasDelPrimero",
+          "failed": false,
+          "error": false,
+          "skipped": false
+        },
+        {
+          "name": "otroResidenteRecibe403SinDatosDeLaAlertaAjena",
+          "failed": false,
+          "error": false,
+          "skipped": false
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "file_name": "image(20261124-163618).png",
+      "size_bytes": 1941277,
+      "sha256": "196b4e3272509c3634ba51ab5fd6883ec845c109ab03e6e722ae25881daa12ce",
+      "jira_attachment_id": "10293",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10293"
+    },
+    {
+      "file_name": "image(20261124-163802).png",
+      "size_bytes": 1940148,
+      "sha256": "127e01d7b092a83840375a52767d67850daa2bcf31e8de6a2577c036a39ae6e5",
+      "jira_attachment_id": "10286",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10286"
+    },
+    {
+      "file_name": "image(20261124-163834).png",
+      "size_bytes": 3767932,
+      "sha256": "ad5cc161788de6ca7502b253320ed497c15a9ecf493063d49913d322b995312b",
+      "jira_attachment_id": "10287",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10287"
+    },
+    {
+      "file_name": "image(20261124-164042).png",
+      "size_bytes": 3721507,
+      "sha256": "c071dfbf2e17938c3415f74e174ce27e7c4880d8b38eaf46561d05181208ca02",
+      "jira_attachment_id": "10288",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10288"
+    },
+    {
+      "file_name": "image(20261124-164757).png",
+      "size_bytes": 3691802,
+      "sha256": "dc1f018cf746c428bce5efd032f1c50ad38065de7f9b7f75d1b4db1731fd306c",
+      "jira_attachment_id": "10289",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10289"
+    },
+    {
+      "file_name": "image(20261124-171103).png",
+      "size_bytes": 64705,
+      "sha256": "8246f39786c61e60a61e10880e7b4f9465891cdf47ed2ec9e7d704645882114d",
+      "jira_attachment_id": "10285",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10285"
+    },
+    {
+      "file_name": "image(20261124-180013).png",
+      "size_bytes": 1655729,
+      "sha256": "2bbe3b86237c18c4714d5be370c182d8a1ee7ce2def2aa8f13d459332be2825c",
+      "jira_attachment_id": "10290",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10290"
+    },
+    {
+      "file_name": "image(20261124-181428).png",
+      "size_bytes": 1920226,
+      "sha256": "45a6f0893a8188fd8d38d40a975a9b8525c39e9440ae703462a159bf5b9f35d9",
+      "jira_attachment_id": "10291",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10291"
+    },
+    {
+      "file_name": "image(20261124-181754).png",
+      "size_bytes": 1981774,
+      "sha256": "07a877105f2453c5d677d85443cfdb569621e2525529890cbce8fab6c0e764da",
+      "jira_attachment_id": "10292",
+      "jira_content_url": "https://jira-prod-us-71-2.prod.atl-paas.net/rest/api/3/attachment/content/10292"
+    }
+  ],
+  "limits": [
+    "Las ejecuciones Maven son suites dirigidas separadas; no equivalen a ejecutar todos los tests del proyecto.",
+    "AlertaInternaPropiedadTest se ejecutó con el mismo código Java y POM del clon oficial, usando el agente Byte Buddy al iniciar la JVM para evitar auto-attach en el entorno del asistente.",
+    "CA-05 usa mocks; no hubo caída real de MySQL ni de Firebase.",
+    "No se ejecutaron aquí Karma, build de producción ni pruebas del despliegue externo.",
+    "El acceso del inquilino, la unidad inactiva y el duplicado exclusivo de Firebase no forman parte de los casos manuales documentados en esta sesión.",
+    "No se adjuntan tokens de acceso, claves temporales, service accounts ni capturas de configuración."
+  ]
+}
