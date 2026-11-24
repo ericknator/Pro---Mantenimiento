@@ -21,7 +21,7 @@ public class FirebaseAdminConfig {
     @Value("${firebase.credentials.path:}")
     private String credentialsPath;
 
-    @Value("${firebase.project-id:demo-pms276}")
+    @Value("${firebase.project-id:bdpromantenimiento20262}")
     private String projectId;
 
     @Value("${firebase.auth.emulator-host:}")
@@ -49,7 +49,7 @@ public class FirebaseAdminConfig {
         } else {
             throw new IllegalStateException(
                     "Configura FIREBASE_AUTH_EMULATOR_HOST para desarrollo "
-                            + "o FIREBASE_CREDENTIALS_PATH para un proyecto Firebase aislado.");
+                            + "o FIREBASE_CREDENTIALS_PATH para el proyecto Firebase configurado.");
         }
 
         return FirebaseApp.initializeApp(builder.build());

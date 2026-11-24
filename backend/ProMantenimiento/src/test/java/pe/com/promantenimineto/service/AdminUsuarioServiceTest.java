@@ -5,6 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.UserRecord;
@@ -48,6 +53,9 @@ class AdminUsuarioServiceTest {
     @Mock
     private AuditoriaSistemaRepository auditoriaRepository;
 
+    @Mock
+    private PlatformTransactionManager transactionManager;
+
     private AdminUsuarioService service;
     private RolEntity rolResidente;
     private UnidadResidencialEntity unidad;
@@ -60,7 +68,8 @@ class AdminUsuarioServiceTest {
                 usuarioUnidadRepository,
                 unidadRepository,
                 rolRepository,
-                auditoriaRepository);
+                auditoriaRepository, transactionManager);
+        lenient().when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
 
         rolResidente = RolEntity.builder()
                 .id(2L)
@@ -148,4 +157,47 @@ class AdminUsuarioServiceTest {
 
         verify(firebaseAuth).deleteUser("uid-pms276-rollback");
     }
+    @Test
+    void compensaFirebaseSiFallaElCommitDespuesDeGuardar() throws Exception {
+        prepararAlta("uid-commit-fallido");
+        doThrow(new RuntimeException("commit fallido")).when(transactionManager).commit(any());
+        assertThrows(RuntimeException.class, () -> service.registrar(comandoValido(), null));
+        var orden = inOrder(usuarioUnidadRepository, transactionManager, firebaseAuth);
+        orden.verify(usuarioUnidadRepository).save(any());
+        orden.verify(transactionManager).commit(any());
+        orden.verify(firebaseAuth).deleteUser("uid-commit-fallido");
+    }
+
+    @Test
+    void conservaFalloOriginalYRecuperacionPendienteSiFirebaseNoElimina() throws Exception {
+        prepararAlta("uid-recuperar");
+        RuntimeException falloMysql = new RuntimeException("commit fallido");
+        doThrow(falloMysql).when(transactionManager).commit(any());
+        var falloFirebase = org.mockito.Mockito.mock(com.google.firebase.auth.FirebaseAuthException.class);
+        doThrow(falloFirebase).when(firebaseAuth).deleteUser("uid-recuperar");
+        RuntimeException resultado = assertThrows(RuntimeException.class,
+                () -> service.registrar(comandoValido(), null));
+        assertEquals(falloMysql, resultado);
+        assertEquals(1, resultado.getSuppressed().length);
+        verify(firebaseAuth).deleteUser("uid-recuperar");
+    }
+
+    private AdminUsuarioService.CrearUsuarioCommand comandoValido() {
+        return new AdminUsuarioService.CrearUsuarioCommand(
+                "Ana", "Pérez", "ana@example.com", null, "Temporal-123", 11L, "INQUILINO");
+    }
+
+    private void prepararAlta(String uid) throws Exception {
+        UserRecord firebaseUser = org.mockito.Mockito.mock(UserRecord.class);
+        when(firebaseUser.getUid()).thenReturn(uid);
+        when(firebaseAuth.createUser(any(UserRecord.CreateRequest.class))).thenReturn(firebaseUser);
+        when(rolRepository.findByCodigoAndActivoTrue("RESIDENTE")).thenReturn(Optional.of(rolResidente));
+        when(unidadRepository.findById(11L)).thenReturn(Optional.of(unidad));
+        when(usuarioRepository.save(any(UsuarioPerfilEntity.class))).thenAnswer(invocation -> {
+            UsuarioPerfilEntity perfil = invocation.getArgument(0);
+            perfil.setId(100L);
+            return perfil;
+        });
+    }
+
 }

@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.google.firebase.auth.AuthErrorCode;
 import com.google.firebase.auth.FirebaseAuth;
@@ -46,6 +49,7 @@ public class AdminUsuarioService {
     private final UnidadResidencialRepository unidadRepository;
     private final RolRepository rolRepository;
     private final AuditoriaSistemaRepository auditoriaRepository;
+    private final TransactionTemplate transaccionAlta;
 
     public AdminUsuarioService(
             FirebaseAuth firebaseAuth,
@@ -53,15 +57,19 @@ public class AdminUsuarioService {
             UsuarioUnidadRepository usuarioUnidadRepository,
             UnidadResidencialRepository unidadRepository,
             RolRepository rolRepository,
-            AuditoriaSistemaRepository auditoriaRepository) {
+            AuditoriaSistemaRepository auditoriaRepository,
+            PlatformTransactionManager transactionManager) {
         this.firebaseAuth = firebaseAuth;
         this.usuarioRepository = usuarioRepository;
         this.usuarioUnidadRepository = usuarioUnidadRepository;
         this.unidadRepository = unidadRepository;
         this.rolRepository = rolRepository;
         this.auditoriaRepository = auditoriaRepository;
+        this.transaccionAlta = new TransactionTemplate(transactionManager);
+        this.transaccionAlta.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
+    @Transactional(readOnly = true)
     public List<UsuarioView> listarUsuarios() {
         List<UsuarioPerfilEntity> usuarios = usuarioRepository.findAllByOrderByApellidosAscNombresAsc();
         Map<Long, List<UsuarioUnidadEntity>> relaciones = usuarioUnidadRepository.findAllActivasConDatos()
@@ -73,6 +81,7 @@ public class AdminUsuarioService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<UnidadView> listarUnidades() {
         return unidadRepository.findByActivoTrueOrderByTorre_CodigoAscPisoAscNumeroAsc()
                 .stream()
@@ -80,7 +89,6 @@ public class AdminUsuarioService {
                 .toList();
     }
 
-    @Transactional
     public UsuarioView registrar(CrearUsuarioCommand command, Long administradorId) {
         CrearUsuarioCommand datos = normalizar(command);
         validar(datos);
@@ -93,7 +101,7 @@ public class AdminUsuarioService {
                 .orElseThrow(() -> new AdminUsuarioException(
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         "ROL_RESIDENTE_NO_CONFIGURADO",
-                        "El rol RESIDENTE no está configurado en la base aislada."));
+                        "El rol RESIDENTE no está configurado en la base de datos."));
 
         UnidadResidencialEntity unidad = unidadRepository.findById(datos.unidadId())
                 .filter(item -> Boolean.TRUE.equals(item.getActivo()))
@@ -111,43 +119,48 @@ public class AdminUsuarioService {
                     .setDisabled(false));
             firebaseUid = firebaseUser.getUid();
 
-            LocalDateTime ahora = LocalDateTime.now();
-            UsuarioPerfilEntity perfil = UsuarioPerfilEntity.builder()
-                    .firebaseUid(firebaseUid)
-                    .rol(rol)
-                    .nombres(datos.nombres())
-                    .apellidos(datos.apellidos())
-                    .correo(datos.correo())
-                    .telefono(datos.telefono())
-                    .activo(true)
-                    .creadoEn(ahora)
-                    .actualizadoEn(ahora)
-                    .build();
-            UsuarioPerfilEntity perfilGuardado = usuarioRepository.save(perfil);
+            // execute retorna después del commit; el catch externo también cubre
+            // restricciones diferidas o fallos durante la confirmación de MySQL.
+            final String uidCreado = firebaseUid;
+            return transaccionAlta.execute(status -> {
+                LocalDateTime ahora = LocalDateTime.now();
+                UsuarioPerfilEntity perfil = UsuarioPerfilEntity.builder()
+                        .firebaseUid(uidCreado)
+                        .rol(rol)
+                        .nombres(datos.nombres())
+                        .apellidos(datos.apellidos())
+                        .correo(datos.correo())
+                        .telefono(datos.telefono())
+                        .activo(true)
+                        .creadoEn(ahora)
+                        .actualizadoEn(ahora)
+                        .build();
+                UsuarioPerfilEntity perfilGuardado = usuarioRepository.save(perfil);
 
-            UsuarioUnidadEntity relacion = UsuarioUnidadEntity.builder()
-                    .usuario(perfilGuardado)
-                    .unidad(unidad)
-                    .relacion(datos.relacion())
-                    .esPrincipal(true)
-                    .activo(true)
-                    .creadoEn(ahora)
-                    .build();
-            usuarioUnidadRepository.save(relacion);
+                UsuarioUnidadEntity relacion = UsuarioUnidadEntity.builder()
+                        .usuario(perfilGuardado)
+                        .unidad(unidad)
+                        .relacion(datos.relacion())
+                        .esPrincipal(true)
+                        .activo(true)
+                        .creadoEn(ahora)
+                        .build();
+                usuarioUnidadRepository.save(relacion);
 
-            UsuarioPerfilEntity administrador = administradorId == null
-                    ? null
-                    : usuarioRepository.getReferenceById(administradorId);
-            auditoriaRepository.save(AuditoriaSistemaEntity.builder()
-                    .usuario(administrador)
-                    .accion("CREAR_USUARIO_RESIDENTE")
-                    .entidad("usuario_perfil")
-                    .entidadId(String.valueOf(perfilGuardado.getId()))
-                    .detalle("relacion=" + datos.relacion() + ";unidadId=" + unidad.getId())
-                    .creadoEn(ahora)
-                    .build());
+                UsuarioPerfilEntity administrador = administradorId == null
+                        ? null
+                        : usuarioRepository.getReferenceById(administradorId);
+                auditoriaRepository.save(AuditoriaSistemaEntity.builder()
+                        .usuario(administrador)
+                        .accion("CREAR_USUARIO_RESIDENTE")
+                        .entidad("usuario_perfil")
+                        .entidadId(String.valueOf(perfilGuardado.getId()))
+                        .detalle("relacion=" + datos.relacion() + ";unidadId=" + unidad.getId())
+                        .creadoEn(ahora)
+                        .build());
 
-            return toUsuarioView(perfilGuardado, List.of(relacion));
+                return toUsuarioView(perfilGuardado, List.of(relacion));
+            });
         } catch (FirebaseAuthException exception) {
             if (exception.getAuthErrorCode() == AuthErrorCode.EMAIL_ALREADY_EXISTS) {
                 throw new AdminUsuarioConflictException("Ya existe una cuenta Firebase con ese correo.");
@@ -156,17 +169,19 @@ public class AdminUsuarioService {
                     "Firebase no pudo crear la cuenta del residente.", exception);
         } catch (RuntimeException exception) {
             if (firebaseUid != null) {
-                eliminarCuentaCompensatoria(firebaseUid);
+                eliminarCuentaCompensatoria(firebaseUid, exception);
             }
             throw exception;
         }
     }
 
-    private void eliminarCuentaCompensatoria(String firebaseUid) {
+    private void eliminarCuentaCompensatoria(String firebaseUid, RuntimeException causa) {
         try {
             firebaseAuth.deleteUser(firebaseUid);
         } catch (FirebaseAuthException deleteException) {
-            log.error("No se pudo compensar la cuenta Firebase {} tras un fallo de MySQL.",
+            causa.addSuppressed(deleteException);
+            log.error("RECUPERACION_ALTA_RESIDENTE_PENDIENTE firebaseUid={}. "
+                    + "Verificar ausencia de perfil MySQL y reintentar eliminación de la cuenta.",
                     firebaseUid, deleteException);
         }
     }

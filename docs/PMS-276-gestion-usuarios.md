@@ -1,6 +1,6 @@
 # PMS-276 — Gestión de usuarios
 
-Esta rama usa un entorno local aislado. No debe apuntar a `bdpromantenimiento20262` ni al proyecto Firebase compartido.
+La configuración general usa el puerto 8086 del PR y el proyecto Firebase del equipo. El emulador solo se activa expresamente. Las pruebas de esta HU usan el perfil `pms276-test`, una base independiente y el proyecto `demo-pms276`; los scripts de prueba no deben apuntar al entorno compartido.
 
 ## Entorno aislado
 
@@ -39,14 +39,14 @@ Esta rama usa un entorno local aislado. No debe apuntar a `bdpromantenimiento202
 
    ```bash
    cd backend/ProMantenimiento
-   SPRING_DATASOURCE_PASSWORD=pms276_test \
+   SPRING_PROFILES_ACTIVE=pms276-test SPRING_DATASOURCE_PASSWORD=pms276_test \
      FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 bash mvnw spring-boot:run
 
    cd frontend
    npm start
    ```
 
-El backend queda en `http://localhost:8086/promantenimiento` y usa por defecto `bdpromantenimiento_pms276_test` en `localhost:3310`.
+Con el perfil de prueba activo, el backend queda en `http://localhost:8086/promantenimiento` y usa `bdpromantenimiento_pms276_test` en `localhost:3310`.
 
 6. Ejecutar la prueba integral contra los servicios aislados:
 
@@ -83,3 +83,9 @@ La compilación de producción Angular puede requerir acceso de red para inlinin
 Los tests Karma requieren un navegador Chrome/Chromium disponible y `CHROME_BIN` cuando no está en el PATH.
 
 No se incluyen usuarios de demo en el script general ni se reutilizan UID del proyecto compartido.
+
+## Integración y recuperación
+
+El frontend general usa API en 8086, como el backend del PR. Para una demo visual contra el emulador, usar el backend aislado en 8086 (puerto libre) y definir `globalThis.PMS276 = { useFirebaseEmulator: true }` antes de cargar Angular en un entorno de prueba local. El frontend habitual no modifica su proyecto Firebase por activar el backend de pruebas. El smoke puede dirigirse al puerto elegido mediante `PMS276_BASE_URL`.
+
+El alta termina su transacción MySQL antes de responder. Un fallo durante `save` o durante `commit` intenta eliminar la identidad Firebase creada. Si la eliminación también falla, se conserva el error original con la causa de compensación y se registra `RECUPERACION_ALTA_RESIDENTE_PENDIENTE` con el UID. Recuperación: identificar ese UID en el log, verificar que no exista perfil MySQL válido asociado y reintentar la eliminación mediante Firebase Admin del proyecto configurado; si existe un perfil válido, investigar antes de eliminar. No registrar contraseñas ni tokens.
