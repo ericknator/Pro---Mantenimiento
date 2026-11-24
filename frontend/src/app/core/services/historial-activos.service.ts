@@ -20,9 +20,9 @@ export interface ItemHistorial {
 export class HistorialActivosService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiActivosUrl = 'http://localhost:8085/promantenimiento/api/activo';
-  private readonly apiTareasUrl = 'http://localhost:8085/promantenimiento/api/tarea-preventiva';
-  private readonly apiIncidenciasUrl = 'http://localhost:8085/promantenimiento/api/incidencia';
+  private readonly apiActivosUrl = 'http://localhost:8086/promantenimiento/api/activo';
+  private readonly apiTareasUrl = 'http://localhost:8086/promantenimiento/api/tarea-preventiva';
+  private readonly apiIncidenciasUrl = 'http://localhost:8086/promantenimiento/api/incidencia';
 
   readonly cargando = signal<boolean>(false);
   readonly error = signal<string | null>(null);
@@ -65,7 +65,7 @@ export class HistorialActivosService {
         res = await firstValueFrom(this.http.get<any[]>(this.apiActivosUrl, { headers }));
       } catch {
         res = await firstValueFrom(
-          this.http.get<any[]>('http://localhost:8085/promantenimineto/api/activos', { headers })
+          this.http.get<any[]>('http://localhost:8086/promantenimineto/api/activos', { headers })
         ).catch(() => []);
       }
 

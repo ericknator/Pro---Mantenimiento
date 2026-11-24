@@ -28,7 +28,7 @@ export class AlertasService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    'http://localhost:8085/promantenimiento/api/tarea-preventiva';
+    'http://localhost:8086/promantenimiento/api/tarea-preventiva';
 
   // Anticipación acordada por el equipo.
   private readonly umbralDiasProximos = 7;

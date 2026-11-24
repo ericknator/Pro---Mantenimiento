@@ -45,6 +45,17 @@ public interface UsuarioUnidadRepository
     List<UsuarioUnidadEntity> findUnidadPrincipalActiva(
         @Param("usuarioId") Long usuarioId
     );
+
+    @Query("""
+        SELECT uu
+        FROM UsuarioUnidadEntity uu
+        JOIN FETCH uu.usuario u
+        JOIN FETCH u.rol
+        JOIN FETCH uu.unidad un
+        JOIN FETCH un.torre
+        WHERE uu.activo = true
+        """)
+    List<UsuarioUnidadEntity> findAllActivasConDatos();
     
     
 
