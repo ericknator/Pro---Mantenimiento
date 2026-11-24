@@ -148,3 +148,23 @@ La secuencia corresponde al recorrido de A (id 3), B (id 4) y retirada observado
 La captura de Console compartida por Erick muestra `Perfil: 200 Rol: RESIDENTE`, seguida de un PATCH a `/promantenimiento/api/incidencia/4/activo` rechazado con HTTP 403. La comprobación previa del perfil distingue este resultado de un token inválido o una sesión ausente. El cuerpo utilizado fue `{"activoId":null}`.
 
 Se acredita la restricción del endpoint real con una sesión de residente. No se atribuye un UID/correo concreto porque no se muestra en esa captura. La consulta MySQL anterior había confirmado el vínculo nulo y tres eventos; no se ejecutó todavía otra consulta de auditoría después del rechazo.
+
+## Rechazos HTTP observados — 24/11/2026
+
+Erick ejecutó en Console el bloque de cuatro solicitudes PATCH a `/promantenimiento/api/incidencia/4/activo`. Antes del bloque se verificó que `/api/auth/perfil` respondiera 200 con rol ADMINISTRADOR. La captura muestra la tabla completa con estos resultados:
+
+| Caso | Cuerpo enviado | Autenticación | HTTP observado | Comparación |
+| --- | --- | --- | --- | --- |
+| Sin sesión | {"activoId":null} | Sin Authorization | 401 | OK: true |
+| Cuerpo incompleto | {} | Administrador | 400 | OK: true |
+| ID inválido | {"activoId":0} | Administrador | 400 | OK: true |
+| Activo inexistente | {"activoId":999999} | Administrador | 404 | OK: true |
+
+Los errores de red mostrados en rojo son los rechazos esperados de estas solicitudes. No se atribuyen a fallos del flujo de guardado válido. Fuente: captura de Console compartida por Erick. No se volvió a consultar auditoría después de los rechazos, por lo que no se afirma una comparación adicional de filas/eventos posterior a este bloque.
+
+### Estado consolidado de la validación de este cambio
+
+- Comprobados: migración y repetición en copia MySQL; preservación de filas originales; vínculo, cambio y retirada mediante navegador/API; persistencia tras recarga; aislamiento entre dos activos del mismo tipo; vacío al retirar la relación; auditoría del recorrido positivo; rechazo 403 con residente; rechazos 401/400/404 descritos arriba.
+- Aprobados antes del recorrido manual: 20 casos Maven con mocks, 14 casos de lógica del historial, build Angular development y tipado de specs. No se vuelven a contabilizar las capturas como pruebas unitarias.
+- Pendientes de integración/revisión: activo inactivo por HTTP (cubierto con mocks), rollback del servicio ante fallo real de auditoría, consulta global del historial, revisión del equipo y despliegue. La aceptación integral de HU-MAN-06 requiere además sus mantenimientos y cronología.
+- La base principal no recibió la migración durante este recorrido. Antes de arrancar este backend contra ella debe aplicarse `04_PMS272_relacion_incidencia_activo.sql` con respaldo y revisar el resultado. El PR y la validación en una copia no realizan por sí mismos esa instalación.
