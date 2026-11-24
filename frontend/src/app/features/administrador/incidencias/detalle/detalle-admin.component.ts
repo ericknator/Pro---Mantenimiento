@@ -9,6 +9,8 @@ import { EDIFICIO_NOMBRE } from '../../../../core/data/navigation.data';
 import { IncidenciasAdminService } from '../../../../core/services/incidencias-admin.service';
 import { PageHeroComponent } from '../../../../shared/page-hero/page-hero.component';
 import { Location } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { IncidenciaActivoService, ActivoSeleccionable } from '../../../../core/services/incidencia-activo.service';
 import { UsuarioPerfilService, RolResponsable, UsuarioResponsable } from '../../../../core/services/usuario-perfil.service';
 
 @Component({
@@ -22,6 +24,19 @@ export class DetalleAdminComponent {
   private readonly service = inject(IncidenciasAdminService);
   private readonly id = toSignal(inject(ActivatedRoute).paramMap.pipe(map((p) => p.get('id'))), { initialValue: null });
   private readonly usuariosService = inject(UsuarioPerfilService);
+  private readonly relacionActivos = inject(IncidenciaActivoService);
+  readonly activos = signal<ActivoSeleccionable[]>([]);
+  readonly cargandoActivos = signal(false);
+  readonly guardandoActivo = signal(false);
+  readonly errorCargaActivos = signal('');
+  readonly errorActivo = signal('');
+  readonly mensajeActivo = signal('');
+  readonly formActivo = this.fb.group({ activoId: this.fb.control<number | null>(null, Validators.min(1)) });
+  private activoInicializadoPara: string | null = null;
+  readonly activoFueraCatalogo = computed(() => {
+    const actual = this.incidencia()?.activo;
+    return !!actual && !this.activos().some(a => a.id === actual.id);
+  });
 
   roles = signal<RolResponsable[]>([]);
   responsables = signal<UsuarioResponsable[]>([]);
@@ -51,6 +66,15 @@ export class DetalleAdminComponent {
 
   constructor() {
     void this.cargarRoles();
+    void this.cargarActivos();
+    effect(() => {
+      const inc = this.incidencia();
+      if (inc && this.activoInicializadoPara !== inc.id) {
+        this.formActivo.controls.activoId.setValue(inc.activo?.id ?? null);
+        this.formActivo.markAsPristine();
+        this.activoInicializadoPara = inc.id;
+      }
+    });
 
     if (this.service.incidencias().length === 0) void this.service.cargar();
 
@@ -104,6 +128,40 @@ export class DetalleAdminComponent {
       );
     } finally {
       this.enviando.set(false);
+    }
+  }
+
+  async cargarActivos(): Promise<void> {
+    this.cargandoActivos.set(true);
+    this.errorCargaActivos.set('');
+    try {
+      this.activos.set(await this.relacionActivos.listarActivos());
+    } catch {
+      this.errorCargaActivos.set('No se pudo cargar la lista de activos.');
+    } finally {
+      this.cargandoActivos.set(false);
+    }
+  }
+
+  async guardarActivo(): Promise<void> {
+    const inc = this.incidencia();
+    if (!inc || this.guardandoActivo() || this.formActivo.invalid || this.errorCargaActivos()) return;
+    this.guardandoActivo.set(true);
+    this.errorActivo.set('');
+    this.mensajeActivo.set('');
+    try {
+      const resultado = await this.relacionActivos.asociar(inc.id, this.formActivo.controls.activoId.value);
+      this.service.incidencias.update(lista => lista.map(i =>
+        i.id === inc.id ? { ...i, activo: resultado.activo } : i));
+      this.formActivo.controls.activoId.setValue(resultado.activo?.id ?? null);
+      this.formActivo.markAsPristine();
+      this.mensajeActivo.set(resultado.activo ? 'Activo relacionado guardado.' : 'Relación retirada.');
+    } catch (e) {
+      const detalle = e instanceof HttpErrorResponse ? e.error?.detail || e.error?.message : null;
+      this.errorActivo.set(detalle || (e instanceof HttpErrorResponse && e.status === 403
+        ? 'Solo administración puede relacionar activos.' : 'No se pudo guardar el activo relacionado.'));
+    } finally {
+      this.guardandoActivo.set(false);
     }
   }
 

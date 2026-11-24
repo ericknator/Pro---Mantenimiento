@@ -48,14 +48,15 @@ public interface HistorialActivoRepository extends JpaRepository<ActivoEntity, L
                 'INCIDENCIA' AS tipo,
                 i.id AS registro_id,
                 i.codigo AS codigo,
-                NULL AS codigo_activo,
-                NULL AS activo_nombre,
+                a.codigo AS codigo_activo,
+                a.nombre AS activo_nombre,
                 i.descripcion AS titulo,
                 i.descripcion AS descripcion,
                 ci.nombre AS categoria,
                 ei.nombre AS estado,
                 i.fecha_reporte AS fecha
             FROM incidencia i
+            LEFT JOIN activo a ON a.id = i.activo_id
             INNER JOIN categoria_incidencia ci
                 ON ci.id = i.categoria_id
             INNER JOIN estado_incidencia ei

@@ -1,0 +1,76 @@
+# PMS-272 — Relación entre incidencia y activo
+
+Propuesta del 24/11/2026 sobre main `7df77f0a91cdde34b4b4c71b372615a66685be88`. Complementa el historial integrado en PR #58 y la trazabilidad PMS-20/HU-MAN-06 → PMS-224 → PMS-272. No acredita cierre de la historia ni modifica el estado de las tareas del equipo.
+
+## Comportamiento
+
+Administración puede relacionar una incidencia con un activo existente desde el detalle administrativo. El selector muestra código, nombre y ubicación. Se puede cambiar o retirar la relación; esto no clasifica la incidencia ni cambia su estado, prioridad o responsable. La operación se registra en auditoría con usuario, incidencia, fecha e identificadores anterior y nuevo.
+
+La relación es opcional: una incidencia general puede permanecer sin activo. No se asignan activos a incidencias existentes por semejanza de nombres, categorías o ubicación. El historial incluye únicamente las relaciones explícitas; `activo: null` representa ausencia de asociación, mientras un contrato incompleto conserva la advertencia. El mensaje vacío indica ausencia de intervenciones vinculadas, sin afirmar que nunca ocurrieron intervenciones.
+
+## Contrato y persistencia
+
+- Columna nueva: `incidencia.activo_id`, nullable, con FK a `activo.id`.
+- `PATCH /api/incidencia/{id}/activo`, restringido a ADMINISTRADOR tanto en seguridad HTTP como en el servicio.
+- Cuerpo: `{"activoId": 2}`; el identificador es solo un ejemplo, debe existir y estar activo. `{"activoId": null}` retira la relación. Un cuerpo sin la propiedad se rechaza con 400.
+- Respuesta: `{"incidenciaId": 7, "activo": {"id": 2, "codigo": "...", "nombre": "..."}}`, o `activo: null`.
+- Sin sesión: 401; rol distinto o administrador inactivo: 403; incidencia inexistente o activo inexistente/inactivo: 404. Un identificador de activo no positivo se rechaza con 400.
+- El campo `activo` se devuelve en las consultas de incidencias. Se ignora en la deserialización de los endpoints generales: la asociación se escribe mediante el endpoint administrativo.
+- El historial SQL global también obtiene código y nombre del activo por la FK. La pantalla de historial conserva su consulta por relaciones explícitas.
+- Cambio y auditoría comparten una transacción de Spring. La prueba con mocks comprueba propagación del error; el rollback real en MySQL sigue pendiente de verificar.
+
+## Orden de instalación para validar
+
+El backend de esta rama necesita la columna nueva incluso para consultar incidencias. La configuración habitual usa `ddl-auto=none`, por lo que se debe aplicar la migración antes de arrancarlo. No ejecutar de nuevo el script general de creación de la base.
+
+1. Preparar un respaldo y una copia de la base para las pruebas. Mantener identificada la rama/versión anterior.
+2. Seleccionar esa base en el cliente MySQL y ejecutar `database/scripts/04_PMS272_relacion_incidencia_activo.sql`. Revisar la columna y la FK antes de continuar. El script no se ejecutó durante esta preparación.
+3. El script toma el tipo real de `activo.id` y consulta la existencia de la columna y la FK antes de emitir cada ALTER. Deja las incidencias existentes sin asociación; no contiene un relleno automático. La repetición y la preservación de filas requieren comprobación en MySQL.
+4. Arrancar el backend de la rama y Angular con la configuración local habitual, conservando las credenciales fuera del PR.
+5. Ejecutar el recorrido dirigido de la sección siguiente y registrar resultados observados. Integrar y actualizar la carpeta oficial después de validar el cambio.
+
+Si se vuelve al código anterior, conservar la columna nullable y sus relaciones: el código anterior no las consulta. No quitar la columna como parte de un retroceso rutinario, porque eliminaría los vínculos guardados.
+
+## Verificación ejecutada
+
+Las ejecuciones se realizaron en una copia aislada de la fuente, sin cambiar la carpeta oficial ni la base de Erick.
+
+| Verificación | Resultado observado | Límite |
+| --- | --- | --- |
+| Maven, Java 25, `IncidenciaActivoServiceTest` | 12 pruebas, 0 fallos, 0 errores | Dependencias de persistencia simuladas; MockMvc sin filtro de seguridad real. |
+| Maven, `AdminUsuarioServiceTest` | 5 pruebas, 0 fallos, 0 errores | Regresión del alta y compensación con mocks. |
+| Maven, `AlertaInternaPropiedadTest` | 3 pruebas, 0 fallos, 0 errores | Regresión de lectura/restricciones de alertas con mocks. |
+| `node scripts/test-historial-service.cjs` | 14 pruebas, 0 fallos | Lógica real transpilada; transporte HTTP, autenticación y signals sustituidos. |
+| `npm run build -- --configuration development` | Aprobado | Build completo de desarrollo, sin ejecución del navegador ni despliegue. Dos advertencias del listado de incidencias. |
+| `tsc --noEmit -p tsconfig.spec.json` | Aprobado | Tipado de specs; no ejecución de Karma. |
+
+Comando Maven usado en el entorno de revisión:
+
+```sh
+mvn --offline --batch-mode -Daether.syncContext.named.factory=noop \
+  -DargLine=-javaagent:/home/erick/.m2/repository/net/bytebuddy/byte-buddy-agent/1.18.11/byte-buddy-agent-1.18.11.jar \
+  -Dtest=IncidenciaActivoServiceTest,AdminUsuarioServiceTest,AlertaInternaPropiedadTest test
+```
+
+El agente explícito permite usar Mockito en este entorno. Su ruta corresponde a la caché local y debe adaptarse si se reproduce en otro equipo. No se cambió el POM ni la versión de Java.
+
+## Recorrido dirigido pendiente
+
+Este recorrido es una propuesta de validación, no una actividad ya realizada:
+
+1. Usar dos activos reales identificados por ID/código, preferiblemente del mismo tipo, y una incidencia de prueba explícitamente identificada.
+2. Como administrador, vincular la incidencia al primero. Recargar y comprobar el mismo ID en la API y en `incidencia.activo_id`, además de la auditoría.
+3. Consultar ambos historiales: la incidencia solo debe aparecer en el del activo seleccionado, con su fecha registrada.
+4. Cambiar la asociación al segundo y repetir la comprobación. Retirar la relación y comprobar que deja de aparecer en ambos.
+5. Con un usuario residente, solicitar la misma operación y comprobar 403 sin cambios persistidos.
+6. Probar activo inexistente/inactivo y registrar el rechazo sin asociación ni auditoría de éxito.
+7. Consultar un activo sin intervenciones vinculadas; verificar el mensaje vacío. Las incidencias generales sin activo no deben producir vínculos ni advertencias de contrato incompleto.
+8. Verificar la consulta `/api/historial-activos` y la conservación de la clasificación/estado de la incidencia. Registrar cualquier brecha antes de aceptar CA-01/CA-02.
+
+Pendientes: migración y repetición en MySQL, persistencia y rollback reales, filtro HTTP con autenticación Firebase, navegador, revisión del equipo y entorno desplegado. La imposibilidad de acceder al servicio Docker desde este entorno impidió preparar aquí una base aislada; no se intentó modificar la base en uso.
+
+## Registro propuesto para el Anexo A
+
+| Herramienta | Fase y actividad | Componente | Validación y pendientes |
+| --- | --- | --- | --- |
+| ChatGPT/Codex | 24/11/2026; implementación asistida de relación incidencia–activo | Servicio/endpoint, entidad, migración incremental, selector administrativo e historial | 20 pruebas Maven y 14 de lógica aprobadas, build Angular development y tipado. Pendientes revisión del equipo, MySQL, Firebase/navegador y demostración del flujo real. |

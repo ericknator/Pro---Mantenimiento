@@ -334,6 +334,9 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	        );
 	    }
 	
+	    // El alta general no admite asociaciones administrativas enviadas por el cliente.
+	    obj.setActivo(null);
+
 	    // El solicitante siempre es el usuario autenticado.
 	    obj.setSolicitante(usuarioAutenticado);
 	

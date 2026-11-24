@@ -112,7 +112,10 @@ export class HistorialActivosService {
       if (!Array.isArray(tareas) || !Array.isArray(incidencias)) {
         throw new Error('Respuesta de historial inválida');
       }
-      if ([...tareas, ...incidencias].some((registro) => !this.tieneRelacion(registro))) {
+      // activo: null es una incidencia explícitamente sin relación en el nuevo contrato.
+      // La ausencia del campo sigue distinguiendo respuestas históricas incompletas.
+      if (tareas.some((registro) => !this.tieneRelacion(registro)) ||
+          incidencias.some((registro) => !this.tieneRelacion(registro) && registro.activo !== null)) {
         this.advertir('Hay intervenciones sin un activo identificado; su historial puede estar incompleto.');
       }
       const tareasDeActivo = tareas.filter((t) => this.correspondeAlActivo(t, activo));

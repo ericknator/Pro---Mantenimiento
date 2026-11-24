@@ -15,4 +15,5 @@ export interface IncidenciaAdmin {
   solicitante: string;
   fecha: Date;
   responsable: string;
+  activo?: { id: number; codigo: string; nombre: string } | null;
 }

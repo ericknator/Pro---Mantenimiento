@@ -3,6 +3,7 @@ package pe.com.promantenimineto.entity;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -31,6 +32,12 @@ public class IncidenciaEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unidad_id")
     private UnidadResidencialEntity unidad;
+
+    // La asociación se modifica solo mediante el endpoint administrativo dedicado.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "activo_id")
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private ActivoEntity activo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_id", nullable = false)

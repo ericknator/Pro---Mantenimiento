@@ -113,3 +113,33 @@ test('sin datos y sin errores, el historial permanece vacío sin advertencias', 
   assert.equal(service.error(), null);
   assert.equal(service.advertencia(), null);
 });
+
+
+test('incidencias generales con activo null no impiden un vacío válido de otro activo', async () => {
+  const { service } = escenario({ incidencias: [falla({ activoId: undefined, activo: null })] });
+  assert.equal((await service.obtenerHistorialDeActivo(activo)).length, 0);
+  assert.equal(service.error(), null);
+  assert.equal(service.advertencia(), null);
+});
+test('el contrato nuevo no mezcla fallas de dos activos del mismo tipo', async () => {
+  const { service } = escenario({ incidencias: [
+    falla({ id: 20, activoId: undefined, activo: { id: 1, codigo: 'ACT-A' } }),
+    falla({ id: 21, activoId: undefined, activo: { id: 2, codigo: 'ACT-B' } }),
+    falla({ id: 22, activoId: undefined, activo: null }),
+  ] });
+  const lista = await service.obtenerHistorialDeActivo(activo);
+  assert.equal(lista.length, 1);
+  assert.equal(lista[0].id, 'falla-20');
+  assert.equal(service.advertencia(), null);
+});
+
+test('referencias incompletas y tareas sin activo mantienen la advertencia', async () => {
+  for (const datos of [
+    { incidencias: [falla({ activoId: undefined, activo: {} })] },
+    { tareas: [tarea({ activo: null })] },
+  ]) {
+    const { service } = escenario(datos);
+    assert.equal((await service.obtenerHistorialDeActivo(activo)).length, 0);
+    assert.ok(service.advertencia());
+  }
+});

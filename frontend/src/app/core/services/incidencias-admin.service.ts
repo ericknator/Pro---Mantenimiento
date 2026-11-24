@@ -19,6 +19,7 @@ interface IncidenciaApi {
   estado?: { codigo?: string; nombre?: string } | null;
   solicitante?: { nombres?: string; apellidos?: string; correo?: string } | null;
   fechaReporte?: string | number[] | null;
+  activo?: { id: number; codigo: string; nombre: string } | null;
   responsableActual?: { id?: number; nombres?: string; apellidos?: string; correo?: string; } | null;
 }
 
@@ -61,6 +62,7 @@ function aModelo(r: IncidenciaApi): IncidenciaAdmin {
     solicitante: nombre,
     fecha: aFecha(r.fechaReporte),
     responsable,
+    activo: r.activo ?? null,
   };
 }
 
