@@ -19,41 +19,38 @@ export interface CrearAlertaInterna {
     descripcion: string | null;
 }
 
+export interface ActualizarEstadoAlerta {
+    nuevoEstadoCodigo?: string;
+    estadoNuevoId?: number;
+    observacion?: string;
+}
+
 export interface AlertaInterna {
     id: number;
     ubicacion: string;
     descripcion: string | null;
     fechaEmision: string;
     actualizadoEn: string;
+    fechaRecepcion?: string | null;
+    recibidoPor?: {
+        id: number;
+        nombres: string;
+        apellidos: string;
+    } | null;
     tipoAlerta: TipoAlertaInterna;
+
     estado: {
         id: number;
         codigo: string;
         nombre: string;
     };
-
-    // PMS-246: información de recepción confirmada.
-    // Los campos permanecen vacíos hasta que portería confirma.
-    recibidoPor?: {
-        id: number;
-        nombre?: string;
-        apellido?: string;
-    } | null;
-
-    fechaRecepcion?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class AlertasInternasService {
+
     private readonly http = inject(HttpClient);
 
-    private readonly apiUrl = API_BASE_URL;
-
-    /**
-     * Obtiene la bandeja de alertas internas.
-     * Acceso autorizado por el backend para:
-     * ADMINISTRADOR y PORTERIA_SEGURIDAD.
-     */
     async obtenerBandeja(): Promise<AlertaInterna[]> {
         const headers = await this.obtenerCabeceras();
 
@@ -65,37 +62,35 @@ export class AlertasInternasService {
         );
     }
 
-    /**
-     * PMS-246 / HU-ALT-03
-     *
-     * Confirma la recepción de una alerta interna.
-     *
-     * El backend es responsable de:
-     * - Validar el rol PORTERIA_SEGURIDAD.
-     * - Verificar que la alerta exista.
-     * - Cambiar EMITIDA a RECIBIDA.
-     * - Registrar el usuario y la fecha de recepción.
-     * - Evitar confirmaciones duplicadas.
-     *
-     * No se modifica el estado local artificialmente.
-     * Se devuelve la respuesta real del backend.
-     */
     async confirmarRecepcion(id: number): Promise<AlertaInterna> {
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
             this.http.patch<AlertaInterna>(
                 `${this.apiUrl}/alerta-interna/${id}/confirmar-recepcion`,
-                null,
+                {},
                 { headers }
             )
         );
     }
 
-    /**
-     * Consulta las alertas del residente autenticado.
-     */
+    async actualizarEstado(
+        id: number,
+        datos: ActualizarEstadoAlerta
+    ): Promise<AlertaInterna> {
+        const headers = await this.obtenerCabeceras();
+
+        return firstValueFrom(
+            this.http.patch<AlertaInterna>(
+                `${this.apiUrl}/alerta-interna/${id}/actualizar-estado`,
+                datos,
+                { headers }
+            )
+        );
+    }
+
     async obtenerMisAlertas(): Promise<AlertaInterna[]> {
+
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(
@@ -106,26 +101,41 @@ export class AlertasInternasService {
         );
     }
 
+    private readonly apiUrl = API_BASE_URL;
+
     private async obtenerUsuario(): Promise<User> {
+
         if (auth.currentUser) {
             return auth.currentUser;
         }
 
-        const usuario = await new Promise<User | null>((resolve) => {
-            const unsubscribe = onAuthStateChanged(auth, (user) => {
-                unsubscribe();
-                resolve(user);
-            });
-        });
+        const usuario = await new Promise<User | null>(
+            (resolve) => {
+                const unsubscribe = onAuthStateChanged(
+                    auth,
+                    (user) => {
+                        unsubscribe();
+                        resolve(user);
+                    }
+                );
+            }
+        );
 
         if (!usuario) {
-            throw new Error('Debes iniciar sesión para continuar.');
+            throw new Error(
+                'Debes iniciar sesión para continuar.'
+            );
         }
 
         return usuario;
     }
 
+    /**
+     * Obtiene el token Firebase para solicitudes
+     * protegidas por Spring Security.
+     */
     private async obtenerCabeceras(): Promise<HttpHeaders> {
+
         const usuario = await this.obtenerUsuario();
         const token = await usuario.getIdToken();
 
@@ -134,7 +144,11 @@ export class AlertasInternasService {
         });
     }
 
+    /**
+     * Obtiene los tipos de alertas activos.
+     */
     async obtenerTipos(): Promise<TipoAlertaInterna[]> {
+
         const headers = await this.obtenerCabeceras();
 
         const tipos = await firstValueFrom(
@@ -144,12 +158,16 @@ export class AlertasInternasService {
             )
         );
 
-        return tipos.filter((tipo) => tipo.activo);
+        return tipos.filter(tipo => tipo.activo);
     }
 
+    /**
+     * Permite al residente registrar una alerta.
+     */
     async registrar(
         datos: CrearAlertaInterna
     ): Promise<AlertaInterna> {
+
         const headers = await this.obtenerCabeceras();
 
         return firstValueFrom(

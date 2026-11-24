@@ -20,7 +20,7 @@ const modulosPendientes: Route[] = [...NAV_ITEMS, NOTIFICACIONES_ITEM, ...MANTEN
   }));
 
 const adminPendientes: Route[] = [
-  ...ADMIN_NAV_ITEMS.filter((i) => !['/administrador/mantenimiento', '/administrador/incidencias', '/administrador/alertas'].includes(i.route)).map((i) => ({
+  ...ADMIN_NAV_ITEMS.filter((i) => !['/administrador/mantenimiento', '/administrador/incidencias', '/administrador/alertas', '/administrador/residentes'].includes(i.route)).map((i) => ({
     path: i.route.replace('/administrador/', ''),
     title: i.label,
     data: { titulo: i.label, fondo: 'edificio', volver: '/administrador/dashboard', volverTexto: 'Volver al dashboard' },
@@ -135,6 +135,17 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/administrador/alertas/activas/alertas-activas.component').then((m) => m.AlertasActivasComponent),
       },
+
+      // PMS-276: Gestión de usuarios
+      {
+        path: 'residentes',
+        title: 'Gestión de usuarios',
+        data: { fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/administrador/usuarios/gestion-usuarios/gestion-usuarios.component')
+            .then((m) => m.GestionUsuariosComponent),
+      },
+
       ...adminPendientes,
     ],
   },
@@ -182,7 +193,7 @@ export const routes: Routes = [
         path: 'seguridad/alertas',
         title: 'Bandeja de alertas internas',
         canActivate: [roleGuard],
-        data: { roles: ['seguridad'], fondo: 'edificio' },
+        data: { roles: ['seguridad'], menu: 'rail', fondo: 'terraza' },
         loadComponent: () =>
           import('./features/alertas-internas/bandeja-alertas.component').then((m) => m.BandejaAlertasComponent),
       },
@@ -276,11 +287,19 @@ export const routes: Routes = [
         data: { titulo: 'Historial de mantenimientos', fondo: 'edificio', volver: '/mantenimiento', volverTexto: 'Volver a Mantenimiento' },
         loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
       },
-      {
+         {
         path: 'modulo/alertas',
-        title: 'Alertas internas',
+        title: 'Alertas',
         canActivate: [roleGuard],
         data: { roles: ['residente'], fondo: 'edificio' },
+        loadComponent: () =>
+          import('./features/alertas/alertas.component').then((m) => m.AlertasComponent),
+      },
+      {
+        path: 'modulo/alertas/generar',
+        title: 'Generar alerta interna',
+        canActivate: [roleGuard],
+        data: { roles: ['residente'], menu: 'rail', fondo: 'terraza' },
         loadComponent: () =>
           import('./features/alertas-internas/reportar-alerta.component').then((m) => m.ReportarAlertaComponent),
       },
@@ -288,9 +307,27 @@ export const routes: Routes = [
         path: 'modulo/mis-alertas',
         title: 'Mis alertas',
         canActivate: [roleGuard],
-        data: { roles: ['residente'], fondo: 'edificio' },
+        data: { roles: ['residente'], menu: 'rail', fondo: 'terraza' },
         loadComponent: () =>
           import('./features/alertas-internas/mis-alertas.component').then((m) => m.MisAlertasComponent),
+      },
+      {
+        path: 'modulo/alertas/activas',
+        title: 'Alertas activas del edificio',
+        data: { titulo: 'Alertas activas del edificio', fondo: 'edificio', volver: '/modulo/alertas', volverTexto: 'Volver a Alertas' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
+      },
+      {
+        path: 'modulo/alertas/historial',
+        title: 'Historial de alertas',
+        data: { titulo: 'Historial de alertas', fondo: 'edificio', volver: '/modulo/alertas', volverTexto: 'Volver a Alertas' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
+      },
+      {
+        path: 'modulo/alertas/detalle',
+        title: 'Detalle de alerta',
+        data: { titulo: 'Detalle de alerta', fondo: 'edificio', volver: '/modulo/alertas', volverTexto: 'Volver a Alertas' },
+        loadComponent: () => import('./features/placeholder/placeholder.component').then((m) => m.PlaceholderComponent),
       },
       ...modulosPendientes,
     ],

@@ -6,7 +6,7 @@ import { IncidenciaAdmin } from '../../models/incidencia-admin.model';
 
 // ⚠️ Usar la misma URL base que el resto de servicios (p. ej. activo.service.ts).
 // Con proxy de Angular sería '/promantenimiento/api'.
-const API_BASE = 'http://localhost:8085/promantenimiento/api';
+const API_BASE = 'http://localhost:8086/promantenimiento/api';
 
 /** Forma esperada de IncidenciaEntity en las respuestas del backend. */
 interface IncidenciaApi {

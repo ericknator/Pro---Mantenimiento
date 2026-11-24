@@ -13,7 +13,7 @@ describe('AlertasService - PMS-188', () => {
     let http: HttpTestingController;
 
     const apiUrl =
-        'http://localhost:8085/promantenimiento/api/tarea-preventiva';
+        'http://localhost:8086/promantenimiento/api/tarea-preventiva';
 
     const usuarioSimulado = {
         getIdToken: jasmine.createSpy('getIdToken'),

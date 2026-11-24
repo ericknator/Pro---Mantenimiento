@@ -4,7 +4,7 @@ import { Injectable, inject } from '@angular/core';
 import { getAuth } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 
-const API_BASE = 'http://localhost:8085/promantenimiento/api';
+const API_BASE = 'http://localhost:8086/promantenimiento/api';
 
 export interface RolResponsable {
   id: number;

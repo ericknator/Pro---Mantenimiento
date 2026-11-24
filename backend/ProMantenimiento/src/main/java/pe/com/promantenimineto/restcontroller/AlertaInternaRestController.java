@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -51,9 +52,15 @@ public class AlertaInternaRestController {
         return servicio.findByResidente();
     }
     
- // HU-ALT-03: Confirmar recepción de alerta.
+    // HU-ALT-03: Confirmar recepción de alerta.
     @PatchMapping("/{id}/confirmar-recepcion")
     public AlertaInternaEntity confirmarRecepcion(@PathVariable Long id) {
         return servicio.confirmarRecepcion(id);
+    }
+    
+    @PatchMapping("/{id}/actualizar-estado")
+    public ResponseEntity<AlertaInternaEntity> actualizarEstado( @PathVariable Long id, @RequestBody Map<String, String> body) {
+        String observacion = body.get("observacion");
+        return ResponseEntity.ok( servicio.actualizarEstado(id, observacion) );
     }
 }

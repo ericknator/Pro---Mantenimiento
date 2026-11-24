@@ -1,130 +1,315 @@
-<main class="mis-alertas-page">
+<main class="mis-alertas-layout">
 
-    <header class="page-header">
-        <span class="eyebrow">CONDOMINIO NUEVO ALCÁZAR</span>
-        <h1>Mis alertas</h1>
-        <p>
-            Consulta el estado de las alertas internas
-            que has registrado.
-        </p>
+  @if (!alertaSeleccionada()) {
+
+    <header class="page-top">
+      <a routerLink="/modulo/alertas" class="link-volver">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+        <span>VOLVER A ALERTAS</span>
+      </a>
+      <h1>Mis alertas</h1>
+      <p>Seguimiento de las alertas internas que emitiste.</p>
     </header>
 
-    <section class="alertas-card">
+    <section class="card-mis-alertas">
 
-        <div class="card-heading">
-            <div>
-                <h2>Historial de alertas</h2>
-                <p>Información actualizada desde el sistema.</p>
-            </div>
-
-            <button type="button" class="refresh-button" [disabled]="cargando()" (click)="cargarAlertas()">
-                Actualizar
-            </button>
+      <div class="card-bar">
+        <div class="card-bar__left">
+          <span class="label-eyebrow">MIS ALERTAS</span>
+          <span class="pill-count">{{ alertas().length }} alertas</span>
+          <button
+            type="button"
+            class="btn-refresh"
+            (click)="cargarAlertas()"
+            [disabled]="cargando()"
+            title="Actualizar estado en vivo"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.spinning]="cargando()">
+              <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+              <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+              <path d="M16 21h5v-5"/>
+            </svg>
+            <span>Actualizar</span>
+          </button>
         </div>
 
-        @if (cargando()) {
-        <div class="feedback" role="status">
-            Cargando tus alertas...
+        <div class="card-bar__filters">
+          <button
+            type="button"
+            class="filter-tab"
+            [class.filter-tab--active]="filtroActual() === 'todas'"
+            (click)="cambiarFiltro('todas')"
+          >
+            Todas ({{ alertas().length }})
+          </button>
+
+          <button
+            type="button"
+            class="filter-tab"
+            [class.filter-tab--active]="filtroActual() === 'en_curso'"
+            (click)="cambiarFiltro('en_curso')"
+          >
+            En curso ({{ enCursoCount() }})
+          </button>
+
+          <button
+            type="button"
+            class="filter-tab"
+            [class.filter-tab--active]="filtroActual() === 'atendidas'"
+            (click)="cambiarFiltro('atendidas')"
+          >
+            Atendidas ({{ atendidasCount() }})
+          </button>
         </div>
-        }
+      </div>
 
-        @if (error()) {
-        <div class="feedback feedback--error" role="alert">
-            <p>{{ error() }}</p>
-            <button type="button" (click)="cargarAlertas()">
-                Reintentar
-            </button>
+      @if (cargando()) {
+        <div class="status-msg">Cargando alertas internas...</div>
+      }
+
+      @if (error()) {
+        <div class="status-msg status-msg--error">
+          <p>{{ error() }}</p>
+          <button type="button" (click)="cargarAlertas()">Reintentar</button>
         </div>
-        }
+      }
 
-        @if (!cargando() && !error()) {
-
-        <p class="total">
-            {{ alertas().length }}
-            {{ alertas().length === 1 ? 'alerta registrada' : 'alertas registradas' }}
-        </p>
-
-        @if (alertas().length === 0) {
-        <div class="feedback">
-            <h3>Aún no tienes alertas registradas</h3>
-            <p>Cuando registres una alerta, aparecerá aquí.</p>
-            <a routerLink="/modulo/alertas">Registrar una alerta</a>
-        </div>
+      @if (!cargando() && !error()) {
+        @if (alertasFiltradas().length === 0) {
+          <div class="status-msg">
+            <p>No hay alertas en esta categoría.</p>
+            <a routerLink="/modulo/alertas/generar">+ Emitir nueva alerta</a>
+          </div>
         } @else {
-        <div class="alertas-list">
-
-            @for (alerta of alertas(); track alerta.id) {
-
-            <article class="alerta-item">
-
-                <div class="alerta-top">
-                    <div>
-                        <span class="alerta-id">ALERTA #{{ alerta.id }}</span>
-                        <h3>{{ nombreTipo(alerta) }}</h3>
-                    </div>
-
-                    <span class="estado-badge" [class.estado-badge--emitida]="codigoEstado(alerta) === 'EMITIDA'"
-                        [class.estado-badge--recibida]="codigoEstado(alerta) === 'RECIBIDA'">
-                        {{ nombreEstado(alerta) }}
-                    </span>
+          <div class="alertas-rows">
+            @for (alerta of alertasFiltradas(); track alerta.id) {
+              <article
+                class="alerta-row"
+                [class.alerta-row--emitida]="codigoEstado(alerta) === 'EMITIDA'"
+                [class.alerta-row--recibida]="codigoEstado(alerta) === 'RECIBIDA'"
+                [class.alerta-row--atencion]="codigoEstado(alerta) === 'EN_ATENCION'"
+                [class.alerta-row--atendida]="codigoEstado(alerta) === 'ATENDIDA'"
+                (click)="seleccionarAlerta(alerta)"
+                tabindex="0"
+                role="button"
+              >
+                <div class="alerta-row__left">
+                  <h3>{{ nombreTipo(alerta) }}</h3>
+                  <p>
+                    ALT-2026-000{{ alerta.id }} · {{ alerta.ubicacion }} · {{ acuseTexto(alerta) }}
+                  </p>
                 </div>
 
-                <dl class="alerta-details">
-                    <div>
-                        <dt>Ubicación</dt>
-                        <dd>{{ alerta.ubicacion }}</dd>
-                    </div>
-
-                    <div>
-                        <dt>Fecha de emisión</dt>
-                        <dd>{{ alerta.fechaEmision | date:'dd/MM/yyyy HH:mm' }}</dd>
-                    </div>
-
-                    <div>
-                        <dt>Última actualización</dt>
-                        <dd>
-                            @if (alerta.actualizadoEn) {
-                            {{ alerta.actualizadoEn | date:'dd/MM/yyyy HH:mm' }}
-                            } @else {
-                            No disponible
-                            }
-                        </dd>
-                    </div>
-                </dl>
-
-                @if (alerta.descripcion) {
-                <div class="descripcion">
-                    <strong>Descripción</strong>
-                    <p>{{ alerta.descripcion }}</p>
+                <div class="alerta-row__right">
+                  <span
+                    class="badge-estado"
+                    [class.badge-estado--emitida]="codigoEstado(alerta) === 'EMITIDA'"
+                    [class.badge-estado--recibida]="codigoEstado(alerta) === 'RECIBIDA'"
+                    [class.badge-estado--atencion]="codigoEstado(alerta) === 'EN_ATENCION'"
+                    [class.badge-estado--atendida]="codigoEstado(alerta) === 'ATENDIDA'"
+                  >
+                    {{ nombreEstado(alerta) }}
+                  </span>
+                  <span class="fecha-act">
+                    Últ. act. {{ (alerta.actualizadoEn || alerta.fechaEmision) | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
                 </div>
-                }
-
-                @if (codigoEstado(alerta) === 'EMITIDA') {
-                <p class="estado-info">
-                    La alerta fue emitida y está pendiente
-                    de confirmación de recepción.
-                </p>
-                }
-
-                @if (codigoEstado(alerta) === 'RECIBIDA') {
-                <p class="estado-info estado-info--recibida">
-                    El sistema registra esta alerta como recibida.
-                </p>
-                }
-
-            </article>
+              </article>
             }
-
-        </div>
+          </div>
         }
-        }
-
-
-        <a class="back-link" routerLink="/modulo/alertas">
-            + Registrar nueva alerta
-        </a>
-
+      }
 
     </section>
+
+  } @else {
+
+    <header class="page-top">
+      <button type="button" class="link-volver link-volver--btn" (click)="deseleccionarAlerta()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m15 18-6-6 6-6"/>
+        </svg>
+        <span>VOLVER A MIS ALERTAS</span>
+      </button>
+      <h1>Alerta ALT-2026-000{{ alertaSeleccionada()!.id }}</h1>
+      <p>{{ nombreTipo(alertaSeleccionada()!) }} · {{ alertaSeleccionada()!.ubicacion }}</p>
+    </header>
+
+    <div class="cards-layout">
+
+      <section class="card-box card-box--form">
+        <div class="card-head-row">
+          <span class="card-eyebrow">ESTADO DE LA ALERTA</span>
+          <span
+            class="badge"
+            [class.badge--emitida]="codigoEstado(alertaSeleccionada()!) === 'EMITIDA'"
+            [class.badge--recibida]="codigoEstado(alertaSeleccionada()!) === 'RECIBIDA'"
+            [class.badge--atencion]="codigoEstado(alertaSeleccionada()!) === 'EN_ATENCION'"
+            [class.badge--atendida]="codigoEstado(alertaSeleccionada()!) === 'ATENDIDA'"
+          >
+            {{ nombreEstado(alertaSeleccionada()!) }}
+          </span>
+        </div>
+
+        @if (codigoEstado(alertaSeleccionada()!) === 'EMITIDA') {
+          <div class="banner-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+            <div>
+              <strong>Alerta emitida a portería</strong>
+              <p>Tu reporte fue registrado. En breve el personal de portería confirmará la recepción.</p>
+            </div>
+          </div>
+        }
+
+        @if (codigoEstado(alertaSeleccionada()!) === 'RECIBIDA') {
+          <div class="banner-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <div>
+              <strong>Recepción confirmada</strong>
+              <p>
+                Portería confirmó la recepción
+                @if (alertaSeleccionada()!.fechaRecepcion) {
+                  el {{ alertaSeleccionada()!.fechaRecepcion | date:'dd MMM yyyy a las HH:mm' }}.
+                }
+                El personal ya está al tanto de tu reporte.
+              </p>
+            </div>
+          </div>
+        }
+
+        @if (codigoEstado(alertaSeleccionada()!) === 'EN_ATENCION') {
+          <div class="banner-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <div>
+              <strong>En atención por seguridad</strong>
+              <p>El personal se encuentra atendiendo y verificando la situación en el lugar.</p>
+            </div>
+          </div>
+        }
+
+        @if (codigoEstado(alertaSeleccionada()!) === 'ATENDIDA') {
+          <div class="banner-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <div>
+              <strong>Alerta atendida satisfactoriamente</strong>
+              <p>Situación atendida y controlada por seguridad.</p>
+            </div>
+          </div>
+        }
+
+        @if (alertaSeleccionada()!.descripcion) {
+          <div class="info-desc">
+            <span class="info-desc__lbl">TU DESCRIPCIÓN:</span>
+            <p>{{ alertaSeleccionada()!.descripcion }}</p>
+          </div>
+        }
+
+        <button type="button" class="btn-cancelar" (click)="deseleccionarAlerta()">
+          Volver a mis alertas
+        </button>
+      </section>
+
+      <section class="card-box card-box--resumen">
+        <div class="card-head-row">
+          <span class="card-eyebrow">RESUMEN DE LA ALERTA</span>
+          <span
+            class="badge"
+            [class.badge--emitida]="codigoEstado(alertaSeleccionada()!) === 'EMITIDA'"
+            [class.badge--recibida]="codigoEstado(alertaSeleccionada()!) === 'RECIBIDA'"
+            [class.badge--atencion]="codigoEstado(alertaSeleccionada()!) === 'EN_ATENCION'"
+            [class.badge--atendida]="codigoEstado(alertaSeleccionada()!) === 'ATENDIDA'"
+          >
+            {{ nombreEstado(alertaSeleccionada()!) }}
+          </span>
+        </div>
+
+        <div class="resumen-grid">
+          <div class="resumen-row">
+            <span class="resumen-lbl">Tipo</span>
+            <span class="resumen-val">{{ nombreTipo(alertaSeleccionada()!) }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Ubicación</span>
+            <span class="resumen-val">{{ alertaSeleccionada()!.ubicacion }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Emitida por</span>
+            <span class="resumen-val">{{ usuarioNombre() }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Fecha y hora</span>
+            <span class="resumen-val">{{ alertaSeleccionada()!.fechaEmision | date:'dd MMM yyyy, HH:mm' }}</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Destino</span>
+            <span class="resumen-val">Portería / Seguridad</span>
+          </div>
+
+          <div class="resumen-row">
+            <span class="resumen-lbl">Estado</span>
+            <span class="resumen-val">{{ nombreEstado(alertaSeleccionada()!) }}</span>
+          </div>
+        </div>
+
+        <div class="linea-estado">
+          <span class="card-eyebrow">LÍNEA DE ESTADO</span>
+          <div class="stepper">
+            <div class="step step--active">
+              <span class="step-circle">✓</span>
+              <span class="step-text">Emitida</span>
+            </div>
+            <div class="step-line" [class.step-line--active]="esPasoCompletado(alertaSeleccionada()!, 2)"></div>
+            <div class="step" [class.step--active]="esPasoCompletado(alertaSeleccionada()!, 2)">
+              <span class="step-circle">{{ esPasoCompletado(alertaSeleccionada()!, 2) ? '✓' : '2' }}</span>
+              <span class="step-text">Recibida</span>
+            </div>
+            <div class="step-line" [class.step-line--active]="esPasoCompletado(alertaSeleccionada()!, 3)"></div>
+            <div class="step" [class.step--active]="esPasoCompletado(alertaSeleccionada()!, 3)">
+              <span class="step-circle">{{ esPasoCompletado(alertaSeleccionada()!, 3) ? '✓' : '3' }}</span>
+              <span class="step-text">Atendida</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="historial-box">
+          <span class="card-eyebrow">HISTORIAL DE LA ALERTA</span>
+          <div class="historial-items">
+            <p>{{ alertaSeleccionada()!.fechaEmision | date:'dd MMM yyyy, HH:mm' }} · Emitida por {{ usuarioNombre() }}</p>
+            @if (esPasoCompletado(alertaSeleccionada()!, 2)) {
+              <p>{{ (alertaSeleccionada()!.fechaRecepcion || alertaSeleccionada()!.actualizadoEn) | date:'dd MMM yyyy, HH:mm' }} · Recibida por Portería Seguridad</p>
+            }
+            @if (codigoEstado(alertaSeleccionada()!) === 'EN_ATENCION') {
+              <p>{{ alertaSeleccionada()!.actualizadoEn | date:'dd MMM yyyy, HH:mm' }} · En atención por Portería Seguridad</p>
+            }
+            @if (esPasoCompletado(alertaSeleccionada()!, 3)) {
+              <p>{{ alertaSeleccionada()!.actualizadoEn | date:'dd MMM yyyy, HH:mm' }} · Atendida por Portería Seguridad</p>
+            }
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  }
 
 </main>

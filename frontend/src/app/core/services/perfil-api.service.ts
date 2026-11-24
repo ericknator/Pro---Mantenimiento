@@ -19,7 +19,7 @@ export class PerfilApiService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    'http://localhost:8085/promantenimiento/api/auth/perfil';
+    'http://localhost:8086/promantenimiento/api/auth/perfil';
 
   obtenerPerfil(token: string): Observable<PerfilUsuario> {
     const headers = new HttpHeaders({

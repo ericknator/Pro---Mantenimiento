@@ -1,212 +1,188 @@
-
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
-
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
-    AlertaInterna,
-    AlertasInternasService
+  AlertaInterna,
+  AlertasInternasService,
 } from '../../core/services/alertas-internas.service';
 
 @Component({
-    selector: 'app-bandeja-alertas',
-    imports: [DatePipe, RouterLink],
-    templateUrl: './bandeja-alertas.component.html',
-    styleUrl: './bandeja-alertas.component.scss'
+  selector: 'app-bandeja-alertas',
+  imports: [DatePipe, FormsModule, RouterLink],
+  templateUrl: './bandeja-alertas.component.html',
+  styleUrl: './bandeja-alertas.component.scss',
 })
 export class BandejaAlertasComponent implements OnInit {
+  private readonly alertasService = inject(AlertasInternasService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
-    private readonly alertasService = inject(AlertasInternasService);
+  readonly alertas = signal<AlertaInterna[]>([]);
+  readonly cargando = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly filtro = signal<'todas' | 'nuevas' | 'atendidas'>('todas');
 
-    readonly alertas = signal<AlertaInterna[]>([]);
-    readonly cargando = signal(false);
-    readonly error = signal<string | null>(null);
+  readonly alertaSeleccionada = signal<AlertaInterna | null>(null);
+  readonly procesando = signal(false);
+  readonly errorAccion = signal<string | null>(null);
+  readonly observacionCierre = signal('Situación atendida y controlada por seguridad.');
 
-    // PMS-246: control de confirmación de recepción.
-    readonly confirmandoId = signal<number | null>(null);
-    readonly errorConfirmacion = signal<{
-        id: number;
-        mensaje: string;
-    } | null>(null);
+  readonly emitidasCount = computed(() =>
+    this.alertas().filter((a) => this.codigoEstado(a) === 'EMITIDA').length
+  );
 
-    ngOnInit(): void {
-        void this.cargarBandeja();
+  readonly atendidasCount = computed(() =>
+    this.alertas().filter((a) => this.codigoEstado(a) === 'ATENDIDA').length
+  );
+
+  readonly alertasFiltradas = computed(() => {
+    const f = this.filtro();
+    const list = this.alertas();
+
+    if (f === 'nuevas') {
+      return list.filter((a) => this.codigoEstado(a) === 'EMITIDA');
     }
+    if (f === 'atendidas') {
+      return list.filter((a) => this.codigoEstado(a) === 'ATENDIDA');
+    }
+    return list;
+  });
 
-    async cargarBandeja(): Promise<void> {
-        // Evitar actualizar la lista durante una confirmación.
-        if (this.cargando() || this.confirmandoId() !== null) {
-            return;
+  ngOnInit(): void {
+    void this.cargarBandeja();
+    this.route.queryParamMap.subscribe((params) => {
+      const idStr = params.get('id');
+      if (idStr) {
+        const id = Number(idStr);
+        const encontrada = this.alertas().find((a) => a.id === id);
+        if (encontrada) {
+          this.alertaSeleccionada.set(encontrada);
         }
+      } else {
+        this.alertaSeleccionada.set(null);
+      }
+    });
+  }
 
-        this.cargando.set(true);
-        this.error.set(null);
+  cambiarFiltro(f: 'todas' | 'nuevas' | 'atendidas'): void {
+    this.filtro.set(f);
+  }
 
-        try {
-            const resultado = await this.alertasService.obtenerBandeja();
+  seleccionarAlerta(alerta: AlertaInterna): void {
+    this.alertaSeleccionada.set(alerta);
+    this.errorAccion.set(null);
+    this.observacionCierre.set('Situación atendida y controlada por seguridad.');
+    void this.router.navigate([], { queryParams: { id: alerta.id } });
+  }
 
-            // Validar la estructura antes de mostrar los datos.
-            if (!Array.isArray(resultado)) {
-                throw new Error('Respuesta de bandeja inesperada.');
-            }
+  deseleccionarAlerta(): void {
+    this.alertaSeleccionada.set(null);
+    this.errorAccion.set(null);
+    void this.router.navigate([], { queryParams: {} });
+  }
 
-            this.alertas.set(resultado);
-            this.errorConfirmacion.set(null);
+  async cargarBandeja(): Promise<void> {
+    if (this.cargando()) {
+      return;
+    }
 
-        } catch (err: unknown) {
-            // No conservar información anterior si falla la consulta.
-            this.alertas.set([]);
+    this.cargando.set(true);
+    this.error.set(null);
 
-            if (err instanceof HttpErrorResponse) {
-                switch (err.status) {
-                    case 401:
-                        this.error.set(
-                            'Tu sesión no es válida. Inicia sesión nuevamente.'
-                        );
-                        break;
+    try {
+      const resultado = await this.alertasService.obtenerBandeja();
+      this.alertas.set(resultado);
 
-                    case 403:
-                        this.error.set(
-                            'No tienes permiso para consultar la bandeja de alertas.'
-                        );
-                        break;
-
-                    case 0:
-                        this.error.set(
-                            'No se pudo conectar con el servidor. Verifica la conexión.'
-                        );
-                        break;
-
-                    default:
-                        this.error.set(
-                            'No se pudieron cargar las alertas internas.'
-                        );
-                }
-            } else {
-                this.error.set(
-                    'Ocurrió un problema al consultar la bandeja.'
-                );
-            }
-
-        } finally {
-            this.cargando.set(false);
+      const idStr = this.route.snapshot.queryParamMap.get('id');
+      if (idStr) {
+        const id = Number(idStr);
+        const refrescada = resultado.find((a) => a.id === id);
+        if (refrescada) {
+          this.alertaSeleccionada.set(refrescada);
         }
-    }
-
-    /**
-     * PMS-246 / HU-ALT-03
-     *
-     * Confirma la recepción de una alerta emitida.
-     *
-     * El backend valida los permisos, registra el usuario,
-     * almacena la fecha de recepción y evita duplicados.
-     */
-    async confirmarRecepcion(alerta: AlertaInterna): Promise<void> {
-
-        // Evitar solicitudes simultáneas.
-        if (this.confirmandoId() !== null || this.cargando()) {
-            return;
+      }
+    } catch (err: unknown) {
+      if (err instanceof HttpErrorResponse) {
+        if (err.status === 401) {
+          this.error.set('Tu sesión ha expirado. Inicia sesión nuevamente.');
+        } else if (err.status === 403) {
+          this.error.set('No tienes permisos de seguridad para ver la bandeja.');
+        } else {
+          this.error.set('No se pudieron cargar las alertas internas.');
         }
+      } else {
+        this.error.set('Ocurrió un error al consultar las alertas.');
+      }
+    } finally {
+      this.cargando.set(false);
+    }
+  }
 
-        // Solo confirmar alertas que la interfaz conoce como EMITIDA.
-        // El backend realiza la validación definitiva del estado.
-        const alertaActual = this.alertas().find(
-            item => item.id === alerta.id
-        );
-
-        if (
-            !alertaActual ||
-            this.identificarEstado(alertaActual) !== 'EMITIDA'
-        ) {
-            return;
-        }
-
-        this.confirmandoId.set(alerta.id);
-        this.errorConfirmacion.set(null);
-
-        try {
-            const respuesta = await this.alertasService.confirmarRecepcion(
-                alerta.id
-            );
-
-            // No asumir que la confirmación se realizó correctamente.
-            // Debemos recibir el estado RECIBIDA desde el backend.
-            if (
-                respuesta?.id !== alerta.id ||
-                respuesta.estado?.codigo !== 'RECIBIDA'
-            ) {
-                throw new Error(
-                    'El servidor no devolvió una confirmación válida.'
-                );
-            }
-
-            // Actualizar únicamente la alerta confirmada,
-            // usando la respuesta real del servidor.
-            this.alertas.update(actuales =>
-                actuales.map(item =>
-                    item.id === alerta.id ? respuesta : item
-                )
-            );
-
-        } catch (err: unknown) {
-
-            let mensaje =
-                'No se pudo confirmar la recepción de la alerta.';
-
-            if (err instanceof HttpErrorResponse) {
-                switch (err.status) {
-                    case 401:
-                        mensaje =
-                            'Tu sesión expiró. Inicia sesión nuevamente.';
-                        break;
-
-                    case 403:
-                        mensaje =
-                            'No tienes permisos para confirmar esta alerta.';
-                        break;
-
-                    case 404:
-                        mensaje =
-                            'La alerta ya no existe. Actualiza la bandeja.';
-                        break;
-
-                    case 409:
-                        mensaje =
-                            'La alerta no permite esta transición. Actualiza la bandeja para comprobar su estado.';
-                        break;
-
-                    case 0:
-                        mensaje =
-                            'No se pudo conectar con el servidor. Comprueba la conexión y actualiza la bandeja antes de reintentar.';
-                        break;
-                }
-            } else if (err instanceof Error) {
-                mensaje = err.message;
-            }
-
-            this.errorConfirmacion.set({
-                id: alerta.id,
-                mensaje
-            });
-
-        } finally {
-            this.confirmandoId.set(null);
-        }
+  async avanzarFlujo(alerta: AlertaInterna): Promise<void> {
+    if (this.procesando()) {
+      return;
     }
 
-    /**
-     * Identifica el estado real de una alerta.
-     */
-    identificarEstado(alerta: AlertaInterna): string {
-        return alerta.estado?.codigo ?? 'DESCONOCIDO';
-    }
+    const estado = this.codigoEstado(alerta);
+    this.procesando.set(true);
+    this.errorAccion.set(null);
 
-    obtenerNombreTipo(alerta: AlertaInterna): string {
-        return alerta.tipoAlerta?.nombre ?? 'Tipo no disponible';
+    try {
+      if (estado === 'EMITIDA') {
+        const actualizada = await this.alertasService.confirmarRecepcion(alerta.id);
+        this.actualizarAlertaEnLista(actualizada);
+      } else if (estado === 'RECIBIDA') {
+        const actualizada = await this.alertasService.actualizarEstado(alerta.id, {
+          nuevoEstadoCodigo: 'EN_ATENCION',
+          observacion: 'Atención iniciada por portería y seguridad.',
+        });
+        this.actualizarAlertaEnLista(actualizada);
+      } else if (estado === 'EN_ATENCION') {
+        const obs = this.observacionCierre().trim() || 'Situación atendida y controlada por seguridad.';
+        const actualizada = await this.alertasService.actualizarEstado(alerta.id, {
+          nuevoEstadoCodigo: 'ATENDIDA',
+          observacion: obs,
+        });
+        this.actualizarAlertaEnLista(actualizada);
+      }
+    } catch {
+      this.errorAccion.set('No se pudo actualizar el estado de la alerta. Inténtalo de nuevo.');
+    } finally {
+      this.procesando.set(false);
     }
+  }
 
-    obtenerNombreEstado(alerta: AlertaInterna): string {
-        return alerta.estado?.nombre ?? 'Estado no disponible';
+  private actualizarAlertaEnLista(actualizada: AlertaInterna): void {
+    this.alertas.update((actuales) =>
+      actuales.map((item) => (item.id === actualizada.id ? actualizada : item))
+    );
+    this.alertaSeleccionada.set(actualizada);
+  }
+
+  codigoEstado(alerta: AlertaInterna): string {
+    return alerta.estado?.codigo ?? 'DESCONOCIDO';
+  }
+
+  nombreEstado(alerta: AlertaInterna): string {
+    return alerta.estado?.nombre ?? 'Desconocido';
+  }
+
+  esPasoCompletado(alerta: AlertaInterna, paso: number): boolean {
+    const cod = this.codigoEstado(alerta);
+    if (paso === 1) {
+      return true;
     }
+    if (paso === 2) {
+      return cod === 'RECIBIDA' || cod === 'EN_ATENCION' || cod === 'ATENDIDA';
+    }
+    if (paso === 3) {
+      return cod === 'EN_ATENCION' || cod === 'ATENDIDA';
+    }
+    if (paso === 4) {
+      return cod === 'ATENDIDA';
+    }
+    return false;
+  }
 }

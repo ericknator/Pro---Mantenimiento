@@ -4,4 +4,4 @@
  * El despliegue externo está pendiente de definición.
  */
 export const API_BASE_URL =
-  'http://localhost:8085/promantenimiento/api';
+  'http://localhost:8086/promantenimiento/api';

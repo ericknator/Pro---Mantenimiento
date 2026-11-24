@@ -9,7 +9,7 @@ import { PageHeroComponent } from '../../../../shared/page-hero/page-hero.compon
 @Component({
   selector: 'app-historial-activo',
   standalone: true,
-  imports: [CommonModule, DatePipe, RouterLink, PageHeroComponent, FormsModule],
+  imports: [CommonModule, DatePipe, PageHeroComponent, FormsModule],
   templateUrl: './historial-activo.component.html',
   styleUrl: './historial-activo.component.scss',
 })

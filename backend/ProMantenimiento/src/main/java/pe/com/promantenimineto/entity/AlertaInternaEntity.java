@@ -52,4 +52,7 @@ public class AlertaInternaEntity {
 
     @Column(name = "actualizado_en", nullable = false)
     private LocalDateTime actualizadoEn;
+    
+    @Transient
+    private String observacion;
 }
