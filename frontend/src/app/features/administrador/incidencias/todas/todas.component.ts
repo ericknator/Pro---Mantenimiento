@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { EDIFICIO_NOMBRE } from '../../../../core/data/navigation.data';
 import { IncidenciasAdminService } from '../../../../core/services/incidencias-admin.service';
 import { PageHeroComponent } from '../../../../shared/page-hero/page-hero.component';
+import { IncidenciaAdmin } from '../../../../models/incidencia-admin.model';
 
 @Component({
   selector: 'app-admin-todas-incidencias',
@@ -63,7 +64,7 @@ export class TodasComponent {
 
     if (estado !== 'Todos') {
       resultado = resultado.filter(
-        (i) => i.estado?.toLowerCase() === estado.toLowerCase()
+        (i) => this.claveEstado(i) === this.normalizarClave(estado)
       );
     }
 
@@ -87,6 +88,19 @@ export class TodasComponent {
 
     return resultado;
   });
+
+  private normalizarClave(valor: string | null | undefined): string {
+    return (valor ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+  }
+
+  private claveEstado(incidencia: IncidenciaAdmin): string {
+    const codigo = this.normalizarClave(incidencia.estadoCodigo);
+    if (codigo) return codigo;
+    // Compatibilidad con respuestas históricas que solo incluían el nombre.
+    const nombre = this.normalizarClave(incidencia.estado);
+    return nombre === 'SOLUCIONADA_PENDIENTE_DE_CONFIRMACION' ? 'SOLUCIONADA' : nombre;
+  }
 
   constructor() {
     void this.service.cargar();
