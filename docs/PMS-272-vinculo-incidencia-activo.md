@@ -24,8 +24,8 @@ La relación es opcional: una incidencia general puede permanecer sin activo. No
 El backend de esta rama necesita la columna nueva incluso para consultar incidencias. La configuración habitual usa `ddl-auto=none`, por lo que se debe aplicar la migración antes de arrancarlo. No ejecutar de nuevo el script general de creación de la base.
 
 1. Preparar un respaldo y una copia de la base para las pruebas. Mantener identificada la rama/versión anterior.
-2. Seleccionar esa base en el cliente MySQL y ejecutar `database/scripts/04_PMS272_relacion_incidencia_activo.sql`. Revisar la columna y la FK antes de continuar. El script no se ejecutó durante esta preparación.
-3. El script toma el tipo real de `activo.id` y consulta la existencia de la columna y la FK antes de emitir cada ALTER. Deja las incidencias existentes sin asociación; no contiene un relleno automático. La repetición y la preservación de filas requieren comprobación en MySQL.
+2. Seleccionar esa base en el cliente MySQL y ejecutar `database/scripts/04_PMS272_relacion_incidencia_activo.sql`. Revisar la columna y la FK antes de continuar. La ejecución posterior en el terminal de Erick se registra al final de este documento.
+3. El script toma el tipo real de `activo.id` y consulta la existencia de la columna y la FK antes de emitir cada ALTER. Deja las incidencias existentes sin asociación; no contiene un relleno automático. La repetición y preservación de filas se comprobaron posteriormente en MySQL 8.4.11, según la evidencia de terminal de Erick.
 4. Arrancar el backend de la rama y Angular con la configuración local habitual, conservando las credenciales fuera del PR.
 5. Ejecutar el recorrido dirigido de la sección siguiente y registrar resultados observados. Integrar y actualizar la carpeta oficial después de validar el cambio.
 
@@ -67,13 +67,13 @@ Este recorrido es una propuesta de validación, no una actividad ya realizada:
 7. Consultar un activo sin intervenciones vinculadas; verificar el mensaje vacío. Las incidencias generales sin activo no deben producir vínculos ni advertencias de contrato incompleto.
 8. Verificar la consulta `/api/historial-activos` y la conservación de la clasificación/estado de la incidencia. Registrar cualquier brecha antes de aceptar CA-01/CA-02.
 
-Pendientes: migración y repetición en MySQL, persistencia y rollback reales, filtro HTTP con autenticación Firebase, navegador, revisión del equipo y entorno desplegado. La imposibilidad de acceder al servicio Docker desde este entorno impidió preparar aquí una base aislada; no se intentó modificar la base en uso.
+Pendientes: persistencia a través del servicio y rollback de su transacción/auditoría, filtro HTTP con autenticación Firebase, navegador, revisión del equipo y entorno desplegado. La migración, su repetición y el rollback de los registros SQL sintéticos se comprobaron posteriormente en el terminal de Erick. La imposibilidad de acceder al servicio Docker desde este entorno impidió preparar aquí una base aislada; no se intentó modificar la base en uso.
 
 ## Registro propuesto para el Anexo A
 
 | Herramienta | Fase y actividad | Componente | Validación y pendientes |
 | --- | --- | --- | --- |
-| ChatGPT/Codex | 24/11/2026; implementación asistida de relación incidencia–activo | Servicio/endpoint, entidad, migración incremental, selector administrativo e historial | 20 pruebas Maven y 14 de lógica aprobadas, build Angular development y tipado. Pendientes revisión del equipo, MySQL, Firebase/navegador y demostración del flujo real. |
+| ChatGPT/Codex | 24/11/2026; implementación asistida de relación incidencia–activo | Servicio/endpoint, entidad, migración incremental, selector administrativo e historial | 20 pruebas Maven y 14 de lógica aprobadas, build Angular development y tipado. Migración y relaciones SQL comprobadas después por Erick en MySQL 8.4.11. Pendientes revisión del equipo, servicio/auditoría, Firebase/navegador y demostración del flujo real. |
 
 ## Ejecución desde el terminal del equipo
 
@@ -87,4 +87,21 @@ El script realiza únicamente lecturas de la base configurada en esa carpeta y c
 
 Evitar registrar datos nuevos desde la aplicación mientras se obtiene la copia: si cambian entre lecturas, la comparación puede detener la validación y debe repetirse en una copia nueva. Los archivos temporales de datos y credenciales se eliminan al salir.
 
-Estado del 24/11/2026: revisión de sintaxis Bash aprobada; ejecución MySQL pendiente. Desde el entorno de revisión las conexiones a localhost:3306 fueron rechazadas y no se pudo acceder a Docker. No se creó la copia ni se aplicó la migración. Este script comprueba SQL; la persistencia a través del servicio, auditoría, permisos HTTP/Firebase y navegador requieren una ejecución posterior contra la copia.
+Estado inicial del entorno de revisión: sintaxis Bash aprobada; ejecución MySQL bloqueada en ese entorno. Desde el entorno de revisión las conexiones a localhost:3306 fueron rechazadas y no se pudo acceder a Docker. No se creó la copia ni se aplicó la migración. Este script comprueba SQL; la persistencia a través del servicio, auditoría, permisos HTTP/Firebase y navegador requieren una ejecución posterior contra la copia.
+
+## Resultado observado en el terminal de Erick — 24/11/2026
+
+Fuente: salida de terminal compartida por Erick tras ejecutar los scripts de la rama del PR #61 (`df3f40c227e4469a739394fb967fd0d873d13180`). Motor informado: MySQL 8.4.11. Se creó y conservó la copia `pms272_qa_20261124_144833_15027`.
+
+| Comprobación | Resultado observado |
+| --- | --- |
+| Migración, primera y segunda ejecución | Ambas OK |
+| Comparación de filas y columnas originales de incidencia | Preservadas, OK |
+| Dos activos sintéticos distintos del mismo tipo | OK |
+| Incidencia sintética sin vínculo inicial | OK |
+| Asociación al activo A y exclusión del B | OK |
+| Cambio al activo B y exclusión del A | OK |
+| Retirada del vínculo conservando el estado | OK |
+| Rollback de registros sintéticos y comprobaciones finales del script | Ejecución completada correctamente |
+
+La salida final fue `VALIDACIÓN MYSQL COMPLETADA`. Los registros QA se revirtieron; no deben buscarse como datos persistentes de la demostración. Las pruebas realizaron SQL directo sobre la copia. No acreditan todavía el endpoint HTTP, la auditoría del servicio, los permisos con Firebase ni la interfaz del navegador. El PR continúa en borrador hasta comprobar ese recorrido. La base original se utilizó como origen de lectura del script.
