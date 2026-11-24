@@ -168,3 +168,11 @@ Los errores de red mostrados en rojo son los rechazos esperados de estas solicit
 - Aprobados antes del recorrido manual: 20 casos Maven con mocks, 14 casos de lógica del historial, build Angular development y tipado de specs. No se vuelven a contabilizar las capturas como pruebas unitarias.
 - Pendientes de integración/revisión: activo inactivo por HTTP (cubierto con mocks), rollback del servicio ante fallo real de auditoría, consulta global del historial, revisión del equipo y despliegue. La aceptación integral de HU-MAN-06 requiere además sus mantenimientos y cronología.
 - La base principal no recibió la migración durante este recorrido. Antes de arrancar este backend contra ella debe aplicarse `04_PMS272_relacion_incidencia_activo.sql` con respaldo y revisar el resultado. El PR y la validación en una copia no realizan por sí mismos esa instalación.
+
+## Alineación de tareas preventivas antes del recorrido combinado
+
+Al revisar la prueba pendiente de CA-01 se contrastó `TareaPreventivaEntity` y el servicio de programación con el historial: el contrato actual devuelve `programadaPara` y `responsable`; el historial consultaba los alias `fechaProgramada` y `tecnico`. Esto podía usar `actualizadoEn` para una tarea programada y omitir su responsable informado.
+
+Se añadieron dos casos con el contrato real: una tarea futura junto con una falla, y una tarea ejecutada cuya fecha de cierre difiere de programación/actualización. Los dos casos fallaron antes del ajuste; después aprobaron los 16 casos del historial (los 14 anteriores más estos 2). El historial usa fechaFin, fechaInicio o programadaPara según los datos disponibles, conserva alias históricos y usa actualizadoEn solo como respaldo registrado. Lee responsable y mantiene tecnico como compatibilidad. No reemplaza ninguna fecha por la hora de la prueba.
+
+El cambio afecta solo la lectura del historial. No modifica la API de programación, los registros de mantenimiento, las asociaciones ni las pruebas positivas y de permisos ya realizadas. La prueba combinada en navegador sobre esta actualización sigue pendiente.

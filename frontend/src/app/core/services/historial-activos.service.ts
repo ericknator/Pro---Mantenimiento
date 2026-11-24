@@ -121,8 +121,12 @@ export class HistorialActivosService {
       const tareasDeActivo = tareas.filter((t) => this.correspondeAlActivo(t, activo));
 
       for (const t of tareasDeActivo) {
-        const fecha = this.fechaRegistrada(t.fechaEjecucion, t.fechaProgramada, t.actualizadoEn);
+        const fecha = this.fechaRegistrada(
+          t.fechaFin, t.fechaInicio, t.programadaPara,
+          t.fechaEjecucion, t.fechaProgramada, t.actualizadoEn
+        );
         if (!fecha) { this.advertirFecha(); continue; }
+        const responsable = t.responsable ?? t.tecnico;
         historial.push({
           id: `tarea-${t.id}`,
           tipo: 'MANTENIMIENTO',
@@ -132,7 +136,8 @@ export class HistorialActivosService {
             t.descripcion ||
             t.observaciones ||
             'Sin descripción registrada.',
-          responsable: t.tecnico?.nombres ? `${t.tecnico.nombres} ${t.tecnico.apellidos || ''}` : 'Responsable no registrado',
+          responsable: [responsable?.nombres, responsable?.apellidos]
+            .filter(Boolean).join(' ') || 'Responsable no registrado',
           codigoReferencia: t.codigo || (t.id != null ? `#${t.id}` : undefined),
           fecha,
         });
