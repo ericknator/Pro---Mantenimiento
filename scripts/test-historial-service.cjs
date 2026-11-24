@@ -113,3 +113,60 @@ test('sin datos y sin errores, el historial permanece vacío sin advertencias', 
   assert.equal(service.error(), null);
   assert.equal(service.advertencia(), null);
 });
+
+
+test('incidencias generales con activo null no impiden un vacío válido de otro activo', async () => {
+  const { service } = escenario({ incidencias: [falla({ activoId: undefined, activo: null })] });
+  assert.equal((await service.obtenerHistorialDeActivo(activo)).length, 0);
+  assert.equal(service.error(), null);
+  assert.equal(service.advertencia(), null);
+});
+test('el contrato nuevo no mezcla fallas de dos activos del mismo tipo', async () => {
+  const { service } = escenario({ incidencias: [
+    falla({ id: 20, activoId: undefined, activo: { id: 1, codigo: 'ACT-A' } }),
+    falla({ id: 21, activoId: undefined, activo: { id: 2, codigo: 'ACT-B' } }),
+    falla({ id: 22, activoId: undefined, activo: null }),
+  ] });
+  const lista = await service.obtenerHistorialDeActivo(activo);
+  assert.equal(lista.length, 1);
+  assert.equal(lista[0].id, 'falla-20');
+  assert.equal(service.advertencia(), null);
+});
+
+test('referencias incompletas y tareas sin activo mantienen la advertencia', async () => {
+  for (const datos of [
+    { incidencias: [falla({ activoId: undefined, activo: {} })] },
+    { tareas: [tarea({ activo: null })] },
+  ]) {
+    const { service } = escenario(datos);
+    assert.equal((await service.obtenerHistorialDeActivo(activo)).length, 0);
+    assert.ok(service.advertencia());
+  }
+});
+
+test('usa programadaPara y responsable del contrato real y ordena junto con fallas', async () => {
+  const programada = '2026-11-25T10:00:00';
+  const { service } = escenario({
+    tareas: [tarea({ fechaProgramada: undefined, programadaPara: programada,
+      actualizadoEn: '2026-11-24T14:00:00',
+      responsable: { nombres: 'Técnico QA', apellidos: 'PMS272' } })],
+    incidencias: [falla({ fechaReporte: '2026-11-24T18:00:00' })],
+  });
+  const lista = await service.obtenerHistorialDeActivo(activo);
+  assert.equal(lista[0].id, 'tarea-10');
+  assert.equal(lista[0].fecha.getTime(), new Date(programada).getTime());
+  assert.equal(lista[0].responsable, 'Técnico QA PMS272');
+  assert.equal(lista[1].id, 'falla-20');
+});
+
+test('una tarea ejecutada usa fechaFin antes que programación o actualización', async () => {
+  const fin = '2026-11-23T09:00:00';
+  const { service } = escenario({ tareas: [tarea({
+    fechaProgramada: undefined, programadaPara: '2026-11-20T10:00:00',
+    fechaInicio: '2026-11-23T08:00:00', fechaFin: fin,
+    actualizadoEn: '2026-11-24T14:00:00', estado: { nombre: 'Ejecutada' },
+  })] });
+  const lista = await service.obtenerHistorialDeActivo(activo);
+  assert.equal(lista[0].fecha.getTime(), new Date(fin).getTime());
+  assert.equal(lista[0].estado, 'Ejecutada');
+});

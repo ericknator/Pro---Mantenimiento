@@ -36,3 +36,11 @@ dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
 @media (max-width: 767.98px) {
   .grid { grid-template-columns: 1fr; gap: 16px; }
 }
+
+.activo-form { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e3e8f2;
+  display: grid; gap: 14px;
+  h3, p { margin: 0; }
+  p { font-size: .85rem; line-height: 1.5; }
+  fieldset { display: grid; gap: 14px; }
+  select { width: 100%; }
+}
