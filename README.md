@@ -178,7 +178,7 @@ bash scripts/pms272-test/install-main-schema.sh
 
 Este comando exige MySQL local y ese nombre de base. Lee las credenciales locales sin mostrarlas; guarda un respaldo comprimido con rutinas, triggers y eventos fuera del repositorio, comprueba su integridad y SHA-256, aplica la migración y compara las incidencias originales y los conteos. El respaldo se conserva en `${XDG_STATE_HOME:-$HOME/.local/state}/pro-mantenimiento/backups/`. La integridad del archivo no equivale a una restauración ensayada. Para otros entornos, preparar su respaldo y aplicar el SQL con el cliente correspondiente.
 
-El script de instalación principal se preparó y revisó; su ejecución sobre la base principal requiere un resultado de terminal. Las pruebas anteriores se realizaron en una copia. Detalle y recuperación: `docs/PMS-272-vinculo-incidencia-activo.md`.
+El 24/11/2026 Erick ejecutó el respaldo y la migración en la base principal local; se verificaron filas/columna/FK, arranque del backend y apertura de la aplicación con sus cuatro incidencias originales. El recorrido funcional ampliado se realizó en la copia QA. Detalle, checksum y límites de validación: `docs/PMS-272-vinculo-incidencia-activo.md`.
 
 ## 9. Trabajo ágil y trazabilidad
 
