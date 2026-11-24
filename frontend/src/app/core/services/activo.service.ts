@@ -20,9 +20,9 @@ import {
 export class ActivoService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl =
-    'http://localhost:8085/promantenimiento/api/activo';
+    'http://localhost:8086/promantenimiento/api/activo';
   private readonly tiposActivoUrl =
-    'http://localhost:8085/promantenimiento/api/tipo-activo';
+    'http://localhost:8086/promantenimiento/api/tipo-activo';
 
   readonly activos = signal<Activo[]>([]);
   readonly tiposActivo = signal<TipoActivo[]>([]);

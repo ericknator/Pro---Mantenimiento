@@ -78,7 +78,17 @@ En la rama principal se encuentran integradas estas rutas:
 
 El historial del residente consulta las alertas asociadas a su cuenta autenticada. Se han realizado pruebas locales de lectura y restricciones de acceso para estos recorridos.
 
-**Pendiente de integración y validación:** confirmación/acuse de recepción y otras transiciones de estado de alertas. La existencia de una pantalla no demuestra por sí sola el cumplimiento integral de la historia.
+Están integrados el acuse de recepción, las transiciones de estado y el rediseño de la bandeja de portería y del seguimiento del residente. Queda pendiente validar el recorrido completo en el entorno que se demostrará; la integración del código no acredita por sí sola la aceptación de las historias.
+
+### Gestión de residentes
+
+La ruta **/administrador/residentes** permite registrar propietarios e inquilinos y asociarlos a una unidad. La API está restringida al rol administrador. Sigue pendiente validar desde el navegador el inicio de sesión del residente recién creado y el reconocimiento de su unidad.
+
+### Historial de activos
+
+El historial utiliza relaciones explícitas por ID/código y distingue errores de consulta de resultados vacíos. No genera activos ni fechas de respaldo. Las incidencias sin vínculo explícito a un activo quedan excluidas con advertencia: la relación persistida incidencia–activo sigue pendiente y HU-MAN-06 no se declara aceptada.
+
+Integración y límites de las pruebas: `docs/revisiones/INTEGRACION-EQUIPO-2026-11-24.md`.
 
 ### Roles contemplados
 

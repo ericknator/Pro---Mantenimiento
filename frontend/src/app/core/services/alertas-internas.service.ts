@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config/api.config';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -100,8 +101,7 @@ export class AlertasInternasService {
         );
     }
 
-    private readonly apiUrl =
-        'http://localhost:8085/promantenimiento/api';
+    private readonly apiUrl = API_BASE_URL;
 
     private async obtenerUsuario(): Promise<User> {
 

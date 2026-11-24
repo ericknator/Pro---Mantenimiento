@@ -32,7 +32,7 @@ interface PlanMantenimientoRequestBody {
 export class MantenimientoService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiBaseUrl = 'http://localhost:8085/promantenimiento/api';
+  private readonly apiBaseUrl = 'http://localhost:8086/promantenimiento/api';
   private readonly activosUrl = `${this.apiBaseUrl}/activo`;
   private readonly frecuenciasUrl = `${this.apiBaseUrl}/frecuencia-mantenimiento`;
   private readonly rolesUrl = `${this.apiBaseUrl}/rol`;

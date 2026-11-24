@@ -10,6 +10,12 @@ const ts = require('../frontend/node_modules/typescript');
 const sourcePath = process.env.PMS_HISTORIAL_SOURCE_PATH || path.join(__dirname,
   '../frontend/src/app/core/services/historial-activos.service.ts');
 const source = fs.readFileSync(sourcePath, 'utf8');
+const apiConfig = ts.transpileModule(fs.readFileSync(path.join(__dirname,
+  '../frontend/src/app/core/config/api.config.ts'), 'utf8'), { compilerOptions: {
+  target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
+}}).outputText;
+const apiExports = {};
+vm.runInNewContext(apiConfig, { exports: apiExports });
 const compiled = ts.transpileModule(source, { compilerOptions: {
   target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   experimentalDecorators: true,
@@ -29,6 +35,7 @@ function escenario({ activos = [], tareas = [], incidencias = [], fallar = '' } 
   const signal = (initial) => { let value = initial; const read = () => value;
     read.set = (next) => { value = next; }; return read; };
   const modules = {
+    '../config/api.config': apiExports,
     '@angular/common/http': { HttpClient: class {}, HttpHeaders: class {} },
     '@angular/core': { Injectable: () => (target) => target, inject: () => http, signal },
     rxjs: { firstValueFrom: (value) => value },

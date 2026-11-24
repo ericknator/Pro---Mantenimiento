@@ -25,10 +25,13 @@ import pe.com.promantenimineto.repository.UsuarioPerfilRepository;
 public class FirebaseTokenFilter extends OncePerRequestFilter {
 
     private final UsuarioPerfilRepository usuarioPerfilRepository;
+    private final FirebaseAuth firebaseAuth;
 
     public FirebaseTokenFilter(
-            UsuarioPerfilRepository usuarioPerfilRepository) {
+            UsuarioPerfilRepository usuarioPerfilRepository,
+            FirebaseAuth firebaseAuth) {
         this.usuarioPerfilRepository = usuarioPerfilRepository;
+        this.firebaseAuth = firebaseAuth;
     }
 
     @Override
@@ -51,8 +54,7 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
         try {
             String token = authorization.substring(7);
 
-            FirebaseToken tokenVerificado =
-                    FirebaseAuth.getInstance().verifyIdToken(token);
+            FirebaseToken tokenVerificado = firebaseAuth.verifyIdToken(token);
 
             UsuarioPerfilEntity usuario =
                     usuarioPerfilRepository
@@ -92,6 +94,11 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
             response.sendError(
                     HttpServletResponse.SC_UNAUTHORIZED,
                     "El token de Firebase no es válido o ha expirado.");
+        } catch (RuntimeException e) {
+            SecurityContextHolder.clearContext();
+            response.sendError(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "No se pudo validar el token de Firebase.");
         }
     }
 }

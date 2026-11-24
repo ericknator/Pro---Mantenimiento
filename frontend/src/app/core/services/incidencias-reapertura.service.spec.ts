@@ -8,7 +8,7 @@ describe('IncidenciasService - PMS-202 reapertura', () => {
   let service: IncidenciasService;
   let http: HttpTestingController;
 
-  const base = 'http://localhost:8085/promantenimiento/api';
+  const base = 'http://localhost:8086/promantenimiento/api';
   const motivo = 'QA-PMS-202: la falla ficticia continúa.';
   const usuario = { getIdToken: jasmine.createSpy('getIdToken') };
 

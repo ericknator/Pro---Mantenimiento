@@ -10,7 +10,7 @@ export class CategoriaIncidenciaService {
   private readonly http = inject(HttpClient);
 
   private readonly apiUrl =
-    'http://localhost:8085/promantenimiento/api/categoria-incidencia';
+    'http://localhost:8086/promantenimiento/api/categoria-incidencia';
 
   readonly categorias = signal<CategoriaIncidencia[]>([]);
   readonly cargando = signal(false);

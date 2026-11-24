@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../config/api.config';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
@@ -20,9 +21,9 @@ export interface ItemHistorial {
 export class HistorialActivosService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiActivosUrl = 'http://localhost:8085/promantenimiento/api/activo';
-  private readonly apiTareasUrl = 'http://localhost:8085/promantenimiento/api/tarea-preventiva';
-  private readonly apiIncidenciasUrl = 'http://localhost:8085/promantenimiento/api/incidencia';
+  private readonly apiActivosUrl = `${API_BASE_URL}/activo`;
+  private readonly apiTareasUrl = `${API_BASE_URL}/tarea-preventiva`;
+  private readonly apiIncidenciasUrl = `${API_BASE_URL}/incidencia`;
 
   readonly cargando = signal<boolean>(false);
   readonly error = signal<string | null>(null);

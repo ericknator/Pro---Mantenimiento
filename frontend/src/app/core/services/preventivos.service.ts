@@ -33,9 +33,9 @@ export class PreventivosService {
   private readonly authService = inject(AuthService);
 
   private readonly apiUrl =
-    'http://localhost:8085/promantenimiento/api/tarea-preventiva';
+    'http://localhost:8086/promantenimiento/api/tarea-preventiva';
   private readonly apiIntervencionUrl =
-    'http://localhost:8085/promantenimiento/api/intervencion-preventiva';
+    'http://localhost:8086/promantenimiento/api/intervencion-preventiva';
 
   private readonly _tareas = signal<TareaPreventiva[]>([]);
   readonly tareas = this._tareas.asReadonly();

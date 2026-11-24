@@ -1,0 +1,205 @@
+<section class="gestion-usuarios">
+    <header class="encabezado">
+        <div>
+            <span class="subtitulo">ADMINISTRACIÓN</span>
+            <h1>Gestión de usuarios</h1>
+            <p>
+                Administra el acceso de propietarios e inquilinos
+                a Pro-Mantenimiento.
+            </p>
+        </div>
+
+        <button type="button" class="btn-primario" (click)="abrirFormulario()">
+            + Nuevo usuario
+        </button>
+    </header>
+
+    <div class="resumen">
+        <article class="resumen-item">
+            <span>Usuarios registrados</span>
+            <strong>{{ usuarios.length }}</strong>
+        </article>
+
+        <article class="resumen-item">
+            <span>Usuarios activos</span>
+            <strong>{{ totalActivos }}</strong>
+        </article>
+    </div>
+
+    <p class="mensaje mensaje-error" *ngIf="errorCarga" role="alert">{{ errorCarga }}</p>
+    <p class="mensaje mensaje-exito" *ngIf="mensajeExito" role="status">{{ mensajeExito }}</p>
+
+    <section class="panel">
+        <div class="panel-encabezado">
+            <div>
+                <h2>Usuarios del condominio</h2>
+                <p>Consulta y filtra las cuentas registradas.</p>
+            </div>
+        </div>
+
+        <div class="filtros">
+            <label class="campo-busqueda">
+                <span>Buscar usuario</span>
+                <input type="search" placeholder="Nombre, correo o departamento" [(ngModel)]="busqueda" />
+            </label>
+
+            <label class="campo-estado">
+                <span>Estado</span>
+                <select [(ngModel)]="filtroEstado">
+                    <option value="TODOS">Todos</option>
+                    <option value="ACTIVO">Activo</option>
+                    <option value="INACTIVO">Inactivo</option>
+                </select>
+            </label>
+
+            <button type="button" class="btn-secundario" (click)="limpiarFiltros()">
+                Limpiar filtros
+            </button>
+        </div>
+
+        <div class="tabla-contenedor">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Correo</th>
+                        <th>Unidad y relación</th>
+                        <th>Rol</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr *ngFor="let usuario of usuariosFiltrados">
+                        <td>
+                            {{ usuario.nombres }} {{ usuario.apellidos }}
+                        </td>
+                        <td>{{ usuario.correo }}</td>
+                        <td>{{ unidadesTexto(usuario) }}</td>
+                        <td>{{ usuario.rol }}</td>
+                        <td>
+                            <span class="estado" [class.activo]="usuario.activo">
+                                {{ usuario.activo ? 'ACTIVO' : 'INACTIVO' }}
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="estado-vacio" *ngIf="usuariosFiltrados.length === 0">
+            <h3>No hay usuarios para mostrar</h3>
+            <p>
+                {{ cargando ? 'Cargando datos reales...' : 'Prueba con otro nombre, correo o estado.' }}
+            </p>
+        </div>
+    </section>
+
+    <div class="modal-fondo" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
+        <section class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-alta"
+            (click)="$event.stopPropagation()">
+            <div class="modal-encabezado">
+                <div>
+                    <h2 id="titulo-alta">Nuevo usuario</h2>
+                    <p>Registra los datos del nuevo residente.</p>
+                </div>
+
+                <button type="button" class="cerrar" aria-label="Cerrar formulario" (click)="cerrarFormulario()">
+                    ×
+                </button>
+            </div>
+
+            <form #altaForm="ngForm" (ngSubmit)="registrarUsuario(altaForm)">
+                <div class="form-grid">
+                    <label>
+                        Nombres *
+                        <input name="nombres" type="text" [(ngModel)]="formulario.nombres" required maxlength="100"
+                            #nombres="ngModel" />
+                        <small *ngIf="nombres.invalid && nombres.touched">
+                            Ingresa los nombres.
+                        </small>
+                    </label>
+
+                    <label>
+                        Apellidos *
+                        <input name="apellidos" type="text" [(ngModel)]="formulario.apellidos" required maxlength="120"
+                            #apellidos="ngModel" />
+                        <small *ngIf="apellidos.invalid && apellidos.touched">
+                            Ingresa los apellidos.
+                        </small>
+                    </label>
+
+                    <label class="ancho-completo">
+                        Correo electrónico *
+                        <input name="correo" type="email" [(ngModel)]="formulario.correo" required email maxlength="150"
+                            placeholder="usuario@correo.com" #correo="ngModel" />
+                        <small *ngIf="correo.invalid && correo.touched">
+                            Ingresa un correo válido.
+                        </small>
+                    </label>
+
+                    <label>
+                        Teléfono
+                        <input name="telefono" type="tel" [(ngModel)]="formulario.telefono" maxlength="20"
+                            placeholder="Opcional" />
+                    </label>
+
+                    <label>
+                        Clave temporal *
+                        <input name="claveTemporal" type="password" [(ngModel)]="formulario.claveTemporal"
+                            required minlength="8" maxlength="128" autocomplete="new-password"
+                            placeholder="Mínimo 8 caracteres" #claveTemporal="ngModel" />
+                        <small *ngIf="claveTemporal.invalid && claveTemporal.touched">
+                            Ingresa una clave temporal de al menos 8 caracteres.
+                        </small>
+                    </label>
+
+                    <label>
+                        Tipo de ocupación *
+                        <select name="relacion" [(ngModel)]="formulario.relacion" required>
+                            <option value="PROPIETARIO">Propietario</option>
+                            <option value="INQUILINO">Inquilino</option>
+                        </select>
+                    </label>
+
+                    <label class="ancho-completo">
+                        Departamento o unidad *
+                        <select name="unidadId" [(ngModel)]="formulario.unidadId" required #unidad="ngModel">
+                            <option [ngValue]="null">
+                                Selecciona una unidad
+                            </option>
+                            <option *ngFor="let item of unidades" [ngValue]="item.id">
+                                {{ item.etiqueta }}
+                            </option>
+                        </select>
+                        <small *ngIf="unidad.invalid && unidad.touched">
+                            Selecciona un departamento.
+                        </small>
+                        <small *ngIf="unidades.length === 0">
+                            Las unidades se cargarán desde el backend.
+                        </small>
+                    </label>
+                </div>
+
+                <div class="rol-asignado">
+                    <strong>Rol asignado: RESIDENTE</strong>
+                    <p>
+                        La clave se envía directamente a Firebase y nunca se guarda en MySQL.
+                    </p>
+                </div>
+
+                <p class="mensaje mensaje-error" *ngIf="errorAlta" role="alert">{{ errorAlta }}</p>
+
+                <div class="acciones">
+                    <button type="button" class="btn-secundario" (click)="cerrarFormulario()">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="btn-primario" [disabled]="altaForm.invalid || intentandoGuardar">
+                        {{ intentandoGuardar ? 'Creando...' : 'Crear usuario' }}
+                    </button>
+                </div>
+            </form>
+        </section>
+    </div>
+</section>

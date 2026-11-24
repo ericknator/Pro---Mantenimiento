@@ -11,7 +11,7 @@ describe('MantenimientoService', () => {
   let service: MantenimientoService;
   let http: HttpTestingController;
 
-  const apiBaseUrl = 'http://localhost:8085/promantenimiento/api';
+  const apiBaseUrl = 'http://localhost:8086/promantenimiento/api';
 
   beforeEach(() => {
     TestBed.configureTestingModule({
