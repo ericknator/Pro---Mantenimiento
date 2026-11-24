@@ -142,3 +142,9 @@ Erick ejecutó una consulta de solo lectura en la copia `pms272_qa_20261124_1448
 | 5 | 3 | activoAnteriorId=4;activoNuevoId=null | 2026-11-24 15:23:07 |
 
 La secuencia corresponde al recorrido de A (id 3), B (id 4) y retirada observado en la interfaz. Esta consulta confirma el estado final persistido y los tres eventos con usuario y fecha. No acredita el rollback del servicio ante un fallo de auditoría ni una prueba de rechazo HTTP con residente. Esas verificaciones continúan separadas y pendientes. Fuente: salida del cliente MySQL compartida por Erick.
+
+## Restricción HTTP con residente observada — 24/11/2026
+
+La captura de Console compartida por Erick muestra `Perfil: 200 Rol: RESIDENTE`, seguida de un PATCH a `/promantenimiento/api/incidencia/4/activo` rechazado con HTTP 403. La comprobación previa del perfil distingue este resultado de un token inválido o una sesión ausente. El cuerpo utilizado fue `{"activoId":null}`.
+
+Se acredita la restricción del endpoint real con una sesión de residente. No se atribuye un UID/correo concreto porque no se muestra en esa captura. La consulta MySQL anterior había confirmado el vínculo nulo y tres eventos; no se ejecutó todavía otra consulta de auditoría después del rechazo.
