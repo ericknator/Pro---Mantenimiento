@@ -1,7 +1,8 @@
+import { API_BASE_URL } from '../config/api.config';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Activo, ActivoApi } from '../../models/activo.model';
+import { Activo } from '../../models/activo.model';
 import { auth } from './firebase.config';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
@@ -20,12 +21,13 @@ export interface ItemHistorial {
 export class HistorialActivosService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiActivosUrl = 'http://localhost:8086/promantenimiento/api/activo';
-  private readonly apiTareasUrl = 'http://localhost:8086/promantenimiento/api/tarea-preventiva';
-  private readonly apiIncidenciasUrl = 'http://localhost:8086/promantenimiento/api/incidencia';
+  private readonly apiActivosUrl = `${API_BASE_URL}/activo`;
+  private readonly apiTareasUrl = `${API_BASE_URL}/tarea-preventiva`;
+  private readonly apiIncidenciasUrl = `${API_BASE_URL}/incidencia`;
 
   readonly cargando = signal<boolean>(false);
   readonly error = signal<string | null>(null);
+  readonly advertencia = signal<string | null>(null);
   readonly activos = signal<Activo[]>([]);
 
   private esperarUsuario(): Promise<User | null> {
@@ -60,20 +62,14 @@ export class HistorialActivosService {
     this.error.set(null);
     try {
       const headers = await this.getHeaders();
-      let res: any[] = [];
-      try {
-        res = await firstValueFrom(this.http.get<any[]>(this.apiActivosUrl, { headers }));
-      } catch {
-        res = await firstValueFrom(
-          this.http.get<any[]>('http://localhost:8086/promantenimineto/api/activos', { headers })
-        ).catch(() => []);
-      }
+      const res = await firstValueFrom(this.http.get<any[]>(this.apiActivosUrl, { headers }));
+      if (!Array.isArray(res)) throw new Error('Respuesta de activos inválida');
 
       const listaMapeada: Activo[] = (res || []).map((item) => ({
         id: item.id,
-        codigo: item.codigo || `ACT-${item.id}`,
+        codigo: item.codigo || (item.id != null ? `#${item.id}` : 'Código no informado'),
         nombre: item.nombre || 'Activo sin nombre',
-        tipo: item.tipoActivo?.nombre || item.tipo || 'General',
+        tipo: item.tipoActivo?.nombre || item.tipo || 'Tipo no informado',
         tipoActivoId: item.tipoActivo?.id,
         ubicacion: item.ubicacion || 'Ubicación no especificada',
         descripcion: item.descripcion,
@@ -82,28 +78,16 @@ export class HistorialActivosService {
         numeroSerie: item.numeroSerie,
         fechaInstalacion: item.fechaInstalacion,
         esCritico: item.esCritico ?? false,
-        estado: item.estadoActivo?.nombre || item.estado || 'OPERATIVO',
+        estado: item.estadoActivo?.nombre || item.estado || 'Estado no informado',
         creadoEn: item.creadoEn,
         actualizadoEn: item.actualizadoEn,
       }));
 
-      if (listaMapeada.length === 0) {
-        listaMapeada.push({
-          id: 1,
-          codigo: 'ACT-DEC7219F',
-          nombre: '[QA] Ascensor Torre 1',
-          tipo: 'Ascensor',
-          ubicacion: 'Torre 1 · Hall principal',
-          estado: 'OPERATIVO',
-          esCritico: true,
-          creadoEn: '2026-09-01T09:00:00',
-        });
-      }
-
       this.activos.set(listaMapeada);
       return listaMapeada;
     } catch (err: any) {
-      this.error.set('No se pudo cargar la lista de activos.');
+      this.activos.set([]);
+      this.error.set('No se pudo cargar la lista de activos. Intenta nuevamente.');
       return [];
     } finally {
       this.cargando.set(false);
@@ -113,6 +97,7 @@ export class HistorialActivosService {
   async obtenerHistorialDeActivo(activo: Activo): Promise<ItemHistorial[]> {
     this.cargando.set(true);
     this.error.set(null);
+    this.advertencia.set(null);
 
     const historial: ItemHistorial[] = [];
 
@@ -120,86 +105,112 @@ export class HistorialActivosService {
       const headers = await this.getHeaders();
 
       const [tareas, incidencias] = await Promise.all([
-        firstValueFrom(this.http.get<any[]>(this.apiTareasUrl, { headers })).catch(() => []),
-        firstValueFrom(this.http.get<any[]>(this.apiIncidenciasUrl, { headers })).catch(() => []),
+        firstValueFrom(this.http.get<any[]>(this.apiTareasUrl, { headers })),
+        firstValueFrom(this.http.get<any[]>(this.apiIncidenciasUrl, { headers })),
       ]);
 
-      const tareasDeActivo = (tareas || []).filter((t: any) => {
-        const actId = t.activo?.id ?? t.activoId ?? t.activo;
-        const actCod = t.activo?.codigo ?? t.activoCodigo;
-        return (
-          (activo.id && String(actId) === String(activo.id)) ||
-          (activo.codigo && actCod === activo.codigo) ||
-          (t.titulo && t.titulo.toLowerCase().includes(activo.tipo.toLowerCase()))
-        );
-      });
+      if (!Array.isArray(tareas) || !Array.isArray(incidencias)) {
+        throw new Error('Respuesta de historial inválida');
+      }
+      if ([...tareas, ...incidencias].some((registro) => !this.tieneRelacion(registro))) {
+        this.advertir('Hay intervenciones sin un activo identificado; su historial puede estar incompleto.');
+      }
+      const tareasDeActivo = tareas.filter((t) => this.correspondeAlActivo(t, activo));
 
       for (const t of tareasDeActivo) {
+        const fecha = this.fechaRegistrada(t.fechaEjecucion, t.fechaProgramada, t.actualizadoEn);
+        if (!fecha) { this.advertirFecha(); continue; }
         historial.push({
           id: `tarea-${t.id}`,
           tipo: 'MANTENIMIENTO',
-          titulo: `${t.titulo || 'Mantenimiento Preventivo'} · ${t.estado?.nombre || t.estado || 'Ejecutada'}`,
-          estado: t.estado?.nombre || t.estado || 'Ejecutada',
+          titulo: `${t.titulo || 'Mantenimiento Preventivo'} · ${t.estado?.nombre || t.estado || 'Sin estado registrado'}`,
+          estado: t.estado?.nombre || t.estado || 'Sin estado registrado',
           descripcion:
             t.descripcion ||
             t.observaciones ||
-            'Mantenimiento e inspección técnica realizada al equipo.',
-          responsable: t.tecnico?.nombres ? `${t.tecnico.nombres} ${t.tecnico.apellidos || ''}` : 'Mantenimiento Prueba',
-          codigoReferencia: t.codigo || `TAR-${t.id}`,
-          fecha: new Date(t.fechaEjecucion || t.fechaProgramada || t.actualizadoEn || Date.now()),
+            'Sin descripción registrada.',
+          responsable: t.tecnico?.nombres ? `${t.tecnico.nombres} ${t.tecnico.apellidos || ''}` : 'Responsable no registrado',
+          codigoReferencia: t.codigo || (t.id != null ? `#${t.id}` : undefined),
+          fecha,
         });
       }
 
-      const fallasDeActivo = (incidencias || []).filter((inc: any) => {
-        const ubi = (inc.ubicacion || '').toLowerCase();
-        const desc = (inc.descripcion || '').toLowerCase();
-        const cat = (inc.categoria?.nombre || inc.categoria || '').toLowerCase();
-        const tipoAct = activo.tipo.toLowerCase();
-        const nomAct = activo.nombre.toLowerCase();
-
-        return (
-          ubi.includes(tipoAct) ||
-          desc.includes(tipoAct) ||
-          nomAct.includes(cat) ||
-          (activo.id && inc.activoId === activo.id)
-        );
-      });
+      const fallasDeActivo = incidencias.filter((inc) => this.correspondeAlActivo(inc, activo));
 
       for (const f of fallasDeActivo) {
+        const fecha = this.fechaRegistrada(f.fechaReporte, f.actualizadoEn);
+        if (!fecha) { this.advertirFecha(); continue; }
         historial.push({
           id: `falla-${f.id}`,
           tipo: 'FALLA',
-          titulo: `Falla: ${f.descripcion || 'Incidencia en activo'} · ${f.estado?.nombre || f.estado || 'Solucionada'}`,
-          estado: f.estado?.nombre || f.estado || 'Solucionada',
+          titulo: `Falla: ${f.descripcion || 'Incidencia en activo'} · ${f.estado?.nombre || f.estado || 'Sin estado registrado'}`,
+          estado: f.estado?.nombre || f.estado || 'Sin estado registrado',
           descripcion:
             f.accionesRealizadas ||
             f.diagnosticoTecnico ||
-            'Se reportó un desperfecto en el activo y se derivó a atención.',
-          responsable: f.solicitante ? `${f.solicitante.nombres} ${f.solicitante.apellidos}` : 'Residente Prueba',
-          codigoReferencia: f.codigo || (f.id ? `INC-2026-000${f.id}` : undefined),
-          fecha: new Date(f.actualizadoEn || f.fechaReporte || Date.now()),
+            'Sin descripción registrada.',
+          responsable: f.solicitante ? `${f.solicitante.nombres} ${f.solicitante.apellidos}` : 'Responsable no registrado',
+          codigoReferencia: f.codigo || (f.id ? `#${f.id}` : undefined),
+          fecha,
         });
       }
 
-      if (activo.creadoEn || activo.fechaInstalacion) {
+      const fechaAlta = this.fechaRegistrada(activo.creadoEn);
+      if (fechaAlta) {
         historial.push({
           id: `registro-${activo.id || 'ini'}`,
           tipo: 'REGISTRO',
           titulo: 'Registro del activo en el sistema',
           estado: 'Activo',
-          descripcion: `Administrador Prueba · Alta del activo ${activo.nombre} con código ${activo.codigo}.`,
-          responsable: 'Administrador Prueba',
+          descripcion: `Alta del activo ${activo.nombre} con código ${activo.codigo}.`,
+          responsable: 'No informado en el registro del activo',
           codigoReferencia: activo.codigo,
-          fecha: new Date(activo.fechaInstalacion || activo.creadoEn || '2026-09-01T09:00:00'),
+          fecha: fechaAlta,
         });
       }
 
       historial.sort((a, b) => b.fecha.getTime() - a.fecha.getTime());
       return historial;
     } catch {
+      this.error.set('No se pudo consultar el historial. Intenta nuevamente; no se ha confirmado la ausencia de intervenciones.');
       return [];
     } finally {
       this.cargando.set(false);
     }
   }
+
+  private tieneRelacion(registro: any): boolean {
+    const ref = registro.activo;
+    return (ref?.id ?? registro.activoId ??
+      (typeof ref === 'number' || typeof ref === 'string' ? ref : null)) != null ||
+      Boolean(ref?.codigo || registro.activoCodigo);
+  }
+
+  private correspondeAlActivo(registro: any, activo: Activo): boolean {
+    const ref = registro.activo;
+    const id = ref?.id ?? registro.activoId ??
+      (typeof ref === 'number' || typeof ref === 'string' ? ref : null);
+    if (id != null) return activo.id != null && String(id) === String(activo.id);
+    const codigo = ref?.codigo ?? registro.activoCodigo;
+    return Boolean(codigo && activo.codigo && codigo === activo.codigo);
+  }
+
+  private fechaRegistrada(...valores: unknown[]): Date | null {
+    for (const valor of valores) {
+      if (typeof valor !== 'string' || !valor.trim()) continue;
+      const fecha = new Date(valor);
+      if (!Number.isNaN(fecha.getTime())) return fecha;
+    }
+    return null;
+  }
+
+  private advertir(mensaje: string): void {
+    const actual = this.advertencia();
+    if (!actual?.includes(mensaje)) this.advertencia.set(actual ? `${actual} ${mensaje}` : mensaje);
+  }
+
+  private advertirFecha(): void {
+    this.advertir('Hay intervenciones sin fecha válida; no se incluyen en la secuencia cronológica.');
+  }
+
 }

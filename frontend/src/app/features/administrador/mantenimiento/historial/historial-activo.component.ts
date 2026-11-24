@@ -18,6 +18,8 @@ export class HistorialActivoComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   readonly cargando = this.service.cargando;
+  readonly error = this.service.error;
+  readonly advertencia = this.service.advertencia;
   readonly activos = this.service.activos;
   readonly activoSeleccionado = signal<Activo | null>(null);
   readonly registros = signal<ItemHistorial[]>([]);
@@ -61,6 +63,7 @@ export class HistorialActivoComponent implements OnInit {
   }
 
   async seleccionarActivo(activo: Activo): Promise<void> {
+    this.registros.set([]);
     this.activoSeleccionado.set(activo);
     this.pestanaActiva.set('TODOS');
     const items = await this.service.obtenerHistorialDeActivo(activo);

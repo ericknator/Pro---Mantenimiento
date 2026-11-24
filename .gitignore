@@ -32,3 +32,6 @@ logs/
 application-local.properties
 application-local.yml
 firebase-service-account.json
+
+# Resultados temporales de validación local
+.validation/
