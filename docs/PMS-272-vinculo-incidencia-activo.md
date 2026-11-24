@@ -2,6 +2,18 @@
 
 Propuesta del 24/11/2026 sobre main `7df77f0a91cdde34b4b4c71b372615a66685be88`. Complementa el historial integrado en PR #58 y la trazabilidad PMS-20/HU-MAN-06 → PMS-224 → PMS-272. No acredita cierre de la historia ni modifica el estado de las tareas del equipo.
 
+## Estado vigente de integración — 24/11/2026
+
+Erick autorizó integrar el PR #61. Se conserva el QA previo del equipo: PMS-222 y PMS-223 figuran Listo, con evidencia registrada por Rodrigo para CA-01 y CA-02. No se eliminan ni se atribuyen a esta sesión esas ejecuciones. La repetición de las tres pestañas no se establece como una nueva condición de aceptación.
+
+La extensión se comprobó en la copia MySQL con vínculo A/B, cambio, retirada, recargas, auditoría y respuestas 401/403/400/404. La lectura de fechas/responsable del contrato actual pasó 16 pruebas de historial, build Angular development y tipado. También constan 20 casos Maven con mocks. El ajuste específico de fechas no tiene todavía una captura de historial combinado sobre el último commit; esto se distingue del QA previo y de las pruebas automatizadas.
+
+Erick compartió la programación sintética de Equipo A (ACT-8080F397), frecuencia Bimestral, responsable Mantenimiento Prueba y primera tarea 25/11/2026 10:00, estado Programada. Se observó el mensaje de registro y GET de tareas con 200; no se atribuye a esa captura la aceptación de un mantenimiento ejecutado ni la comprobación del historial combinado.
+
+Se revisaron fuentes, diferencias con main, resultados de prueba y metadatos del PR. GitHub no registró revisiones humanas ni hilos pendientes, y no devolvió ejecuciones de Actions ni estados CI para el head consultado. No se registra una aprobación independiente o una ejecución de CI que no ocurrió.
+
+La instalación en la base principal y el arranque posterior siguen pendientes de ejecutarse desde el terminal de Erick. La integración de código no aplica SQL por sí misma ni cierra automáticamente la historia o la DoD. Los apartados siguientes conservan la secuencia de preparación y los resultados observados en cada momento.
+
 ## Comportamiento
 
 Administración puede relacionar una incidencia con un activo existente desde el detalle administrativo. El selector muestra código, nombre y ubicación. Se puede cambiar o retirar la relación; esto no clasifica la incidencia ni cambia su estado, prioridad o responsable. La operación se registra en auditoría con usuario, incidencia, fecha e identificadores anterior y nuevo.
@@ -176,3 +188,11 @@ Al revisar la prueba pendiente de CA-01 se contrastó `TareaPreventivaEntity` y 
 Se añadieron dos casos con el contrato real: una tarea futura junto con una falla, y una tarea ejecutada cuya fecha de cierre difiere de programación/actualización. Los dos casos fallaron antes del ajuste; después aprobaron los 16 casos del historial (los 14 anteriores más estos 2). El historial usa fechaFin, fechaInicio o programadaPara según los datos disponibles, conserva alias históricos y usa actualizadoEn solo como respaldo registrado. Lee responsable y mantiene tecnico como compatibilidad. No reemplaza ninguna fecha por la hora de la prueba.
 
 El cambio afecta solo la lectura del historial. No modifica la API de programación, los registros de mantenimiento, las asociaciones ni las pruebas positivas y de permisos ya realizadas. La prueba combinada en navegador sobre esta actualización sigue pendiente.
+
+## Instalación preparada para la base principal
+
+Con escrituras de la aplicación detenidas y main actualizado, ejecutar `bash scripts/pms272-test/install-main-schema.sh` desde la raíz oficial. El instalador solo admite el nombre local bdpromantenimiento20262 y se detiene si el respaldo falla. Conserva el dump con rutinas, triggers y eventos en un directorio privado fuera del repositorio, comprimido y con checksum. Después aplica el mismo SQL ensayado dos veces en la copia y verifica columna nullable, FK, conteos y todas las columnas originales de las incidencias. No cambia application.properties ni traslada los activos/tareas QA de la copia a la base principal.
+
+La revisión de sintaxis Bash y Python embebido aprobó. No se ejecutó el instalador principal desde el entorno del asistente por falta de acceso a MySQL local. Tampoco se realizó un ensayo de restauración del respaldo principal. Tras ejecutarlo, iniciar el backend con la configuración habitual, sin el argumento que seleccionaba la base QA, y verificar la aplicación.
+
+Si surge un problema de aplicación, detener el backend y evaluar volver al código anterior conservando la nueva columna nullable. No eliminar la columna ni restaurar destructivamente el dump sin revisar el estado de los datos. El dump es un respaldo recuperable; el instalador no ejecuta automáticamente una restauración.

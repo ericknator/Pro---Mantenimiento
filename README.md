@@ -86,7 +86,7 @@ La ruta **/administrador/residentes** permite registrar propietarios e inquilino
 
 ### Historial de activos
 
-El historial utiliza relaciones explícitas por ID/código y distingue errores de consulta de resultados vacíos. No genera activos ni fechas de respaldo. Las incidencias sin vínculo explícito a un activo quedan excluidas con advertencia: la relación persistida incidencia–activo sigue pendiente y HU-MAN-06 no se declara aceptada.
+El historial utiliza relaciones explícitas y distingue errores de consulta de resultados vacíos. Administración puede guardar, cambiar o retirar el activo relacionado desde el detalle de la incidencia, con auditoría. La relación es opcional: una incidencia general puede permanecer sin activo. La validación en una copia de MySQL y sus límites se registran en `docs/PMS-272-vinculo-incidencia-activo.md`; el cierre de HU-MAN-06 se comprueba contra la DoD acordada.
 
 Integración y límites de las pruebas: `docs/revisiones/INTEGRACION-EQUIPO-2026-11-24.md`.
 
@@ -164,11 +164,21 @@ cd backend/ProMantenimiento
 ./mvnw spring-boot:run
 ~~~
 
-Antes de iniciar, el backend requiere la configuración local de base de datos, autenticación y servicios correspondiente al entorno. El frontend también necesita que la URL de su API apunte al backend disponible.
+Antes de iniciar, el backend requiere la configuración local de base de datos, autenticación y servicios correspondiente al entorno. **La base debe tener aplicada la migración `database/scripts/04_PMS272_relacion_incidencia_activo.sql` antes de arrancar este backend**, incluso para consultar incidencias. El frontend también necesita que la URL de su API apunte al backend disponible.
 
 ### Base de datos
 
-Los scripts y recursos SQL están organizados en **database/scripts/**, **database/consultas/** y **database/docs/**. Aplicar únicamente la secuencia y versión de scripts acordada para el entorno; este README no presupone una instalación automática ni una migración validada.
+Los scripts y recursos SQL están organizados en **database/scripts/**, **database/consultas/** y **database/docs/**. Para una base existente, aplicar la migración incremental PMS-272; no ejecutar de nuevo el script general `02_ProMantenimiento_BD_V4_CORREGIDA_RELACIONES.sql`, porque recrea la base.
+
+Para la base principal local de Erick (`bdpromantenimiento20262`), detener las escrituras de la aplicación y ejecutar desde la raíz:
+
+~~~bash
+bash scripts/pms272-test/install-main-schema.sh
+~~~
+
+Este comando exige MySQL local y ese nombre de base. Lee las credenciales locales sin mostrarlas; guarda un respaldo comprimido con rutinas, triggers y eventos fuera del repositorio, comprueba su integridad y SHA-256, aplica la migración y compara las incidencias originales y los conteos. El respaldo se conserva en `${XDG_STATE_HOME:-$HOME/.local/state}/pro-mantenimiento/backups/`. La integridad del archivo no equivale a una restauración ensayada. Para otros entornos, preparar su respaldo y aplicar el SQL con el cliente correspondiente.
+
+El script de instalación principal se preparó y revisó; su ejecución sobre la base principal requiere un resultado de terminal. Las pruebas anteriores se realizaron en una copia. Detalle y recuperación: `docs/PMS-272-vinculo-incidencia-activo.md`.
 
 ## 9. Trabajo ágil y trazabilidad
 
