@@ -15,6 +15,9 @@
 />
 
 <div class="historial-container">
+  <p role="alert" *ngIf="error()">{{ error() }}</p>
+  <p role="status" *ngIf="advertencia() && !error()">{{ advertencia() }}</p>
+  <p *ngIf="!cargando() && !error() && activos().length === 0">No hay activos registrados.</p>
   <div class="selector-activo-bar" *ngIf="activos().length > 1">
     <label for="selectActivo">Activo a evaluar:</label>
     <select
@@ -28,7 +31,7 @@
     </select>
   </div>
 
-  <section class="card-historial">
+  <section class="card-historial" *ngIf="activoSeleccionado()">
     <header class="card-historial__head">
       <div class="head-left">
         <h2 class="card-title">HISTORIAL DEL ACTIVO</h2>
@@ -91,7 +94,7 @@
         </div>
       </div>
 
-      <div class="vacio-box" *ngIf="registrosFiltrados().length === 0 && !cargando()">
+      <div class="vacio-box" *ngIf="registrosFiltrados().length === 0 && !cargando() && !error() && !advertencia()">
         <span class="material-symbols-rounded icon-vacio">schedule</span>
         <h3>Sin intervenciones registradas</h3>
         <p>No existen registros de mantenimiento ni fallas para este activo.</p>
