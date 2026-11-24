@@ -105,3 +105,28 @@ Fuente: salida de terminal compartida por Erick tras ejecutar los scripts de la 
 | Rollback de registros sintéticos y comprobaciones finales del script | Ejecución completada correctamente |
 
 La salida final fue `VALIDACIÓN MYSQL COMPLETADA`. Los registros QA se revirtieron; no deben buscarse como datos persistentes de la demostración. Las pruebas realizaron SQL directo sobre la copia. No acreditan todavía el endpoint HTTP, la auditoría del servicio, los permisos con Firebase ni la interfaz del navegador. El PR continúa en borrador hasta comprobar ese recorrido. La base original se utilizó como origen de lectura del script.
+
+## Recorrido de navegador observado — 24/11/2026
+
+Erick ejecutó la rama `qa/pms272-validacion-20261124` desde la carpeta oficial. El log compartido confirmó Java 25, Tomcat iniciado en 8086 y conexión a `pms272_qa_20261124_144833_15027` (MySQL 8.4.11). Una primera ejecución no pudo ocupar el puerto; el arranque posterior fue correcto. El mensaje de Maven por sí solo no se registra como arranque exitoso.
+
+Las capturas muestran dos activos sintéticos distintos en la copia, ambos de tipo Bomba de agua / cisterna:
+
+| Activo | Código | Ubicación de prueba |
+| --- | --- | --- |
+| [QA PMS272] Equipo A | ACT-8080F397 | Zona de prueba A |
+| [QA PMS272] Equipo B | ACT-4921CA90 | Zona de prueba B |
+
+Se utilizó la incidencia de prueba INC-2026-0004 (id 4), cuya descripción indica expresamente que no corresponde a una falla real. Fuente de resultados: capturas compartidas por Erick en esta conversación.
+
+| Paso observado | Detalle después de guardar y recargar | Historial A, Fallas | Historial B, Fallas |
+| --- | --- | --- | --- |
+| Asociación a A | ACT-8080F397; PATCH de asociación con 200 | 1, descripción de la incidencia QA | 0, Sin intervenciones vinculadas |
+| Cambio de A a B | ACT-4921CA90; respuesta 200 y valor conservado tras recarga | 0, Sin intervenciones vinculadas | 1, descripción de la incidencia QA |
+| Retirada de la relación | Relación retirada, respuesta 200 y Sin activo relacionado tras recarga | 0, Sin intervenciones vinculadas | 0, Sin intervenciones vinculadas |
+
+La interfaz conserva estado REPORTADA, categoría Limpieza, prioridad Baja y ausencia de responsable asignado durante el recorrido. Las consultas de activos, tareas e incidencias mostraron respuestas 200 en las capturas de historial. El alta del activo cuenta como registro general; las pestañas Fallas no la cuentan como falla.
+
+Esto acredita el guardado/lectura mediante la aplicación, el filtrado entre dos activos del mismo tipo y el vacío posterior a la retirada. No se observó todavía la tabla de auditoría ni se ejecutó con residente el PATCH nuevo. Tampoco se comprobaron por HTTP los errores de activo inexistente/inactivo, el rollback ante fallo de auditoría o el endpoint global `/api/historial-activos`. Esos límites permanecen separados de las pruebas unitarias y del ensayo SQL. No acredita la aceptación completa de HU-MAN-06, que incluye también mantenimientos y cronología.
+
+No se incorporan a Git capturas con encabezados Authorization ni credenciales. El registro para Anexo A debe incluir esta validación manual realizada por Erick.
