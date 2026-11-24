@@ -1,6 +1,6 @@
 # PMS-272 — Relación entre incidencia y activo
 
-Propuesta del 24/11/2026 sobre main `7df77f0a91cdde34b4b4c71b372615a66685be88`. Complementa el historial integrado en PR #58 y la trazabilidad PMS-20/HU-MAN-06 → PMS-224 → PMS-272. No acredita cierre de la historia ni modifica el estado de las tareas del equipo.
+Implementación del 24/11/2026, integrada mediante PR #61 en main `490a241679e198beff31b3dfc85727aa905b3f23`, a partir de `7df77f0a91cdde34b4b4c71b372615a66685be88`. Complementa el historial integrado en PR #58 y la trazabilidad PMS-20/HU-MAN-06 → PMS-224 → PMS-272. No acredita cierre de la historia ni modifica el estado de las tareas del equipo.
 
 ## Estado vigente de integración — 24/11/2026
 
@@ -12,7 +12,7 @@ Erick compartió la programación sintética de Equipo A (ACT-8080F397), frecuen
 
 Se revisaron fuentes, diferencias con main, resultados de prueba y metadatos del PR. GitHub no registró revisiones humanas ni hilos pendientes, y no devolvió ejecuciones de Actions ni estados CI para el head consultado. No se registra una aprobación independiente o una ejecución de CI que no ocurrió.
 
-La instalación en la base principal y el arranque posterior siguen pendientes de ejecutarse desde el terminal de Erick. La integración de código no aplica SQL por sí misma ni cierra automáticamente la historia o la DoD. Los apartados siguientes conservan la secuencia de preparación y los resultados observados en cada momento.
+Erick ejecutó el respaldo y la migración en la base principal; el backend arrancó contra ella y la captura posterior muestra la aplicación abierta como administrador con las cuatro incidencias originales. Los detalles se registran en el cierre de instalación al final. Esto completa la integración local; el cierre formal de historia/DoD y el despliegue externo se distinguen de esta comprobación. Los apartados siguientes conservan la secuencia de preparación y los resultados observados en cada momento.
 
 ## Comportamiento
 
@@ -66,9 +66,9 @@ mvn --offline --batch-mode -Daether.syncContext.named.factory=noop \
 
 El agente explícito permite usar Mockito en este entorno. Su ruta corresponde a la caché local y debe adaptarse si se reproduce en otro equipo. No se cambió el POM ni la versión de Java.
 
-## Recorrido dirigido pendiente
+## Recorrido propuesto inicialmente
 
-Este recorrido es una propuesta de validación, no una actividad ya realizada:
+Este listado conserva el plan inicial. Los resultados realmente ejecutados y los casos pendientes se distinguen en los apartados posteriores:
 
 1. Usar dos activos reales identificados por ID/código, preferiblemente del mismo tipo, y una incidencia de prueba explícitamente identificada.
 2. Como administrador, vincular la incidencia al primero. Recargar y comprobar el mismo ID en la API y en `incidencia.activo_id`, además de la auditoría.
@@ -79,13 +79,13 @@ Este recorrido es una propuesta de validación, no una actividad ya realizada:
 7. Consultar un activo sin intervenciones vinculadas; verificar el mensaje vacío. Las incidencias generales sin activo no deben producir vínculos ni advertencias de contrato incompleto.
 8. Verificar la consulta `/api/historial-activos` y la conservación de la clasificación/estado de la incidencia. Registrar cualquier brecha antes de aceptar CA-01/CA-02.
 
-Pendientes: persistencia a través del servicio y rollback de su transacción/auditoría, filtro HTTP con autenticación Firebase, navegador, revisión del equipo y entorno desplegado. La migración, su repetición y el rollback de los registros SQL sintéticos se comprobaron posteriormente en el terminal de Erick. La imposibilidad de acceder al servicio Docker desde este entorno impidió preparar aquí una base aislada; no se intentó modificar la base en uso.
+Al preparar el plan quedaban pendientes persistencia a través del servicio y rollback de su transacción/auditoría, filtro HTTP con autenticación Firebase, navegador, revisión del equipo y entorno desplegado. La migración, su repetición y el rollback de los registros SQL sintéticos se comprobaron posteriormente en el terminal de Erick. La imposibilidad de acceder al servicio Docker desde este entorno impidió preparar aquí una base aislada; no se intentó modificar la base en uso.
 
 ## Registro propuesto para el Anexo A
 
 | Herramienta | Fase y actividad | Componente | Validación y pendientes |
 | --- | --- | --- | --- |
-| ChatGPT/Codex | 24/11/2026; implementación asistida de relación incidencia–activo | Servicio/endpoint, entidad, migración incremental, selector administrativo e historial | 20 pruebas Maven y 14 de lógica aprobadas, build Angular development y tipado. Migración y relaciones SQL comprobadas después por Erick en MySQL 8.4.11. Pendientes revisión del equipo, servicio/auditoría, Firebase/navegador y demostración del flujo real. |
+| ChatGPT/Codex | 24/11/2026; implementación asistida de relación incidencia–activo | Servicio/endpoint, entidad, migración incremental, selector administrativo e historial | 20 pruebas Maven y 16 de lógica aprobadas, build Angular development y tipado. Erick verificó migración en copia, vínculo/cambio/retirada en navegador, auditoría y permisos; luego aplicó respaldo/migración en la base principal y comprobó la apertura con sus cuatro incidencias. QA previo PMS-222/PMS-223 conservado. Pendientes los casos adicionales y el cierre formal contra DoD/despliegue. |
 
 ## Ejecución desde el terminal del equipo
 
@@ -196,3 +196,19 @@ Con escrituras de la aplicación detenidas y main actualizado, ejecutar `bash sc
 La revisión de sintaxis Bash y Python embebido aprobó. No se ejecutó el instalador principal desde el entorno del asistente por falta de acceso a MySQL local. Tampoco se realizó un ensayo de restauración del respaldo principal. Tras ejecutarlo, iniciar el backend con la configuración habitual, sin el argumento que seleccionaba la base QA, y verificar la aplicación.
 
 Si surge un problema de aplicación, detener el backend y evaluar volver al código anterior conservando la nueva columna nullable. No eliminar la columna ni restaurar destructivamente el dump sin revisar el estado de los datos. El dump es un respaldo recuperable; el instalador no ejecuta automáticamente una restauración.
+
+## Cierre de instalación local observado — 24/11/2026
+
+Erick ejecutó desde la carpeta oficial el cambio a main y el fast-forward a `490a241679e198beff31b3dfc85727aa905b3f23`. Se conservaron sus modificaciones locales de application.properties, el script SQL general y sus archivos sin seguimiento. No se publican sus valores de configuración ni se incorporan a Git.
+
+El instalador seleccionó la base principal `bdpromantenimiento20262` en MySQL 8.4.11. La salida informó respaldo comprimido con suma coincidente y `MIGRACIÓN PRINCIPAL COMPLETADA: filas originales preservadas, columna y FK verificadas`. El directorio del respaldo es `pms272-20261124_161920.jzCPPi`, dentro de la ruta privada de respaldos documentada en README.
+
+- Archivo: `base-principal.sql.gz`.
+- SHA-256 leído de SHA256SUMS: `c30dce51ba60f1710d35d948818a147349bac37fece42d6158c804d9f5621807`.
+- El checksum y el archivo comprimido se verificaron durante el instalador. No se ensayó una restauración de ese dump.
+
+El log posterior confirmó JDBC `jdbc:mysql://localhost:3306/bdpromantenimiento20262`, Java 25 y arranque de Tomcat en 8086 con contexto `/promantenimiento`, seguido de `Started ProMantenimientoApplication` a las 16:19:26 (hora indicada por el log). No se confunde este arranque con la ejecución anterior contra la copia QA.
+
+La captura posterior de `/administrador/incidencias/todas` muestra la sesión Administrador Prueba, el listado con cuatro incidencias y los códigos INC-2026-0004, INC-2026-0003, INC-2026-0002 e INC-2026-0001. Se confirma apertura/lectura del entorno principal tras migrar. La copia conserva por separado los activos y la programación sintéticos de QA. Esta captura no se presenta como una nueva ejecución de todo el recorrido de historial sobre la base principal.
+
+Fuentes: salida de terminal compartida por Erick, archivo de checksum existente y captura de la aplicación. La integración local queda comprobada. El estado formal de la historia se rige por la DoD acordada; las pruebas adicionales no ejecutadas y el despliegue externo conservan los límites ya descritos.
