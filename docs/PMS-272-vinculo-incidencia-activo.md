@@ -74,3 +74,17 @@ Pendientes: migración y repetición en MySQL, persistencia y rollback reales, f
 | Herramienta | Fase y actividad | Componente | Validación y pendientes |
 | --- | --- | --- | --- |
 | ChatGPT/Codex | 24/11/2026; implementación asistida de relación incidencia–activo | Servicio/endpoint, entidad, migración incremental, selector administrativo e historial | 20 pruebas Maven y 14 de lógica aprobadas, build Angular development y tipado. Pendientes revisión del equipo, MySQL, Firebase/navegador y demostración del flujo real. |
+
+## Ejecución desde el terminal del equipo
+
+Se preparó `scripts/pms272-test/validate-mysql-copy.sh`. Requiere Python 3 y los clientes MySQL; en CachyOS también reconoce los ejecutables incluidos con MySQL Workbench. Lee las credenciales locales sin mostrarlas ni agregarlas a Git y exige conexión a MySQL local.
+
+```sh
+bash scripts/pms272-test/validate-mysql-copy.sh /mnt/Datos/Proyectos/Pro---Mantenimiento
+```
+
+El script realiza únicamente lecturas de la base configurada en esa carpeta y crea una base nueva con prefijo `pms272_qa_`. Copia tablas y datos con mysqldump, sin triggers, rutinas ni eventos; no es un respaldo completo para recuperación. Conserva la copia para continuar la validación. En esa copia aplica la migración dos veces, compara todas las columnas originales de incidencias, comprueba la FK y ejecuta relaciones entre dos activos sintéticos del mismo tipo, cambio y retirada. Los registros sintéticos se revierten con ROLLBACK. Comprueba las filas y los conteos al finalizar.
+
+Evitar registrar datos nuevos desde la aplicación mientras se obtiene la copia: si cambian entre lecturas, la comparación puede detener la validación y debe repetirse en una copia nueva. Los archivos temporales de datos y credenciales se eliminan al salir.
+
+Estado del 24/11/2026: revisión de sintaxis Bash aprobada; ejecución MySQL pendiente. Desde el entorno de revisión las conexiones a localhost:3306 fueron rechazadas y no se pudo acceder a Docker. No se creó la copia ni se aplicó la migración. Este script comprueba SQL; la persistencia a través del servicio, auditoría, permisos HTTP/Firebase y navegador requieren una ejecución posterior contra la copia.
