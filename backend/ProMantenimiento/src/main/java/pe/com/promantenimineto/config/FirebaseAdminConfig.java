@@ -11,8 +11,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.Date;
 
 @Configuration
@@ -26,6 +28,9 @@ public class FirebaseAdminConfig {
 
     @Value("${firebase.auth.emulator-host:}")
     private String emulatorHost;
+    
+    @Value("${firebase.credentials.base64:}")
+    private String credentialsBase64;
 
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
@@ -42,14 +47,35 @@ public class FirebaseAdminConfig {
                     "pms276-emulator",
                     new Date(System.currentTimeMillis() + 3_600_000));
             builder.setCredentials(GoogleCredentials.create(token));
-        } else if (credentialsPath != null && !credentialsPath.isBlank()) {
-            try (FileInputStream serviceAccount = new FileInputStream(credentialsPath)) {
-                builder.setCredentials(GoogleCredentials.fromStream(serviceAccount));
+        } else if (credentialsBase64 != null && !credentialsBase64.isBlank()) {
+
+            byte[] decodedCredentials = Base64.getDecoder()
+                    .decode(credentialsBase64);
+
+            try (ByteArrayInputStream serviceAccount =
+                    new ByteArrayInputStream(decodedCredentials)) {
+
+                builder.setCredentials(
+                        GoogleCredentials.fromStream(serviceAccount)
+                );
             }
+
+        } else if (credentialsPath != null && !credentialsPath.isBlank()) {
+
+            try (FileInputStream serviceAccount =
+                    new FileInputStream(credentialsPath)) {
+
+                builder.setCredentials(
+                        GoogleCredentials.fromStream(serviceAccount)
+                );
+            }
+
         } else {
             throw new IllegalStateException(
                     "Configura FIREBASE_AUTH_EMULATOR_HOST para desarrollo "
-                            + "o FIREBASE_CREDENTIALS_PATH para el proyecto Firebase configurado.");
+                    + "o FIREBASE_CREDENTIALS_BASE64 / FIREBASE_CREDENTIALS_PATH "
+                    + "para producción."
+            );
         }
 
         return FirebaseApp.initializeApp(builder.build());
