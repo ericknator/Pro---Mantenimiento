@@ -97,3 +97,7 @@ Erick ejecutó el flujo manual en el clon oficial, con la configuración habitua
 La suite `AdminUsuarioServiceTest` se ejecutó mediante Maven: 5 pruebas aprobadas. La regresión `AlertaInternaPropiedadTest` aprobó otros 3 casos con Maven y un agente de prueba explícito en el entorno del asistente. La simulación de fallos no acredita una caída real de infraestructura. No se atribuyen con estos resultados Karma, build de producción ni aceptación integral de la DoD.
 
 Detalle, límites y registro para Anexo A: [validación de PMS-276](qa/PMS-276-validacion-2026-11-24.md). Las nueve capturas están adjuntas en [PMS-276](https://gean-team-isil.atlassian.net/browse/PMS-276).
+
+## Conciliación de aceptación
+
+La validación satisfactoria del grupo fue comunicada por Erick. Se contrastaron los seis criterios con las evidencias manuales y Maven disponibles y la DoD documentada; el registro de validación detalla ese contraste y conserva sus límites. El estado administrativo vigente se consulta en PMS-276. No se atribuye una nueva ejecución ni un despliegue externo.

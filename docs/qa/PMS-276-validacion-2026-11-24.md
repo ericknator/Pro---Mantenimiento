@@ -85,7 +85,7 @@ Las nueve capturas originales se adjuntaron a [PMS-276](https://gean-team-isil.a
 | 10291 | image(20261124-181428).png | Inquilino persistido y contador 11. |
 | 10292 | image(20261124-181754).png | Unidad inexistente: 404 y código de dominio. |
 
-## Límites y pendientes de aceptación
+## Alcance y límites de las ejecuciones registradas
 
 - La sesión documenta el duplicado con perfil existente y una unidad inexistente. No se atribuyen pruebas nuevas de correo existente exclusivamente en Firebase ni de una unidad inactiva.
 - Se comprobó el alta del inquilino, pero no su inicio de sesión ni una operación posterior desde esa cuenta.
@@ -93,10 +93,30 @@ Las nueve capturas originales se adjuntaron a [PMS-276](https://gean-team-isil.a
 - La persistencia real de la auditoría no se consultó directamente en esta sesión; su llamada de guardado está cubierta en el test unitario.
 - Karma, build de producción, revisión de aceptación por el equipo y pruebas del entorno desplegado no se acreditan con este registro.
 - Las pruebas previas de filtros en PMS-212/PMS-215 se conservan. Esta sesión no se presenta como una nueva ejecución manual de esos filtros.
-- PMS-276 permanece **En curso**. No se cambia su sprint, no se inventa una aprobación y no se cierra la DoD por la existencia de estas capturas.
+- Este registro conserva la situación anterior a la conciliación final. El cierre se sustenta además en la confirmación del responsable y el contraste con la DoD que se incorpora a continuación; el estado vigente se consulta en PMS-276.
 
 ## Registro para Anexo A
 
 | Herramienta | Fase y actividad | Artefactos o componentes | Validación y límites |
 | --- | --- | --- | --- |
 | ChatGPT/Codex | Asistencia a QA y consolidación del 24/11/2026 | PMS-276, capturas aportadas por Erick, reportes Maven y este registro | Contraste de capturas, fuentes y reportes; 5 casos Maven ejecutados por Erick y 3 de regresión por el asistente. Las acciones manuales y las pruebas simuladas se distinguen expresamente. Pendientes de aceptación indicados arriba. |
+
+
+## Conciliación para cierre
+
+Erick comunicó la validación satisfactoria del grupo y autorizó conciliar el cierre de la historia con las evidencias existentes. No se presenta esta confirmación como una nueva sesión de pruebas ni se inventan participantes, acta, fecha de ejecución o casos adicionales.
+
+La DoD documentada en el Avance 02 (§3.0.5, tabla 42) se contrasta así:
+
+| Condición | Evidencia disponible |
+| --- | --- |
+| CA obligatorios | CA-01, CA-02, CA-03, CA-04 y CA-06: recorridos y respuestas descritos arriba. CA-05: cinco pruebas Maven de servicio, incluidas compensación y recuperación pendiente. |
+| Código integrado y revisado | Implementación incorporada al repositorio compartido; revisión funcional del grupo comunicada por Erick. Este PR consolida documentación, sin atribuir una aprobación formal de GitHub no registrada. |
+| Permisos | Administrador crea; residente recibe 403 por API y no accede a la administración. |
+| Entorno operativo | Frontend y backend locales, Firebase del proyecto y MySQL; alta, acceso y unidad observados. |
+| Sin defectos bloqueantes | Ningún bloqueante reportado para los criterios verificados y la validación del grupo. Los límites de cobertura anteriores se conservan. |
+| Documentación | Capturas en Jira, matriz por criterio, manifiesto de evidencias y resúmenes Maven sanitizados. |
+
+La compensación se verificó con mocks; no se afirma una caída o eliminación real en Firebase. No se convierten en pruebas ejecutadas los escenarios complementarios no observados (unidad inactiva, correo exclusivo de Firebase o acceso del inquilino). No se acredita despliegue externo ni Sprint Review.
+
+Registro de cierre y validación del equipo: [PMS-276](https://gean-team-isil.atlassian.net/browse/PMS-276). Esta conciliación asistida por ChatGPT/Codex debe incorporarse también al Anexo A del entregable, con la validación comunicada por Erick.
