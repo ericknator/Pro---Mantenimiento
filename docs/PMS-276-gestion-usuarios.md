@@ -1,6 +1,6 @@
 # PMS-276 — Gestión de usuarios
 
-La configuración general usa el puerto 8086 del PR y el proyecto Firebase del equipo. El emulador solo se activa expresamente. Las pruebas de esta HU usan el perfil `pms276-test`, una base independiente y el proyecto `demo-pms276`; los scripts de prueba no deben apuntar al entorno compartido.
+La configuración general usa el puerto 8086 del PR y el proyecto Firebase del equipo. El emulador solo se activa expresamente. Los scripts de prueba aislada de esta HU usan el perfil `pms276-test`, una base independiente y el proyecto `demo-pms276`; esos scripts no deben apuntar al entorno compartido.
 
 ## Entorno aislado
 
@@ -89,3 +89,15 @@ No se incluyen usuarios de demo en el script general ni se reutilizan UID del pr
 El frontend general usa API en 8086, como el backend del PR. Para una demo visual contra el emulador, usar el backend aislado en 8086 (puerto libre) y definir `globalThis.PMS276 = { useFirebaseEmulator: true }` antes de cargar Angular en un entorno de prueba local. El frontend habitual no modifica su proyecto Firebase por activar el backend de pruebas. El smoke puede dirigirse al puerto elegido mediante `PMS276_BASE_URL`.
 
 El alta termina su transacción MySQL antes de responder. Un fallo durante `save` o durante `commit` intenta eliminar la identidad Firebase creada. Si la eliminación también falla, se conserva el error original con la causa de compensación y se registra `RECUPERACION_ALTA_RESIDENTE_PENDIENTE` con el UID. Recuperación: identificar ese UID en el log, verificar que no exista perfil MySQL válido asociado y reintentar la eliminación mediante Firebase Admin del proyecto configurado; si existe un perfil válido, investigar antes de eliminar. No registrar contraseñas ni tokens.
+
+## Validación posterior del 24/11/2026
+
+Erick ejecutó el flujo manual en el clon oficial, con la configuración habitual del proyecto. Se verificaron alta y persistencia de propietario e inquilino; acceso del propietario y reconocimiento de su unidad mediante una incidencia; duplicado 409; unidad inexistente 404; y rechazo 403 a un residente por API.
+
+La suite `AdminUsuarioServiceTest` se ejecutó mediante Maven: 5 pruebas aprobadas. La regresión `AlertaInternaPropiedadTest` aprobó otros 3 casos con Maven y un agente de prueba explícito en el entorno del asistente. La simulación de fallos no acredita una caída real de infraestructura. No se atribuyen con estos resultados Karma, build de producción ni aceptación integral de la DoD.
+
+Detalle, límites y registro para Anexo A: [validación de PMS-276](qa/PMS-276-validacion-2026-11-24.md). Las nueve capturas están adjuntas en [PMS-276](https://gean-team-isil.atlassian.net/browse/PMS-276).
+
+## Conciliación de aceptación
+
+La validación satisfactoria del grupo fue comunicada por Erick. Se contrastaron los seis criterios con las evidencias manuales y Maven disponibles y la DoD documentada; el registro de validación detalla ese contraste y conserva sus límites. El estado administrativo vigente se consulta en PMS-276. No se atribuye una nueva ejecución ni un despliegue externo.
