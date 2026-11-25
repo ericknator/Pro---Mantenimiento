@@ -55,6 +55,8 @@ public class SecurityConfig {
                     "/api/admin/usuarios",
                     "/api/admin/usuarios/**"
                 ).hasRole("ADMINISTRADOR")
+                .requestMatchers(HttpMethod.PATCH, "/api/incidencia/*/activo")
+                    .hasRole("ADMINISTRADOR")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(
