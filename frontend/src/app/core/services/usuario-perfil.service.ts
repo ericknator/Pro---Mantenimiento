@@ -5,7 +5,7 @@ import { getAuth } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '../config/api.config';
 
-const API_BASE = `API_BASE_URL`;
+const API_BASE = API_BASE_URL;
 
 export interface RolResponsable {
   id: number;
