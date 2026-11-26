@@ -135,11 +135,11 @@
       <h3 class="section-subtitle">DATOS REGISTRADOS</h3>
       <div class="dato-bloque">
         <label>Diagnóstico</label>
-        <p>Diagnóstico técnico no disponible en esta consulta.</p>
+        <p>{{ diagnosticoSolucion() }}</p>
       </div>
       <div class="dato-bloque">
         <label>Acciones realizadas</label>
-        <p>El detalle de las acciones realizadas aún no está disponible.</p>
+        <p>{{ accionesSolucion() }}</p>
       </div>
       @if (evidenciasSolucion().length > 0) {
       <div class="dato-bloque">

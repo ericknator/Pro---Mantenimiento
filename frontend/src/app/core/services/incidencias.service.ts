@@ -122,6 +122,8 @@ export class IncidenciasService {
         ubicacion: item.ubicacion,
         descripcion: item.descripcion,
         motivoReapertura: item.motivoReapertura?.trim() || null,
+        diagnosticoTecnico: item.diagnosticoTecnico?.trim() || null,
+        accionesRealizadas: item.accionesRealizadas?.trim() || null,
         evidencias: [],
         evidenciasSolucion: this.mapearEvidencias(item),
         evidenciasConsultaDisponible,

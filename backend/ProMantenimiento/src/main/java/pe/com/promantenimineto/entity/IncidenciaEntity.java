@@ -64,6 +64,14 @@ public class IncidenciaEntity {
     @Transient
     private String motivoReapertura;
 
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String diagnosticoTecnico;
+
+    @Transient
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String accionesRealizadas;
+
     @Column(name = "fecha_reporte", nullable = false)
     private LocalDateTime fechaReporte;
 

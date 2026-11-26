@@ -242,6 +242,7 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	    // Administrador: puede consultar cualquier incidencia.
 	    if ("ADMINISTRADOR".equals(rol)) {
 	        cargarMotivoReapertura(incidencia);
+	        cargarDatosSolucion(incidencia);
 	        return incidencia;
 	    }
 	
@@ -259,6 +260,7 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	        }
 
 	        cargarMotivoReapertura(incidencia);
+	        cargarDatosSolucion(incidencia);
 	        return incidencia;
 	    }
 	    
@@ -279,6 +281,7 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	        }
 
 	        cargarMotivoReapertura(incidencia);
+	        cargarDatosSolucion(incidencia);
 	        return incidencia;
 	    }
 	
@@ -290,6 +293,26 @@ public class IncidenciaServiceImpl implements IncidenciaService{
 	}
 
     
+
+    // Solo se invoca después de autorizar el acceso al caso.
+    private void cargarDatosSolucion(IncidenciaEntity incidencia) {
+        var acciones = actuacionRepositorio
+                .findFirstByIncidenciaIdAndTipoAccionCodigoOrderByCreadoEnDesc(
+                        incidencia.getId(), "ACCION_REALIZADA");
+        var diagnostico = actuacionRepositorio
+                .findFirstByIncidenciaIdAndTipoAccionCodigoOrderByCreadoEnDesc(
+                        incidencia.getId(), "DIAGNOSTICO");
+        incidencia.setAccionesRealizadas(
+                acciones.map(ActuacionIncidenciaEntity::getDescripcion).orElse(null));
+        // Una nueva atención sin diagnóstico no debe mostrar el de la atención anterior.
+        incidencia.setDiagnosticoTecnico(diagnostico
+                .filter(d -> acciones.isEmpty()
+                        || (d.getCreadoEn() != null
+                            && acciones.get().getCreadoEn() != null
+                            && !d.getCreadoEn().isBefore(acciones.get().getCreadoEn())))
+                .map(ActuacionIncidenciaEntity::getDescripcion).orElse(null));
+    }
+
 
 	@Override
 	public IncidenciaEntity add(IncidenciaEntity obj) {

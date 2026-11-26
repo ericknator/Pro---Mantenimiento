@@ -38,6 +38,8 @@ export interface Incidencia extends NuevaIncidencia {
   responsableNombre: string | null;
   fechaSolucion: Date | null;
   motivoReapertura?: string | null;
+  diagnosticoTecnico?: string | null;
+  accionesRealizadas?: string | null;
 }
 
 export interface EvidenciaIncidencia {
@@ -88,6 +90,8 @@ export interface IncidenciaApi {
   ubicacion: string;
   descripcion: string;
   motivoReapertura?: string | null;
+  diagnosticoTecnico?: string | null;
+  accionesRealizadas?: string | null;
   fechaReporte: string;
   fechaSolucion: string | null;
   fechaCierre: string | null;
