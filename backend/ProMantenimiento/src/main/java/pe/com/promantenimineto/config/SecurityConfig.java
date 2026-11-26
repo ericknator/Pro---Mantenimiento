@@ -68,45 +68,24 @@ public class SecurityConfig {
     }
 
 
-	@Bean
-	public CorsConfigurationSource corsConfigurationSource() {
-	
-	    CorsConfiguration config = new CorsConfiguration();
-	
-	    config.setAllowedOrigins(
-	        List.of(
-	            "http://localhost:4200",
-	            "https://adorable-eagerness-production-ce0a27b3.up.railway.app"
-	        )
-	    );
-	
-	    config.setAllowedMethods(
-	        List.of(
-	            "GET",
-	            "POST",
-	            "PUT",
-	            "PATCH",
-	            "DELETE",
-	            "OPTIONS"
-	        )
-	    );
-	
-	    config.setAllowedHeaders(
-	        List.of(
-	            "Authorization",
-	            "Content-Type"
-	        )
-	    );
-	
-	    config.setAllowCredentials(false);
-	    config.setMaxAge(3600L);
-	
-	    UrlBasedCorsConfigurationSource source =
-	        new UrlBasedCorsConfigurationSource();
-	
-	    source.registerCorsConfiguration("/**", config);
-	
-	    return source;
-	}
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        // Configuración temporal para diagnosticar el rechazo CORS
+        config.setAllowedOriginPatterns(List.of("*"));
+        config.setAllowedMethods(List.of("*"));
+        config.setAllowedHeaders(List.of("*"));
+
+        config.setAllowCredentials(false);
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration("/**", config);
+
+        return source;
+    }
 
 }
