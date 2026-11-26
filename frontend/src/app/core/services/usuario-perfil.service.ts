@@ -3,8 +3,9 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { getAuth } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
+import { API_BASE_URL } from '../config/api.config';
 
-const API_BASE = 'http://localhost:8086/promantenimiento/api';
+const API_BASE = `API_BASE_URL`;
 
 export interface RolResponsable {
   id: number;

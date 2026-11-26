@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../core/config/api.config';
 
 export interface Rol {
   id: number;
@@ -15,7 +16,7 @@ export interface Rol {
 })
 export class RolService {
 
-  private apiUrl = 'http://localhost:8086/promantenimiento/api/rol';
+private apiUrl = `${API_BASE_URL}/rol`;
 
   constructor(private http: HttpClient) {}
 

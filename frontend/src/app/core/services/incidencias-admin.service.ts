@@ -3,10 +3,11 @@ import { Injectable, inject, signal } from '@angular/core';
 import { getAuth } from 'firebase/auth';
 import { firstValueFrom } from 'rxjs';
 import { IncidenciaAdmin } from '../../models/incidencia-admin.model';
+import { API_BASE_URL } from '../config/api.config';
 
 // ⚠️ Usar la misma URL base que el resto de servicios (p. ej. activo.service.ts).
 // Con proxy de Angular sería '/promantenimiento/api'.
-const API_BASE = 'http://localhost:8086/promantenimiento/api';
+const API_BASE = `API_BASE_URL`;
 
 /** Forma esperada de IncidenciaEntity en las respuestas del backend. */
 interface IncidenciaApi {

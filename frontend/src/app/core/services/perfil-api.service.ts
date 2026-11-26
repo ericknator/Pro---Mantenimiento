@@ -2,6 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_BASE_URL } from '../config/api.config';
 
 export interface PerfilUsuario {
   id: number;
@@ -18,8 +19,7 @@ export interface PerfilUsuario {
 export class PerfilApiService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl =
-    'http://localhost:8086/promantenimiento/api/auth/perfil';
+  private readonly apiUrl = `${API_BASE_URL}/auth/perfil`;
 
   obtenerPerfil(token: string): Observable<PerfilUsuario> {
     const headers = new HttpHeaders({

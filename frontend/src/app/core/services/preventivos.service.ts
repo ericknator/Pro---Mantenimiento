@@ -9,6 +9,7 @@ import {
 } from '../../models/tarea-preventiva.model';
 import { auth } from './firebase.config';
 import { onAuthStateChanged, type User } from 'firebase/auth';
+import { API_BASE_URL } from '../config/api.config';
 
 export interface IntervencionPreventivaDto {
   tareaPreventivaId: number;
@@ -32,10 +33,8 @@ export class PreventivosService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
 
-  private readonly apiUrl =
-    'http://localhost:8086/promantenimiento/api/tarea-preventiva';
-  private readonly apiIntervencionUrl =
-    'http://localhost:8086/promantenimiento/api/intervencion-preventiva';
+  private readonly apiUrl = `${API_BASE_URL}/tarea-preventiva`;
+  private readonly apiIntervencionUrl = `${API_BASE_URL}/intervencion-preventiva`;
 
   private readonly _tareas = signal<TareaPreventiva[]>([]);
   readonly tareas = this._tareas.asReadonly();

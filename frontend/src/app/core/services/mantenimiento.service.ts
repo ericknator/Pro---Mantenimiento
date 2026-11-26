@@ -18,6 +18,8 @@ import {
   UsuarioResponsableApi,
 } from '../../models/mantenimiento.model';
 import { TareaPreventivaApi } from '../../models/tarea-preventiva.model';
+import { API_BASE_URL } from '../config/api.config';
+
 
 interface PlanMantenimientoRequestBody {
   activo: { id: number };
@@ -32,7 +34,7 @@ interface PlanMantenimientoRequestBody {
 export class MantenimientoService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiBaseUrl = 'http://localhost:8086/promantenimiento/api';
+  private readonly apiBaseUrl = `API_BASE_URL`;
   private readonly activosUrl = `${this.apiBaseUrl}/activo`;
   private readonly frecuenciasUrl = `${this.apiBaseUrl}/frecuencia-mantenimiento`;
   private readonly rolesUrl = `${this.apiBaseUrl}/rol`;

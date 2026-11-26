@@ -7,6 +7,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { auth } from './firebase.config';
 import { FERIADOS_PERU } from '../data/feriados-peru.data';
 import { restarDiasHabiles } from '../utils/dias-habiles.util';
+import { API_BASE_URL } from '../config/api.config';
 
 export type TipoAlertaMantenimiento = 'proxima' | 'vencida';
 
@@ -27,8 +28,7 @@ export interface AlertaMantenimiento {
 export class AlertasService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl =
-    'http://localhost:8086/promantenimiento/api/tarea-preventiva';
+  private readonly apiUrl =`${API_BASE_URL}/tarea-preventiva`;
 
   // Anticipación acordada por el equipo.
   private readonly umbralDiasProximos = 7;

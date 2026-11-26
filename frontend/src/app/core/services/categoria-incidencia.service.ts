@@ -4,13 +4,13 @@ import { firstValueFrom } from 'rxjs';
 import { auth } from './firebase.config';
 import { onAuthStateChanged, type User } from 'firebase/auth';
 import { CategoriaIncidencia } from '../../models/categoria-incidencia.model';
+import { API_BASE_URL } from '../config/api.config';
 
 @Injectable({ providedIn: 'root' })
 export class CategoriaIncidenciaService {
   private readonly http = inject(HttpClient);
 
-  private readonly apiUrl =
-    'http://localhost:8086/promantenimiento/api/categoria-incidencia';
+  private readonly apiUrl = `${API_BASE_URL}/categoria-incidencia`;
 
   readonly categorias = signal<CategoriaIncidencia[]>([]);
   readonly cargando = signal(false);

@@ -15,14 +15,13 @@ import {
   NuevoActivoPayload,
   TipoActivo
 } from '../../models/activo.model';
+import { API_BASE_URL } from '../config/api.config';
 
 @Injectable({ providedIn: 'root' })
 export class ActivoService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl =
-    'http://localhost:8086/promantenimiento/api/activo';
-  private readonly tiposActivoUrl =
-    'http://localhost:8086/promantenimiento/api/tipo-activo';
+  private readonly apiUrl = `${API_BASE_URL}/activo`;
+  private readonly tiposActivoUrl = `${API_BASE_URL}/tipo-activo`;
 
   readonly activos = signal<Activo[]>([]);
   readonly tiposActivo = signal<TipoActivo[]>([]);
